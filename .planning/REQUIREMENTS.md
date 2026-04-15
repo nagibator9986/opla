@@ -156,16 +156,97 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| INFRA-01..07 | Phase 1 | Pending |
-| DATA-01..13 | Phase 1 | Pending |
-| API-01..11 | Phase 2 | Pending |
-| BOT-01..11 | Phase 3 | Pending |
-| PAY-01..09 | Phase 4 | Pending |
-| WEB-01..08 | Phase 5 | Pending |
-| PDF-01..07 | Phase 6 | Pending |
-| DLV-01..06 | Phase 6 | Pending |
-| CRM-01..10 | Phase 7 | Pending |
-| HARD-01..09 | Phase 8 | Pending |
+| INFRA-01 | Phase 1: Infrastructure & Data Model | Pending |
+| INFRA-02 | Phase 1: Infrastructure & Data Model | Pending |
+| INFRA-03 | Phase 1: Infrastructure & Data Model | Pending |
+| INFRA-04 | Phase 1: Infrastructure & Data Model | Pending |
+| INFRA-05 | Phase 1: Infrastructure & Data Model | Pending |
+| INFRA-06 | Phase 1: Infrastructure & Data Model | Pending |
+| INFRA-07 | Phase 1: Infrastructure & Data Model | Pending |
+| DATA-01 | Phase 1: Infrastructure & Data Model | Pending |
+| DATA-02 | Phase 1: Infrastructure & Data Model | Pending |
+| DATA-03 | Phase 1: Infrastructure & Data Model | Pending |
+| DATA-04 | Phase 1: Infrastructure & Data Model | Pending |
+| DATA-05 | Phase 1: Infrastructure & Data Model | Pending |
+| DATA-06 | Phase 1: Infrastructure & Data Model | Pending |
+| DATA-07 | Phase 1: Infrastructure & Data Model | Pending |
+| DATA-08 | Phase 1: Infrastructure & Data Model | Pending |
+| DATA-09 | Phase 1: Infrastructure & Data Model | Pending |
+| DATA-10 | Phase 1: Infrastructure & Data Model | Pending |
+| DATA-11 | Phase 1: Infrastructure & Data Model | Pending |
+| DATA-12 | Phase 1: Infrastructure & Data Model | Pending |
+| DATA-13 | Phase 1: Infrastructure & Data Model | Pending |
+| API-01 | Phase 2: Core REST API | Pending |
+| API-02 | Phase 2: Core REST API | Pending |
+| API-03 | Phase 2: Core REST API | Pending |
+| API-04 | Phase 2: Core REST API | Pending |
+| API-05 | Phase 2: Core REST API | Pending |
+| API-06 | Phase 2: Core REST API | Pending |
+| API-07 | Phase 2: Core REST API | Pending |
+| API-08 | Phase 2: Core REST API | Pending |
+| API-09 | Phase 2: Core REST API | Pending |
+| API-10 | Phase 2: Core REST API | Pending |
+| API-11 | Phase 2: Core REST API | Pending |
+| BOT-01 | Phase 3: Telegram Bot | Pending |
+| BOT-02 | Phase 3: Telegram Bot | Pending |
+| BOT-03 | Phase 3: Telegram Bot | Pending |
+| BOT-04 | Phase 3: Telegram Bot | Pending |
+| BOT-05 | Phase 3: Telegram Bot | Pending |
+| BOT-06 | Phase 3: Telegram Bot | Pending |
+| BOT-07 | Phase 3: Telegram Bot | Pending |
+| BOT-08 | Phase 3: Telegram Bot | Pending |
+| BOT-09 | Phase 3: Telegram Bot | Pending |
+| BOT-10 | Phase 3: Telegram Bot | Pending |
+| BOT-11 | Phase 3: Telegram Bot | Pending |
+| PAY-01 | Phase 4: Payments | Pending |
+| PAY-02 | Phase 4: Payments | Pending |
+| PAY-03 | Phase 4: Payments | Pending |
+| PAY-04 | Phase 4: Payments | Pending |
+| PAY-05 | Phase 4: Payments | Pending |
+| PAY-06 | Phase 4: Payments | Pending |
+| PAY-07 | Phase 4: Payments | Pending |
+| PAY-08 | Phase 4: Payments | Pending |
+| PAY-09 | Phase 4: Payments | Pending |
+| WEB-01 | Phase 5: React Frontend | Pending |
+| WEB-02 | Phase 5: React Frontend | Pending |
+| WEB-03 | Phase 5: React Frontend | Pending |
+| WEB-04 | Phase 5: React Frontend | Pending |
+| WEB-05 | Phase 5: React Frontend | Pending |
+| WEB-06 | Phase 5: React Frontend | Pending |
+| WEB-07 | Phase 5: React Frontend | Pending |
+| WEB-08 | Phase 5: React Frontend | Pending |
+| PDF-01 | Phase 6: PDF Generation & Delivery | Pending |
+| PDF-02 | Phase 6: PDF Generation & Delivery | Pending |
+| PDF-03 | Phase 6: PDF Generation & Delivery | Pending |
+| PDF-04 | Phase 6: PDF Generation & Delivery | Pending |
+| PDF-05 | Phase 6: PDF Generation & Delivery | Pending |
+| PDF-06 | Phase 6: PDF Generation & Delivery | Pending |
+| PDF-07 | Phase 6: PDF Generation & Delivery | Pending |
+| DLV-01 | Phase 6: PDF Generation & Delivery | Pending |
+| DLV-02 | Phase 6: PDF Generation & Delivery | Pending |
+| DLV-03 | Phase 6: PDF Generation & Delivery | Pending |
+| DLV-04 | Phase 6: PDF Generation & Delivery | Pending |
+| DLV-05 | Phase 6: PDF Generation & Delivery | Pending |
+| DLV-06 | Phase 6: PDF Generation & Delivery | Pending |
+| CRM-01 | Phase 7: Admin CRM | Pending |
+| CRM-02 | Phase 7: Admin CRM | Pending |
+| CRM-03 | Phase 7: Admin CRM | Pending |
+| CRM-04 | Phase 7: Admin CRM | Pending |
+| CRM-05 | Phase 7: Admin CRM | Pending |
+| CRM-06 | Phase 7: Admin CRM | Pending |
+| CRM-07 | Phase 7: Admin CRM | Pending |
+| CRM-08 | Phase 7: Admin CRM | Pending |
+| CRM-09 | Phase 7: Admin CRM | Pending |
+| CRM-10 | Phase 7: Admin CRM | Pending |
+| HARD-01 | Phase 8: Hardening & Production Readiness | Pending |
+| HARD-02 | Phase 8: Hardening & Production Readiness | Pending |
+| HARD-03 | Phase 8: Hardening & Production Readiness | Pending |
+| HARD-04 | Phase 8: Hardening & Production Readiness | Pending |
+| HARD-05 | Phase 8: Hardening & Production Readiness | Pending |
+| HARD-06 | Phase 8: Hardening & Production Readiness | Pending |
+| HARD-07 | Phase 8: Hardening & Production Readiness | Pending |
+| HARD-08 | Phase 8: Hardening & Production Readiness | Pending |
+| HARD-09 | Phase 8: Hardening & Production Readiness | Pending |
 
 **Coverage:**
 - v1 requirements: 80 total
@@ -174,4 +255,4 @@
 
 ---
 *Requirements defined: 2026-04-15*
-*Last updated: 2026-04-15 after initial definition*
+*Last updated: 2026-04-15 — traceability updated with phase names after roadmap creation*
