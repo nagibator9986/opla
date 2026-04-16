@@ -24,11 +24,6 @@ class TestJWTAuth:
         # (Real endpoint coverage is in submissions tests — Phase 2 Plan 02)
         assert str(refresh.access_token)  # token is non-empty
 
-    @pytest.mark.xfail(
-        reason="Submissions endpoint not yet implemented (Plan 02-03). "
-        "Once SubmissionCreateView is added this endpoint returns 401.",
-        strict=False,
-    )
     def test_unauthenticated_request_returns_401(self):
         client = APIClient()
         response = client.get("/api/v1/submissions/")
