@@ -41,6 +41,20 @@ files_modified:
   - backend/apps/content/apps.py
   - backend/apps/content/models.py
   - backend/apps/content/admin.py
+  - backend/apps/accounts/migrations/__init__.py
+  - backend/apps/accounts/migrations/0001_initial.py
+  - backend/apps/industries/migrations/__init__.py
+  - backend/apps/industries/migrations/0001_initial.py
+  - backend/apps/submissions/migrations/__init__.py
+  - backend/apps/submissions/migrations/0001_initial.py
+  - backend/apps/payments/migrations/__init__.py
+  - backend/apps/payments/migrations/0001_initial.py
+  - backend/apps/reports/migrations/__init__.py
+  - backend/apps/reports/migrations/0001_initial.py
+  - backend/apps/delivery/migrations/__init__.py
+  - backend/apps/delivery/migrations/0001_initial.py
+  - backend/apps/content/migrations/__init__.py
+  - backend/apps/content/migrations/0001_initial.py
 nyquist_compliant: true
 ---
 
@@ -816,31 +830,7 @@ For each app create:
 - backend/baqsy/settings/base.py (INSTALLED_APPS must include all 8 apps)
 </read_first>
 <action>
-Ensure `INSTALLED_APPS` in `backend/baqsy/settings/base.py` includes:
-```python
-INSTALLED_APPS = [
-    "django.contrib.admin",
-    "django.contrib.auth",
-    "django.contrib.contenttypes",
-    "django.contrib.sessions",
-    "django.contrib.messages",
-    "django.contrib.staticfiles",
-    # 3rd party
-    "django_fsm",
-    "corsheaders",
-    # project apps
-    "apps.core",
-    "apps.accounts",
-    "apps.industries",
-    "apps.submissions",
-    "apps.payments",
-    "apps.reports",
-    "apps.delivery",
-    "apps.content",
-]
-```
-
-Also ensure `AUTH_USER_MODEL = "accounts.BaseUser"` is in base.py.
+INSTALLED_APPS and AUTH_USER_MODEL are already set in base.py by Plan 01 (includes django_fsm, all 8 apps, AUTH_USER_MODEL). Do NOT modify base.py — only verify it has all required entries.
 
 Run: `python manage.py makemigrations` for each app.
 Run: `python manage.py migrate` to verify all migrations apply cleanly.

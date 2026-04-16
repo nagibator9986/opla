@@ -5,7 +5,7 @@ type: execute
 wave: 2
 title: "Backups and seed data"
 depends_on: [01, 02]
-requirements: [INFRA-06]
+requirements: [INFRA-06]  # partial: script only, cron scheduling deferred to Phase 8 (HARD-08)
 autonomous: true
 files_modified:
   - docker/postgres-backup.sh
@@ -138,8 +138,8 @@ INDUSTRIES = [
 ]
 
 TARIFFS = [
-    {"code": "ashide-1", "title": "Ashıde 1", "price_kzt": 45000, "description": "Базовый аудит — 7-9 параметров"},
-    {"code": "ashide-2", "title": "Ashıde 2", "price_kzt": 135000, "description": "Расширенный аудит — 18-24 параметра"},
+    {"code": "ashide_1", "title": "Ashıde 1", "price_kzt": 45000, "description": "Базовый аудит — 7-9 параметров"},
+    {"code": "ashide_2", "title": "Ashıde 2", "price_kzt": 135000, "description": "Расширенный аудит — 18-24 параметра"},
     {"code": "upsell", "title": "Upsell Ashıde 1→2", "price_kzt": 90000, "description": "Доплата за переход с Ashıde 1 на Ashıde 2"},
 ]
 
@@ -263,8 +263,8 @@ def test_seed_creates_baseline_data():
         assert tmpl.questions.count() == 9
 
     # Verify specific tariffs
-    assert Tariff.objects.filter(code="ashide-1", price_kzt=45000).exists()
-    assert Tariff.objects.filter(code="ashide-2", price_kzt=135000).exists()
+    assert Tariff.objects.filter(code="ashide_1", price_kzt=45000).exists()
+    assert Tariff.objects.filter(code="ashide_2", price_kzt=135000).exists()
     assert Tariff.objects.filter(code="upsell", price_kzt=90000).exists()
 
 
