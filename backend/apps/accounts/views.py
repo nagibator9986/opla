@@ -145,3 +145,56 @@ class DeeplinkExchangeView(APIView):
                 "name": profile.name,
             }
         )
+
+
+class BotJWTView(APIView):
+    """POST /api/v1/bot/jwt/ — bot requests JWT for a telegram_id (session recovery)."""
+
+    authentication_classes = []
+    permission_classes = [IsBotAuthenticated]
+
+    def post(self, request):
+        telegram_id = request.data.get("telegram_id")
+        if not telegram_id:
+            return Response({"detail": "telegram_id required"}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            profile = ClientProfile.objects.get(telegram_id=telegram_id)
+        except ClientProfile.DoesNotExist:
+            return Response({"detail": "Client not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        email = f"tg_{telegram_id}@baqsy.internal"
+        user, _ = BaseUser.objects.get_or_create(email=email, defaults={"is_active": True})
+        refresh = RefreshToken.for_user(user)
+        return Response({
+            "access": str(refresh.access_token),
+            "refresh": str(refresh),
+            "client_profile_id": profile.id,
+        })
+
+
+class ActiveSubmissionView(APIView):
+    """GET /api/v1/bot/active-submission/?telegram_id=N — find in-progress submission."""
+
+    authentication_classes = []
+    permission_classes = [IsBotAuthenticated]
+
+    def get(self, request):
+        telegram_id = request.query_params.get("telegram_id")
+        if not telegram_id:
+            return Response({"detail": "telegram_id required"}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            profile = ClientProfile.objects.get(telegram_id=telegram_id)
+        except ClientProfile.DoesNotExist:
+            return Response({"detail": "No profile"}, status=status.HTTP_404_NOT_FOUND)
+
+        from apps.submissions.models import Submission
+        sub = Submission.objects.filter(
+            client=profile,
+            status__in=["in_progress_full", "paid", "in_progress_basic"]
+        ).order_by("-created_at").first()
+
+        if not sub:
+            return Response({"detail": "No active submission"}, status=status.HTTP_404_NOT_FOUND)
+
+        from apps.submissions.serializers import SubmissionDetailSerializer
+        return Response(SubmissionDetailSerializer(sub).data)
