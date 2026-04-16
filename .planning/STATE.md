@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 2 context gathered
+stopped_at: "Phase 2 Plan 00 complete: API bootstrap"
 last_updated: "2026-04-16T06:14:21.292Z"
 last_activity: "2026-04-16 — Plan 03 executed: postgres-backup.sh + seed_initial command complete"
 progress:
   total_phases: 8
   completed_phases: 1
   total_plans: 4
-  completed_plans: 4
-  percent: 8
+  completed_plans: 5
+  percent: 15
 ---
 
 # Project State
@@ -25,12 +25,12 @@ See: .planning/PROJECT.md (updated 2026-04-15)
 
 ## Current Position
 
-Phase: 1 of 8 (Infrastructure & Data Model)
-Plan: 4 of 4 in current phase (Plans 00 + 01 + 02 + 03 complete)
+Phase: 2 of 8 (Core REST API)
+Plan: 1 of 4 in current phase (Plan 00 complete)
 Status: In progress
-Last activity: 2026-04-16 — Plan 03 executed: postgres-backup.sh + seed_initial command complete
+Last activity: 2026-04-16 — Plan 00 executed: DRF + SimpleJWT bootstrap, /api/v1/ URL namespace, factory-boy factories
 
-Progress: [█░░░░░░░░░] 8%
+Progress: [██░░░░░░░░] 15%
 
 ## Performance Metrics
 
@@ -73,6 +73,9 @@ Recent decisions affecting current work:
 - [Phase 01 Plan 03]: Tariff codes underscore convention: ashide_1, ashide_2, upsell (per CLAUDE.md)
 - [Phase 01 Plan 03]: PGPASSWORD env var for pg_dump (not --password flag) — avoids credential leak in process list
 - [Phase 01 Plan 03]: Backup cron scheduling deferred to Phase 8 (HARD-08); script only in Phase 1
+- [Phase 02 Plan 00]: ClientProfile.user OneToOneField(BaseUser, null=True) для JWT — synthetic email tg_{id}@baqsy.internal
+- [Phase 02 Plan 00]: Redis db=2 для deeplink через redis.Redis(host, port, db=2) — прямой клиент, не Django cache
+- [Phase 02 Plan 00]: fakeredis добавлен в dev deps для изолированных тестов deeplink без реального Redis
 
 ### Pending Todos
 
@@ -86,6 +89,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-16T06:14:21.284Z
-Stopped at: Phase 2 context gathered
-Resume file: .planning/phases/02-core-rest-api/02-CONTEXT.md
+Last session: 2026-04-16T08:52:12Z
+Stopped at: "Phase 2 Plan 00 complete — Completed 02-00-api-bootstrap-PLAN.md"
+Resume file: .planning/phases/02-core-rest-api/02-01-PLAN.md

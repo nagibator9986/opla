@@ -34,6 +34,8 @@ def _get_deeplink_redis():
 class OnboardingView(APIView):
     """POST /api/v1/bot/onboarding/ — create or update ClientProfile."""
 
+    # Bot endpoints use API key auth, not JWT — bypass default auth pipeline
+    authentication_classes = []
     permission_classes = [IsBotAuthenticated]
 
     def post(self, request):
@@ -77,6 +79,8 @@ class OnboardingView(APIView):
 class DeeplinkCreateView(APIView):
     """POST /api/v1/bot/deeplink/ — bot creates a one-time UUID token."""
 
+    # Bot endpoints use API key auth, not JWT — bypass default auth pipeline
+    authentication_classes = []
     permission_classes = [IsBotAuthenticated]
 
     def post(self, request):
