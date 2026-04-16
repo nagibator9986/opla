@@ -8,7 +8,7 @@
 
 - [ ] **Phase 1: Infrastructure & Data Model** — Docker Compose + все Django-модели + миграции + инвариант версионирования шаблонов
 - [x] **Phase 2: Core REST API** — все эндпоинты для бота и React; JWT; deep-link токены (completed 2026-04-16)
-- [ ] **Phase 3: Telegram Bot** — aiogram 3 FSM онбординг + прохождение анкеты; тонкий REST-клиент
+- [x] **Phase 3: Telegram Bot** — aiogram 3 FSM онбординг + прохождение анкеты; тонкий REST-клиент (completed 2026-04-16)
 - [ ] **Phase 4: Payments** — CloudPayments Widget + HMAC webhook + идемпотентность + sandbox-тест
 - [ ] **Phase 5: React Frontend** — лендинг, тарифы с CP виджетом, кабинет клиента, upsell
 - [ ] **Phase 6: PDF Generation & Delivery** — WeasyPrint + Jinja2 + MinIO + Telegram sendDocument + Wazzup24
@@ -121,7 +121,7 @@
 |-------|----------------|--------|-----------|
 | 1. Infrastructure & Data Model | 4/4 | Complete | 2026-04-16 |
 | 2. Core REST API | 4/4 | Complete   | 2026-04-16 |
-| 3. Telegram Bot | 2/3 | In Progress|  |
+| 3. Telegram Bot | 3/3 | Complete   | 2026-04-16 |
 | 4. Payments | 0/? | Not started | - |
 | 5. React Frontend | 0/? | Not started | - |
 | 6. PDF Generation & Delivery | 0/? | Not started | - |

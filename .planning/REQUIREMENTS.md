@@ -51,13 +51,13 @@
 - [x] **BOT-02**: Команда `/start` запускает FSM-сценарий онбординга
 - [x] **BOT-03**: Онбординг задаёт 5 вопросов: имя, компания, отрасль (выбор из inline-клавиатуры), WhatsApp-номер, город
 - [x] **BOT-04**: После онбординга бот выдаёт deep-link на сайт с тарифами
-- [ ] **BOT-05**: Бот реагирует на сигнал об успешной оплате и начинает задавать вопросы из анкеты по одному
-- [ ] **BOT-06**: Каждый ответ сразу отправляется в Django API (нет локального кэша)
-- [ ] **BOT-07**: Прогресс-индикатор в каждом сообщении («Вопрос 7/27»)
+- [x] **BOT-05**: Бот реагирует на сигнал об успешной оплате и начинает задавать вопросы из анкеты по одному
+- [x] **BOT-06**: Каждый ответ сразу отправляется в Django API (нет локального кэша)
+- [x] **BOT-07**: Прогресс-индикатор в каждом сообщении («Вопрос 7/27»)
 - [x] **BOT-08**: Команда `/status` показывает текущий статус заказа
 - [x] **BOT-09**: Команда `/help` показывает справку
-- [ ] **BOT-10**: При обрыве FSM бот восстанавливает прогресс из Django при следующем `/start`
-- [ ] **BOT-11**: Напоминание через 24 часа если анкета не завершена (Celery beat)
+- [x] **BOT-10**: При обрыве FSM бот восстанавливает прогресс из Django при следующем `/start`
+- [x] **BOT-11**: Напоминание через 24 часа если анкета не завершена (Celery beat)
 
 ### Payments (PAY)
 
@@ -191,13 +191,13 @@
 | BOT-02 | Phase 3: Telegram Bot | Complete |
 | BOT-03 | Phase 3: Telegram Bot | Complete |
 | BOT-04 | Phase 3: Telegram Bot | Complete |
-| BOT-05 | Phase 3: Telegram Bot | Pending |
-| BOT-06 | Phase 3: Telegram Bot | Pending |
-| BOT-07 | Phase 3: Telegram Bot | Pending |
+| BOT-05 | Phase 3: Telegram Bot | Complete |
+| BOT-06 | Phase 3: Telegram Bot | Complete |
+| BOT-07 | Phase 3: Telegram Bot | Complete |
 | BOT-08 | Phase 3: Telegram Bot | Complete |
 | BOT-09 | Phase 3: Telegram Bot | Complete |
-| BOT-10 | Phase 3: Telegram Bot | Pending |
-| BOT-11 | Phase 3: Telegram Bot | Pending |
+| BOT-10 | Phase 3: Telegram Bot | Complete |
+| BOT-11 | Phase 3: Telegram Bot | Complete |
 | PAY-01 | Phase 4: Payments | Pending |
 | PAY-02 | Phase 4: Payments | Pending |
 | PAY-03 | Phase 4: Payments | Pending |

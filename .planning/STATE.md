@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 03-telegram-bot-01-bot-core-and-onboarding-PLAN.md
-last_updated: "2026-04-16T10:36:08.668Z"
+stopped_at: Completed 03-telegram-bot-02-questionnaire-and-reminders-PLAN.md
+last_updated: "2026-04-16T10:39:15.149Z"
 last_activity: "2026-04-16 — Plan 00 executed: DRF + SimpleJWT bootstrap, /api/v1/ URL namespace, factory-boy factories"
 progress:
   total_phases: 8
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 11
-  completed_plans: 10
+  completed_plans: 11
   percent: 15
 ---
 
@@ -57,6 +57,7 @@ Progress: [██░░░░░░░░] 15%
 | Phase 02-core-rest-api P03 | 3 | 3 tasks | 5 files |
 | Phase 03-telegram-bot P00 | 10 | 2 tasks | 5 files |
 | Phase 03-telegram-bot P01 | 3 | 3 tasks | 14 files |
+| Phase 03-telegram-bot P02 | 5 | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -93,6 +94,8 @@ Recent decisions affecting current work:
 - [Phase 03-telegram-bot]: Router order: start_router (deep_link) before commands_router — CommandStart(deep_link=True) must match before plain CommandStart
 - [Phase 03-telegram-bot]: questionnaire.py stub in Plan 01 prevents import failure; full replacement in Plan 02
 - [Phase 03-telegram-bot]: _send_next_question в start.py импортируется в questionnaire.py — единственный источник истины для отображения вопросов
+- [Phase 03-telegram-bot]: Answer value always typed dict: {text:.., number:.., choice:.., choices:[..]} consistent with Answer.value JSONField
+- [Phase 03-telegram-bot]: Multichoice done button shows live count 'Gotovo (N)' for UX clarity
 
 ### Pending Todos
 
@@ -106,6 +109,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-16T10:36:08.666Z
-Stopped at: Completed 03-telegram-bot-01-bot-core-and-onboarding-PLAN.md
+Last session: 2026-04-16T10:39:15.147Z
+Stopped at: Completed 03-telegram-bot-02-questionnaire-and-reminders-PLAN.md
 Resume file: None
