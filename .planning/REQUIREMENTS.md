@@ -33,8 +33,8 @@
 
 ### REST API (API)
 
-- [ ] **API-01**: JWT-аутентификация для клиента (SimpleJWT)
-- [ ] **API-02**: Django session-auth для админки
+- [x] **API-01**: JWT-аутентификация для клиента (SimpleJWT)
+- [x] **API-02**: Django session-auth для админки
 - [ ] **API-03**: `POST /api/bot/onboarding/` — создаёт/обновляет `ClientProfile` по `telegram_id`
 - [ ] **API-04**: `GET /api/industries/` — список активных отраслей
 - [ ] **API-05**: `POST /api/submissions/` — создаёт `Submission` с выбранным тарифом и отраслью
@@ -42,8 +42,8 @@
 - [ ] **API-07**: `POST /api/submissions/{id}/answers/` — сохраняет ответ на конкретный вопрос
 - [ ] **API-08**: `POST /api/submissions/{id}/complete/` — помечает анкету завершённой
 - [ ] **API-09**: `GET /api/submissions/{id}/` — статус заказа для клиента
-- [ ] **API-10**: `POST /api/bot/deeplink/` — выдаёт одноразовый UUID-токен для перехода из бота на сайт
-- [ ] **API-11**: `POST /api/bot/deeplink/exchange/` — обменивает UUID-токен на JWT клиента (на сайте)
+- [x] **API-10**: `POST /api/bot/deeplink/` — выдаёт одноразовый UUID-токен для перехода из бота на сайт
+- [x] **API-11**: `POST /api/bot/deeplink/exchange/` — обменивает UUID-токен на JWT клиента (на сайте)
 
 ### Telegram Bot (BOT)
 
@@ -176,8 +176,8 @@
 | DATA-11 | Phase 1: Infrastructure & Data Model | Complete |
 | DATA-12 | Phase 1: Infrastructure & Data Model | Complete |
 | DATA-13 | Phase 1: Infrastructure & Data Model | Complete |
-| API-01 | Phase 2: Core REST API | Pending |
-| API-02 | Phase 2: Core REST API | Pending |
+| API-01 | Phase 2: Core REST API | Complete |
+| API-02 | Phase 2: Core REST API | Complete |
 | API-03 | Phase 2: Core REST API | Pending |
 | API-04 | Phase 2: Core REST API | Pending |
 | API-05 | Phase 2: Core REST API | Pending |
@@ -185,8 +185,8 @@
 | API-07 | Phase 2: Core REST API | Pending |
 | API-08 | Phase 2: Core REST API | Pending |
 | API-09 | Phase 2: Core REST API | Pending |
-| API-10 | Phase 2: Core REST API | Pending |
-| API-11 | Phase 2: Core REST API | Pending |
+| API-10 | Phase 2: Core REST API | Complete |
+| API-11 | Phase 2: Core REST API | Complete |
 | BOT-01 | Phase 3: Telegram Bot | Pending |
 | BOT-02 | Phase 3: Telegram Bot | Pending |
 | BOT-03 | Phase 3: Telegram Bot | Pending |

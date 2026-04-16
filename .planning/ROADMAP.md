@@ -120,7 +120,7 @@
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Infrastructure & Data Model | 4/4 | Complete | 2026-04-16 |
-| 2. Core REST API | 1/4 | In Progress | - |
+| 2. Core REST API | 3/4 | In Progress|  |
 | 3. Telegram Bot | 0/? | Not started | - |
 | 4. Payments | 0/? | Not started | - |
 | 5. React Frontend | 0/? | Not started | - |
