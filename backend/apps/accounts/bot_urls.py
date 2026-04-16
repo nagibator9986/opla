@@ -1,7 +1,10 @@
-"""Bot-facing API endpoints for /api/v1/bot/.
-
-Placeholder — onboarding and deep-link endpoints added in Plan 01.
-"""
+"""URL patterns for bot-facing endpoints in accounts app."""
 from django.urls import path
 
-urlpatterns = []
+from apps.accounts.views import DeeplinkCreateView, DeeplinkExchangeView, OnboardingView
+
+urlpatterns = [
+    path("onboarding/", OnboardingView.as_view(), name="bot-onboarding"),
+    path("deeplink/", DeeplinkCreateView.as_view(), name="bot-deeplink-create"),
+    path("deeplink/exchange/", DeeplinkExchangeView.as_view(), name="bot-deeplink-exchange"),
+]

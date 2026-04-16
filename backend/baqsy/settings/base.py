@@ -129,6 +129,7 @@ CORS_ALLOW_ALL_ORIGINS = DEBUG  # locked down in prod
 # Redis
 REDIS_HOST = env("REDIS_HOST", default="redis")
 REDIS_PORT = env.int("REDIS_PORT", default=6379)
+REDIS_URL = env("REDIS_URL", default=f"redis://{REDIS_HOST}:{REDIS_PORT}")
 
 # Bot API secret (X-Bot-Token header)
 BOT_API_SECRET = env("BOT_API_SECRET", default="dev-bot-secret")
