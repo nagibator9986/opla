@@ -37,11 +37,11 @@
 - [x] **API-02**: Django session-auth для админки
 - [x] **API-03**: `POST /api/bot/onboarding/` — создаёт/обновляет `ClientProfile` по `telegram_id`
 - [x] **API-04**: `GET /api/industries/` — список активных отраслей
-- [ ] **API-05**: `POST /api/submissions/` — создаёт `Submission` с выбранным тарифом и отраслью
-- [ ] **API-06**: `GET /api/submissions/{id}/next-question/` — возвращает следующий неотвеченный вопрос
-- [ ] **API-07**: `POST /api/submissions/{id}/answers/` — сохраняет ответ на конкретный вопрос
-- [ ] **API-08**: `POST /api/submissions/{id}/complete/` — помечает анкету завершённой
-- [ ] **API-09**: `GET /api/submissions/{id}/` — статус заказа для клиента
+- [x] **API-05**: `POST /api/submissions/` — создаёт `Submission` с выбранным тарифом и отраслью
+- [x] **API-06**: `GET /api/submissions/{id}/next-question/` — возвращает следующий неотвеченный вопрос
+- [x] **API-07**: `POST /api/submissions/{id}/answers/` — сохраняет ответ на конкретный вопрос
+- [x] **API-08**: `POST /api/submissions/{id}/complete/` — помечает анкету завершённой
+- [x] **API-09**: `GET /api/submissions/{id}/` — статус заказа для клиента
 - [x] **API-10**: `POST /api/bot/deeplink/` — выдаёт одноразовый UUID-токен для перехода из бота на сайт
 - [x] **API-11**: `POST /api/bot/deeplink/exchange/` — обменивает UUID-токен на JWT клиента (на сайте)
 
@@ -180,11 +180,11 @@
 | API-02 | Phase 2: Core REST API | Complete |
 | API-03 | Phase 2: Core REST API | Complete |
 | API-04 | Phase 2: Core REST API | Complete |
-| API-05 | Phase 2: Core REST API | Pending |
-| API-06 | Phase 2: Core REST API | Pending |
-| API-07 | Phase 2: Core REST API | Pending |
-| API-08 | Phase 2: Core REST API | Pending |
-| API-09 | Phase 2: Core REST API | Pending |
+| API-05 | Phase 2: Core REST API | Complete |
+| API-06 | Phase 2: Core REST API | Complete |
+| API-07 | Phase 2: Core REST API | Complete |
+| API-08 | Phase 2: Core REST API | Complete |
+| API-09 | Phase 2: Core REST API | Complete |
 | API-10 | Phase 2: Core REST API | Complete |
 | API-11 | Phase 2: Core REST API | Complete |
 | BOT-01 | Phase 3: Telegram Bot | Pending |
