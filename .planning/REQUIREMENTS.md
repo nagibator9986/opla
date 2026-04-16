@@ -35,8 +35,8 @@
 
 - [x] **API-01**: JWT-аутентификация для клиента (SimpleJWT)
 - [x] **API-02**: Django session-auth для админки
-- [ ] **API-03**: `POST /api/bot/onboarding/` — создаёт/обновляет `ClientProfile` по `telegram_id`
-- [ ] **API-04**: `GET /api/industries/` — список активных отраслей
+- [x] **API-03**: `POST /api/bot/onboarding/` — создаёт/обновляет `ClientProfile` по `telegram_id`
+- [x] **API-04**: `GET /api/industries/` — список активных отраслей
 - [ ] **API-05**: `POST /api/submissions/` — создаёт `Submission` с выбранным тарифом и отраслью
 - [ ] **API-06**: `GET /api/submissions/{id}/next-question/` — возвращает следующий неотвеченный вопрос
 - [ ] **API-07**: `POST /api/submissions/{id}/answers/` — сохраняет ответ на конкретный вопрос
@@ -178,8 +178,8 @@
 | DATA-13 | Phase 1: Infrastructure & Data Model | Complete |
 | API-01 | Phase 2: Core REST API | Complete |
 | API-02 | Phase 2: Core REST API | Complete |
-| API-03 | Phase 2: Core REST API | Pending |
-| API-04 | Phase 2: Core REST API | Pending |
+| API-03 | Phase 2: Core REST API | Complete |
+| API-04 | Phase 2: Core REST API | Complete |
 | API-05 | Phase 2: Core REST API | Pending |
 | API-06 | Phase 2: Core REST API | Pending |
 | API-07 | Phase 2: Core REST API | Pending |

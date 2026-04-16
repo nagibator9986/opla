@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: "Completed 02-core-rest-api Plan 01: JWT auth, bot auth, deep-link endpoints"
-last_updated: "2026-04-16T08:55:46.672Z"
+stopped_at: Completed 02-core-rest-api-02-PLAN.md
+last_updated: "2026-04-16T08:55:53.823Z"
 last_activity: "2026-04-16 — Plan 00 executed: DRF + SimpleJWT bootstrap, /api/v1/ URL namespace, factory-boy factories"
 progress:
   total_phases: 8
@@ -81,6 +81,7 @@ Recent decisions affecting current work:
 - [Phase 02-core-rest-api]: authentication_classes=[] на bot views — IsBotAuthenticated возвращает 403, не 401 от JWT pipeline
 - [Phase 02-core-rest-api]: Synthetic user pattern: tg_{telegram_id}@baqsy.internal email для BaseUser при onboarding
 - [Phase 02-core-rest-api]: _get_deeplink_redis() factory function для mockability в тестах (Redis db=2)
+- [Phase 02-core-rest-api]: Industries endpoint AllowAny (public), pagination PAGE_SIZE=20 from global settings
 
 ### Pending Todos
 
@@ -94,6 +95,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-16T08:55:36.077Z
-Stopped at: Completed 02-core-rest-api Plan 01: JWT auth, bot auth, deep-link endpoints
+Last session: 2026-04-16T08:55:53.819Z
+Stopped at: Completed 02-core-rest-api-02-PLAN.md
 Resume file: None
