@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: planning
-stopped_at: Phase 1 context gathered
-last_updated: "2026-04-15T18:47:30.209Z"
+stopped_at: Completed 01-infrastructure-data-model/00-test-bootstrap-PLAN.md
+last_updated: "2026-04-16T05:45:22.217Z"
 last_activity: 2026-04-15 — Roadmap создан, трассировка требований установлена
 progress:
   total_phases: 8
   completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
+  total_plans: 4
+  completed_plans: 1
   percent: 0
 ---
 
@@ -50,6 +50,7 @@ Progress: [░░░░░░░░░░] 0%
 - Trend: -
 
 *Updated after each plan completion*
+| Phase 01-infrastructure-data-model P00 | 3 | 3 tasks | 46 files |
 
 ## Accumulated Context
 
@@ -61,6 +62,8 @@ Recent decisions affecting current work:
 - Roadmap: Бот — тонкий REST-клиент; вся бизнес-логика в Django
 - Roadmap: JSONB для Answer.value; версионирование QuestionnaireTemplate обязательно
 - Roadmap: Docker Compose покрывает dev и prod; развёртывание ≤2 часов
+- [Phase 01-infrastructure-data-model]: Wave 0: pytest-django harness с 14 xfail-заглушками создан до реализации — паттерн Nyquist feedback loop
+- [Phase 01-infrastructure-data-model]: django-fsm-2 v4.2.4 выбран вместо archived django-fsm; django-environ ^0.11 (PyPI стабильный)
 
 ### Pending Todos
 
@@ -74,6 +77,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-15T18:47:30.203Z
-Stopped at: Phase 1 context gathered
-Resume file: .planning/phases/01-infrastructure-data-model/01-CONTEXT.md
+Last session: 2026-04-16T05:45:22.215Z
+Stopped at: Completed 01-infrastructure-data-model/00-test-bootstrap-PLAN.md
+Resume file: None
