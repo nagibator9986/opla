@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 3 context gathered
-last_updated: "2026-04-16T09:16:26.233Z"
+stopped_at: Completed 03-telegram-bot-00-PLAN.md
+last_updated: "2026-04-16T10:34:38.190Z"
 last_activity: "2026-04-16 — Plan 00 executed: DRF + SimpleJWT bootstrap, /api/v1/ URL namespace, factory-boy factories"
 progress:
   total_phases: 8
   completed_phases: 2
-  total_plans: 8
-  completed_plans: 8
+  total_plans: 11
+  completed_plans: 9
   percent: 15
 ---
 
@@ -55,6 +55,7 @@ Progress: [██░░░░░░░░] 15%
 | Phase 02-core-rest-api P01 | 5 | 3 tasks | 7 files |
 | Phase 02-core-rest-api P02 | 7 | 2 tasks | 5 files |
 | Phase 02-core-rest-api P03 | 3 | 3 tasks | 5 files |
+| Phase 03-telegram-bot P00 | 10 | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -85,6 +86,9 @@ Recent decisions affecting current work:
 - [Phase 02-core-rest-api]: Industries endpoint AllowAny (public), pagination PAGE_SIZE=20 from global settings
 - [Phase 02-core-rest-api]: complete_questionnaire() requires IN_PROGRESS_FULL; test helper _advance_to_in_progress_full() advances FSM state for testing without payment
 - [Phase 02-core-rest-api]: NextQuestionView returns 204 No Content sentinel when all questions answered — bot/frontend checks this before offering complete button
+- [Phase 03-telegram-bot]: authentication_classes=[] на BotJWTView и ActiveSubmissionView — IsBotAuthenticated без JWT pipeline
+- [Phase 03-telegram-bot]: BotJWTView переиспользует synthetic user email tg_{telegram_id}@baqsy.internal — единый паттерн идентификации
+- [Phase 03-telegram-bot]: JWT ACCESS_TOKEN_LIFETIME 1h → 4h для длинных сессий прохождения анкеты в боте
 
 ### Pending Todos
 
@@ -98,6 +102,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-16T09:16:26.225Z
-Stopped at: Phase 3 context gathered
-Resume file: .planning/phases/03-telegram-bot/03-CONTEXT.md
+Last session: 2026-04-16T10:34:38.188Z
+Stopped at: Completed 03-telegram-bot-00-PLAN.md
+Resume file: None
