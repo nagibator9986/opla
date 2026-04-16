@@ -1,5 +1,4 @@
 from django.db import models, transaction
-from django.core.exceptions import ValidationError
 
 from apps.core.models import TimestampedModel
 
@@ -48,20 +47,26 @@ class QuestionnaireTemplate(TimestampedModel):
 
     @classmethod
     def create_new_version(cls, old_template):
-        """Atomically create a new template version cloning questions from the old one."""
+        """Atomically create a new template version cloning questions from the old one.
+
+        Deactivates old template FIRST to avoid partial unique constraint violation,
+        then creates new active version.
+        """
         with transaction.atomic():
             old = cls.objects.select_for_update().get(pk=old_template.pk)
             old_questions = list(old.questions.all())
+            next_version = old.version + 1
+
+            # Deactivate old BEFORE creating new (avoids partial unique constraint violation)
+            old.is_active = False
+            old.save(update_fields=["is_active"])
 
             new_version = cls.objects.create(
                 industry=old.industry,
-                version=old.version + 1,
+                version=next_version,
                 is_active=True,
                 name=old.name,
             )
-
-            old.is_active = False
-            old.save(update_fields=["is_active"])
 
             for q in old_questions:
                 Question.objects.create(

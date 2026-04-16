@@ -1,12 +1,26 @@
-"""Phase 1 Wave 0 stub — DATA-11 (ContentBlock)."""
+"""DATA-11: ContentBlock model tests."""
 from __future__ import annotations
+
 import pytest
 
-pytestmark = pytest.mark.xfail(strict=False, reason="Phase 1 Wave 0 stub")
+from apps.content.models import ContentBlock
 
 
 @pytest.mark.django_db
 def test_content_block_model():
-    from apps.content.models import ContentBlock
-    cb = ContentBlock.objects.create(key="landing.hero.title", value="<h1>Baqsy</h1>")
-    assert cb.key == "landing.hero.title"
+    block = ContentBlock.objects.create(
+        key="hero_title",
+        title="Hero Title",
+        content="Welcome to Baqsy",
+        content_type=ContentBlock.ContentType.TEXT,
+    )
+    assert block.key == "hero_title"
+    assert block.is_active is True
+
+
+@pytest.mark.django_db
+def test_content_block_key_unique():
+    from django.db import IntegrityError
+    ContentBlock.objects.create(key="unique-key", title="U1", content="c1")
+    with pytest.raises(IntegrityError):
+        ContentBlock.objects.create(key="unique-key", title="U2", content="c2")
