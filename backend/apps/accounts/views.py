@@ -23,7 +23,12 @@ from apps.industries.models import Industry
 
 def _get_deeplink_redis():
     """Return a synchronous Redis client for deep-link token storage (db=2)."""
-    return redis.Redis.from_url(settings.REDIS_URL + "/2", decode_responses=True)
+    return redis.Redis(
+        host=settings.REDIS_HOST,
+        port=settings.REDIS_PORT,
+        db=2,
+        decode_responses=True,
+    )
 
 
 class OnboardingView(APIView):
@@ -53,12 +58,15 @@ class OnboardingView(APIView):
             },
         )
 
-        # Ensure synthetic BaseUser exists for JWT issuance
-        email = f"tg_{data['telegram_id']}@baqsy.internal"
-        BaseUser.objects.get_or_create(
-            email=email,
-            defaults={"is_active": True},
-        )
+        # Ensure synthetic BaseUser exists for JWT issuance, link to profile
+        if profile.user is None:
+            email = f"tg_{data['telegram_id']}@baqsy.internal"
+            user, _ = BaseUser.objects.get_or_create(
+                email=email,
+                defaults={"is_active": True},
+            )
+            profile.user = user
+            profile.save(update_fields=["user"])
 
         return Response(
             {"id": profile.id, "created": created},

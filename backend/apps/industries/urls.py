@@ -1,7 +1,11 @@
-"""Industries API endpoints for /api/v1/industries/.
+"""URL patterns for the industries app.
 
-Placeholder — industry list endpoint added in Plan 02.
+Mounted at /api/v1/industries/ via apps.core.api_urls.
 """
 from django.urls import path
 
-urlpatterns = []
+from apps.industries.views import IndustryListView
+
+urlpatterns = [
+    path("", IndustryListView.as_view(), name="industry-list"),
+]
