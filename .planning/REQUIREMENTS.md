@@ -17,19 +17,19 @@
 
 ### Data Model (DATA)
 
-- [ ] **DATA-01**: Модель `Industry` (список отраслей: Ритейл, IT, Производство, Услуги, F&B, …)
-- [ ] **DATA-02**: Модель `QuestionnaireTemplate` с полями `industry_id`, `version`, `is_active`, `name`
-- [ ] **DATA-03**: Модель `Question` с полями `template_id`, `order`, `text`, `field_type`, `options` (JSONB), `required`, `block`
-- [ ] **DATA-04**: Модель `ClientProfile` с `telegram_id`, `name`, `company`, `phone_wa`, `city`, `industry_id`
-- [ ] **DATA-05**: Модель `Submission` с `client_id`, `template_id` (FK на версию), `status`, `created_at`, `completed_at`
-- [ ] **DATA-06**: Модель `Answer` с `submission_id`, `question_id`, `value` (JSONB), `answered_at`
-- [ ] **DATA-07**: Модель `Tariff` с `code`, `title`, `price_kzt`, `description`, `is_active`
-- [ ] **DATA-08**: Модель `Payment` с `submission_id`, `tariff_id`, `transaction_id` (unique), `status`, `amount`, `raw_webhook` (JSONB)
-- [ ] **DATA-09**: Модель `AuditReport` с `submission_id`, `admin_text`, `pdf_url`, `status`, `approved_at`
-- [ ] **DATA-10**: Модель `DeliveryLog` с `report_id`, `channel`, `status`, `external_id`, `error`
-- [ ] **DATA-11**: Модель `ContentBlock` для текстов лендинга (key-value с HTML-контентом)
-- [ ] **DATA-12**: Версионирование `QuestionnaireTemplate`: любое редактирование создаёт новую версию, активная ровно одна
-- [ ] **DATA-13**: `Submission.template_id` не меняется после создания (проверка в `save()`)
+- [x] **DATA-01**: Модель `Industry` (список отраслей: Ритейл, IT, Производство, Услуги, F&B, …)
+- [x] **DATA-02**: Модель `QuestionnaireTemplate` с полями `industry_id`, `version`, `is_active`, `name`
+- [x] **DATA-03**: Модель `Question` с полями `template_id`, `order`, `text`, `field_type`, `options` (JSONB), `required`, `block`
+- [x] **DATA-04**: Модель `ClientProfile` с `telegram_id`, `name`, `company`, `phone_wa`, `city`, `industry_id`
+- [x] **DATA-05**: Модель `Submission` с `client_id`, `template_id` (FK на версию), `status`, `created_at`, `completed_at`
+- [x] **DATA-06**: Модель `Answer` с `submission_id`, `question_id`, `value` (JSONB), `answered_at`
+- [x] **DATA-07**: Модель `Tariff` с `code`, `title`, `price_kzt`, `description`, `is_active`
+- [x] **DATA-08**: Модель `Payment` с `submission_id`, `tariff_id`, `transaction_id` (unique), `status`, `amount`, `raw_webhook` (JSONB)
+- [x] **DATA-09**: Модель `AuditReport` с `submission_id`, `admin_text`, `pdf_url`, `status`, `approved_at`
+- [x] **DATA-10**: Модель `DeliveryLog` с `report_id`, `channel`, `status`, `external_id`, `error`
+- [x] **DATA-11**: Модель `ContentBlock` для текстов лендинга (key-value с HTML-контентом)
+- [x] **DATA-12**: Версионирование `QuestionnaireTemplate`: любое редактирование создаёт новую версию, активная ровно одна
+- [x] **DATA-13**: `Submission.template_id` не меняется после создания (проверка в `save()`)
 
 ### REST API (API)
 
@@ -163,19 +163,19 @@
 | INFRA-05 | Phase 1: Infrastructure & Data Model | Complete |
 | INFRA-06 | Phase 1: Infrastructure & Data Model | Pending |
 | INFRA-07 | Phase 1: Infrastructure & Data Model | Complete |
-| DATA-01 | Phase 1: Infrastructure & Data Model | Pending |
-| DATA-02 | Phase 1: Infrastructure & Data Model | Pending |
-| DATA-03 | Phase 1: Infrastructure & Data Model | Pending |
-| DATA-04 | Phase 1: Infrastructure & Data Model | Pending |
-| DATA-05 | Phase 1: Infrastructure & Data Model | Pending |
-| DATA-06 | Phase 1: Infrastructure & Data Model | Pending |
-| DATA-07 | Phase 1: Infrastructure & Data Model | Pending |
-| DATA-08 | Phase 1: Infrastructure & Data Model | Pending |
-| DATA-09 | Phase 1: Infrastructure & Data Model | Pending |
-| DATA-10 | Phase 1: Infrastructure & Data Model | Pending |
-| DATA-11 | Phase 1: Infrastructure & Data Model | Pending |
-| DATA-12 | Phase 1: Infrastructure & Data Model | Pending |
-| DATA-13 | Phase 1: Infrastructure & Data Model | Pending |
+| DATA-01 | Phase 1: Infrastructure & Data Model | Complete |
+| DATA-02 | Phase 1: Infrastructure & Data Model | Complete |
+| DATA-03 | Phase 1: Infrastructure & Data Model | Complete |
+| DATA-04 | Phase 1: Infrastructure & Data Model | Complete |
+| DATA-05 | Phase 1: Infrastructure & Data Model | Complete |
+| DATA-06 | Phase 1: Infrastructure & Data Model | Complete |
+| DATA-07 | Phase 1: Infrastructure & Data Model | Complete |
+| DATA-08 | Phase 1: Infrastructure & Data Model | Complete |
+| DATA-09 | Phase 1: Infrastructure & Data Model | Complete |
+| DATA-10 | Phase 1: Infrastructure & Data Model | Complete |
+| DATA-11 | Phase 1: Infrastructure & Data Model | Complete |
+| DATA-12 | Phase 1: Infrastructure & Data Model | Complete |
+| DATA-13 | Phase 1: Infrastructure & Data Model | Complete |
 | API-01 | Phase 2: Core REST API | Pending |
 | API-02 | Phase 2: Core REST API | Pending |
 | API-03 | Phase 2: Core REST API | Pending |

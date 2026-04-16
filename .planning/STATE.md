@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: in-progress
-stopped_at: Completed 01-infrastructure-data-model/01-docker-django-skeleton-PLAN.md
-last_updated: "2026-04-16T05:50:00.000Z"
-last_activity: 2026-04-16 — Plan 01 executed: Docker+Django skeleton complete
+status: executing
+stopped_at: Completed 01-02-apps-and-models-PLAN.md
+last_updated: "2026-04-16T05:53:13.323Z"
+last_activity: "2026-04-16 — Plan 01 executed: Docker+Django skeleton complete"
 progress:
   total_phases: 8
   completed_phases: 0
   total_plans: 4
-  completed_plans: 2
+  completed_plans: 3
   percent: 5
 ---
 
@@ -50,6 +50,7 @@ Progress: [█░░░░░░░░░] 5%
 - Trend: On track
 
 *Updated after each plan completion*
+| Phase 01 P02 | 10 | 8 tasks | 46 files |
 
 ## Accumulated Context
 
@@ -66,6 +67,8 @@ Recent decisions affecting current work:
 - [Phase 01-infrastructure-data-model Plan 01]: Multi-stage Dockerfile: builder (Poetry) + runtime (WeasyPrint+fonts); MinIO healthcheck mc ready local
 - [Phase 01-infrastructure-data-model Plan 01]: POSTGRES_INITDB_ARGS C.UTF-8 (не ru_RU.UTF-8) — postgres:16 Debian не имеет ru_RU locale без locale-gen
 - [Phase 01-infrastructure-data-model Plan 01]: AUTH_USER_MODEL=accounts.BaseUser установлен до создания модели — требование Django
+- [Phase 01]: create_new_version deactivates OLD template BEFORE creating new (SQLite/PG partial unique constraint ordering)
+- [Phase 01]: Industry.code SlugField (not slug) — UUIDModel for external models, BigAutoField for internal
 
 ### Pending Todos
 
@@ -79,6 +82,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-16T05:50:00.000Z
-Stopped at: Completed 01-infrastructure-data-model/01-docker-django-skeleton-PLAN.md
+Last session: 2026-04-16T05:53:13.321Z
+Stopped at: Completed 01-02-apps-and-models-PLAN.md
 Resume file: None
