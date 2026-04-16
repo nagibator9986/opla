@@ -1,6 +1,7 @@
 """Base settings shared by dev and prod."""
 from __future__ import annotations
 
+from datetime import timedelta
 from pathlib import Path
 
 import environ
@@ -27,6 +28,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "rest_framework",
+    "rest_framework_simplejwt",
     "corsheaders",
     "django_celery_beat",
     "django_fsm",
@@ -123,3 +125,37 @@ AWS_QUERYSTRING_EXPIRE = 60 * 60 * 24 * 7  # 7 days
 
 # CORS
 CORS_ALLOW_ALL_ORIGINS = DEBUG  # locked down in prod
+
+# Redis
+REDIS_HOST = env("REDIS_HOST", default="redis")
+REDIS_PORT = env.int("REDIS_PORT", default=6379)
+
+# Bot API secret (X-Bot-Token header)
+BOT_API_SECRET = env("BOT_API_SECRET", default="dev-bot-secret")
+
+# Django REST Framework
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
+        "rest_framework.authentication.SessionAuthentication",
+    ],
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.IsAuthenticated",
+    ],
+    "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
+    "PAGE_SIZE": 20,
+    "DEFAULT_RENDERER_CLASSES": [
+        "rest_framework.renderers.JSONRenderer",
+    ],
+    "EXCEPTION_HANDLER": "apps.core.exceptions.custom_exception_handler",
+}
+
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(hours=1),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
+    "ROTATE_REFRESH_TOKENS": True,
+    "BLACKLIST_AFTER_ROTATION": False,
+    "AUTH_HEADER_TYPES": ("Bearer",),
+    "USER_ID_FIELD": "id",
+    "USER_ID_CLAIM": "user_id",
+}

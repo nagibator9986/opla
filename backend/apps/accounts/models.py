@@ -26,6 +26,13 @@ class BaseUser(AbstractBaseUser, PermissionsMixin, TimestampedModel):
 
 
 class ClientProfile(TimestampedModel):
+    user = models.OneToOneField(
+        "accounts.BaseUser",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="client_profile",
+    )
     telegram_id = models.BigIntegerField(unique=True)
     name = models.CharField(max_length=255)
     company = models.CharField(max_length=255)
