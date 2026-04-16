@@ -34,6 +34,7 @@ class Submission(UUIDModel, TimestampedModel):
     )
     status = FSMField(default=Status.CREATED, choices=Status.choices)
     completed_at = models.DateTimeField(null=True, blank=True)
+    last_reminded_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         verbose_name = "Заказ"
