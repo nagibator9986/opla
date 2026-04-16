@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: planning
-stopped_at: Completed 01-infrastructure-data-model/00-test-bootstrap-PLAN.md
-last_updated: "2026-04-16T05:45:22.217Z"
-last_activity: 2026-04-15 — Roadmap создан, трассировка требований установлена
+status: in-progress
+stopped_at: Completed 01-infrastructure-data-model/01-docker-django-skeleton-PLAN.md
+last_updated: "2026-04-16T05:50:00.000Z"
+last_activity: 2026-04-16 — Plan 01 executed: Docker+Django skeleton complete
 progress:
   total_phases: 8
   completed_phases: 0
   total_plans: 4
-  completed_plans: 1
-  percent: 0
+  completed_plans: 2
+  percent: 5
 ---
 
 # Project State
@@ -26,31 +26,30 @@ See: .planning/PROJECT.md (updated 2026-04-15)
 ## Current Position
 
 Phase: 1 of 8 (Infrastructure & Data Model)
-Plan: 0 of ? in current phase
-Status: Ready to plan
-Last activity: 2026-04-15 — Roadmap создан, трассировка требований установлена
+Plan: 2 of 4 in current phase (Plans 00 + 01 complete)
+Status: In progress
+Last activity: 2026-04-16 — Plan 01 executed: Docker+Django skeleton complete
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [█░░░░░░░░░] 5%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 0
-- Average duration: -
-- Total execution time: 0 hours
+- Total plans completed: 2
+- Average duration: ~10 min
+- Total execution time: 0.3 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| - | - | - | - |
+| 01-infrastructure-data-model | 2/4 | ~20 min | ~10 min |
 
 **Recent Trend:**
-- Last 5 plans: -
-- Trend: -
+- Last 5 plans: Plan 00 (~5 min), Plan 01 (~5 min)
+- Trend: On track
 
 *Updated after each plan completion*
-| Phase 01-infrastructure-data-model P00 | 3 | 3 tasks | 46 files |
 
 ## Accumulated Context
 
@@ -64,6 +63,9 @@ Recent decisions affecting current work:
 - Roadmap: Docker Compose покрывает dev и prod; развёртывание ≤2 часов
 - [Phase 01-infrastructure-data-model]: Wave 0: pytest-django harness с 14 xfail-заглушками создан до реализации — паттерн Nyquist feedback loop
 - [Phase 01-infrastructure-data-model]: django-fsm-2 v4.2.4 выбран вместо archived django-fsm; django-environ ^0.11 (PyPI стабильный)
+- [Phase 01-infrastructure-data-model Plan 01]: Multi-stage Dockerfile: builder (Poetry) + runtime (WeasyPrint+fonts); MinIO healthcheck mc ready local
+- [Phase 01-infrastructure-data-model Plan 01]: POSTGRES_INITDB_ARGS C.UTF-8 (не ru_RU.UTF-8) — postgres:16 Debian не имеет ru_RU locale без locale-gen
+- [Phase 01-infrastructure-data-model Plan 01]: AUTH_USER_MODEL=accounts.BaseUser установлен до создания модели — требование Django
 
 ### Pending Todos
 
@@ -77,6 +79,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-16T05:45:22.215Z
-Stopped at: Completed 01-infrastructure-data-model/00-test-bootstrap-PLAN.md
+Last session: 2026-04-16T05:50:00.000Z
+Stopped at: Completed 01-infrastructure-data-model/01-docker-django-skeleton-PLAN.md
 Resume file: None

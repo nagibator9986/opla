@@ -119,7 +119,7 @@
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Infrastructure & Data Model | 1/4 | In Progress|  |
+| 1. Infrastructure & Data Model | 2/4 | In Progress|  |
 | 2. Core REST API | 0/? | Not started | - |
 | 3. Telegram Bot | 0/? | Not started | - |
 | 4. Payments | 0/? | Not started | - |

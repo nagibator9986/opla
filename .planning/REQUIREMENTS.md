@@ -7,13 +7,13 @@
 
 ### Infrastructure (INFRA)
 
-- [ ] **INFRA-01**: Docker Compose разворачивает полную стек (web, bot, worker, beat, db, redis, nginx, minio) одной командой
-- [ ] **INFRA-02**: Проект запускается в dev-окружении через `docker-compose up` без дополнительных шагов
-- [ ] **INFRA-03**: Все секреты (токены, ключи) читаются из `.env`, в репо только `.env.example`
-- [ ] **INFRA-04**: Django миграции автоматически применяются при старте web-контейнера
-- [ ] **INFRA-05**: Docker образ содержит системные шрифты для Cyrillic (Liberation Sans, Roboto) для WeasyPrint
+- [x] **INFRA-01**: Docker Compose разворачивает полную стек (web, bot, worker, beat, db, redis, nginx, minio) одной командой
+- [x] **INFRA-02**: Проект запускается в dev-окружении через `docker-compose up` без дополнительных шагов
+- [x] **INFRA-03**: Все секреты (токены, ключи) читаются из `.env`, в репо только `.env.example`
+- [x] **INFRA-04**: Django миграции автоматически применяются при старте web-контейнера
+- [x] **INFRA-05**: Docker образ содержит системные шрифты для Cyrillic (Liberation Sans, Roboto) для WeasyPrint
 - [ ] **INFRA-06**: PostgreSQL бэкапится по cron в MinIO ежедневно
-- [ ] **INFRA-07**: README содержит инструкцию развёртывания на новом хостинге за ≤2 часа
+- [x] **INFRA-07**: README содержит инструкцию развёртывания на новом хостинге за ≤2 часа
 
 ### Data Model (DATA)
 
@@ -156,13 +156,13 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| INFRA-01 | Phase 1: Infrastructure & Data Model | Pending |
-| INFRA-02 | Phase 1: Infrastructure & Data Model | Pending |
-| INFRA-03 | Phase 1: Infrastructure & Data Model | Pending |
-| INFRA-04 | Phase 1: Infrastructure & Data Model | Pending |
-| INFRA-05 | Phase 1: Infrastructure & Data Model | Pending |
+| INFRA-01 | Phase 1: Infrastructure & Data Model | Complete |
+| INFRA-02 | Phase 1: Infrastructure & Data Model | Complete |
+| INFRA-03 | Phase 1: Infrastructure & Data Model | Complete |
+| INFRA-04 | Phase 1: Infrastructure & Data Model | Complete |
+| INFRA-05 | Phase 1: Infrastructure & Data Model | Complete |
 | INFRA-06 | Phase 1: Infrastructure & Data Model | Pending |
-| INFRA-07 | Phase 1: Infrastructure & Data Model | Pending |
+| INFRA-07 | Phase 1: Infrastructure & Data Model | Complete |
 | DATA-01 | Phase 1: Infrastructure & Data Model | Pending |
 | DATA-02 | Phase 1: Infrastructure & Data Model | Pending |
 | DATA-03 | Phase 1: Infrastructure & Data Model | Pending |
