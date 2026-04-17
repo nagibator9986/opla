@@ -47,12 +47,15 @@ class SubmissionDetailSerializer(serializers.ModelSerializer):
     industry_name = serializers.CharField(source="template.industry.name", read_only=True)
     total_questions = serializers.SerializerMethodField()
     answered_count = serializers.SerializerMethodField()
+    tariff_code = serializers.CharField(source="tariff.code", read_only=True, default=None)
+    pdf_url = serializers.SerializerMethodField()
 
     class Meta:
         model = Submission
         fields = [
             "id", "status", "template_name", "industry_name",
             "total_questions", "answered_count",
+            "tariff_code", "pdf_url",
             "created_at", "completed_at",
         ]
         read_only_fields = fields
@@ -62,6 +65,10 @@ class SubmissionDetailSerializer(serializers.ModelSerializer):
 
     def get_answered_count(self, obj):
         return obj.answers.count()
+
+    def get_pdf_url(self, obj):
+        report = getattr(obj, "report", None)
+        return report.pdf_url if report and report.pdf_url else None
 
 
 class QuestionSerializer(serializers.ModelSerializer):

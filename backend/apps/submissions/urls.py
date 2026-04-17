@@ -4,6 +4,7 @@ from django.urls import path
 from apps.submissions.views import (
     SubmissionCreateView,
     SubmissionDetailView,
+    MySubmissionView,
     NextQuestionView,
     AnswerCreateView,
     SubmissionCompleteView,
@@ -11,6 +12,7 @@ from apps.submissions.views import (
 
 urlpatterns = [
     path("", SubmissionCreateView.as_view(), name="submission-create"),
+    path("my/", MySubmissionView.as_view(), name="submission-my"),
     path("<uuid:pk>/", SubmissionDetailView.as_view(), name="submission-detail"),
     path("<uuid:pk>/next-question/", NextQuestionView.as_view(), name="submission-next-question"),
     path("<uuid:pk>/answers/", AnswerCreateView.as_view(), name="submission-answer"),

@@ -123,6 +123,23 @@ class AnswerCreateView(APIView):
         )
 
 
+class MySubmissionView(APIView):
+    """GET /api/v1/submissions/my/ — get the latest submission of the authenticated client."""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        client = _get_client_profile(request.user)
+        if not client:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+        sub = Submission.objects.filter(client=client).order_by("-created_at").first()
+        if not sub:
+            return Response(
+                {"detail": "Нет активных заказов."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        return Response(SubmissionDetailSerializer(sub).data)
+
+
 class SubmissionCompleteView(APIView):
     """POST /api/v1/submissions/{id}/complete/ — mark questionnaire complete."""
     permission_classes = [IsAuthenticated]
