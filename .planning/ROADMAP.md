@@ -10,7 +10,7 @@
 - [x] **Phase 2: Core REST API** — все эндпоинты для бота и React; JWT; deep-link токены (completed 2026-04-16)
 - [x] **Phase 3: Telegram Bot** — aiogram 3 FSM онбординг + прохождение анкеты; тонкий REST-клиент (completed 2026-04-16)
 - [x] **Phase 4: Payments** — CloudPayments Widget + HMAC webhook + идемпотентность + sandbox-тест (completed 2026-04-17)
-- [ ] **Phase 5: React Frontend** — лендинг, тарифы с CP виджетом, кабинет клиента, upsell
+- [x] **Phase 5: React Frontend** — лендинг, тарифы с CP виджетом, кабинет клиента, upsell (completed 2026-04-17)
 - [ ] **Phase 6: PDF Generation & Delivery** — WeasyPrint + Jinja2 + MinIO + Telegram sendDocument + Wazzup24
 - [ ] **Phase 7: Admin CRM** — дашборд, карточка заказа с редактором аудита, редакторы контента/шаблонов/тарифов
 - [ ] **Phase 8: Hardening & Production Readiness** — structlog, Sentry, CI, TLS, rate limiting, webhook mode, документация
@@ -128,7 +128,7 @@ Plans:
 | 2. Core REST API | 4/4 | Complete   | 2026-04-16 |
 | 3. Telegram Bot | 3/3 | Complete   | 2026-04-16 |
 | 4. Payments | 2/2 | Complete   | 2026-04-17 |
-| 5. React Frontend | 1/3 | In Progress|  |
+| 5. React Frontend | 3/3 | Complete   | 2026-04-17 |
 | 6. PDF Generation & Delivery | 0/? | Not started | - |
 | 7. Admin CRM | 0/? | Not started | - |
 | 8. Hardening & Production Readiness | 0/? | Not started | - |

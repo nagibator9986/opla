@@ -76,8 +76,8 @@
 - [x] **WEB-01**: Лендинг на React 18 + Vite + TypeScript + Tailwind
 - [ ] **WEB-02**: Секции лендинга: hero, метод, тарифы, кейсы, FAQ — тексты из `ContentBlock`
 - [ ] **WEB-03**: Страница тарифов с CloudPayments Widget и выбором Ashıde 1 / Ashıde 2
-- [ ] **WEB-04**: Страница клиентского кабинета со статусом заказа и ссылкой на PDF
-- [ ] **WEB-05**: Кнопка Upsell в кабинете клиентов с тарифом Ashıde 1
+- [x] **WEB-04**: Страница клиентского кабинета со статусом заказа и ссылкой на PDF
+- [x] **WEB-05**: Кнопка Upsell в кабинете клиентов с тарифом Ashıde 1
 - [x] **WEB-06**: Deep-link landing: React обменивает UUID на JWT и логинит клиента
 - [ ] **WEB-07**: Адаптивная вёрстка (mobile-first)
 - [x] **WEB-08**: TanStack Query для fetch, Zustand для клиентского state
@@ -210,8 +210,8 @@
 | WEB-01 | Phase 5: React Frontend | Complete |
 | WEB-02 | Phase 5: React Frontend | Pending |
 | WEB-03 | Phase 5: React Frontend | Pending |
-| WEB-04 | Phase 5: React Frontend | Pending |
-| WEB-05 | Phase 5: React Frontend | Pending |
+| WEB-04 | Phase 5: React Frontend | Complete |
+| WEB-05 | Phase 5: React Frontend | Complete |
 | WEB-06 | Phase 5: React Frontend | Complete |
 | WEB-07 | Phase 5: React Frontend | Pending |
 | WEB-08 | Phase 5: React Frontend | Complete |

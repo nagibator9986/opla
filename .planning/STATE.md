@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 05-react-frontend-01-PLAN.md
-last_updated: "2026-04-17T07:41:38.992Z"
+stopped_at: Completed 05-react-frontend-02-PLAN.md
+last_updated: "2026-04-17T07:46:07.164Z"
 last_activity: "2026-04-16 — Plan 00 executed: DRF + SimpleJWT bootstrap, /api/v1/ URL namespace, factory-boy factories"
 progress:
   total_phases: 8
-  completed_phases: 4
+  completed_phases: 5
   total_plans: 16
-  completed_plans: 14
+  completed_plans: 16
   percent: 15
 ---
 
@@ -61,6 +61,8 @@ Progress: [██░░░░░░░░] 15%
 | Phase 04-payments P01 | 167 | 3 tasks | 8 files |
 | Phase 04-payments P02 | 137 | 3 tasks | 4 files |
 | Phase 05-react-frontend P01 | 15 | 2 tasks | 27 files |
+| Phase 05-react-frontend P03 | 10 | 2 tasks | 8 files |
+| Phase 05-react-frontend P02 | 18 | 2 tasks | 18 files |
 
 ## Accumulated Context
 
@@ -105,6 +107,11 @@ Recent decisions affecting current work:
 - [Phase 05-react-frontend]: ContentBlock API returns flat dict {key: content} for simpler frontend consumption
 - [Phase 05-react-frontend]: Tailwind v4 @tailwindcss/vite plugin — no tailwind.config.js; CSS @import only
 - [Phase 05-react-frontend]: Axios failedQueue pattern prevents duplicate refresh on parallel 401 requests
+- [Phase 05-react-frontend]: exchangeDeeplink uses plain axios — no JWT interceptor before auth
+- [Phase 05-react-frontend]: UpsellCard visibility gated by tariffCode=ashide_1 AND status in completed/under_audit/delivered
+- [Phase 05-react-frontend]: openPaymentWidget guards window.cp?.CloudPayments — alert if widget script not loaded
+- [Phase 05-react-frontend]: useContentBlocks uses placeholderData so real API data replaces fallback without cache mutation
+- [Phase 05-react-frontend]: TariffsPage fetches submissions/my/ when authenticated to get submission UUID for invoiceId
 
 ### Pending Todos
 
@@ -118,6 +125,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-17T07:41:38.990Z
-Stopped at: Completed 05-react-frontend-01-PLAN.md
+Last session: 2026-04-17T07:46:07.162Z
+Stopped at: Completed 05-react-frontend-02-PLAN.md
 Resume file: None
