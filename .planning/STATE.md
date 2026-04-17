@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 04-payments-01-webhook-and-hmac-PLAN.md
-last_updated: "2026-04-17T05:37:00.093Z"
+stopped_at: Completed 04-payments-02-bot-notify-and-upsell-PLAN.md
+last_updated: "2026-04-17T05:41:12.714Z"
 last_activity: "2026-04-16 — Plan 00 executed: DRF + SimpleJWT bootstrap, /api/v1/ URL namespace, factory-boy factories"
 progress:
   total_phases: 8
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 13
-  completed_plans: 12
+  completed_plans: 13
   percent: 15
 ---
 
@@ -59,6 +59,7 @@ Progress: [██░░░░░░░░] 15%
 | Phase 03-telegram-bot P01 | 3 | 3 tasks | 14 files |
 | Phase 03-telegram-bot P02 | 5 | 2 tasks | 3 files |
 | Phase 04-payments P01 | 167 | 3 tasks | 8 files |
+| Phase 04-payments P02 | 137 | 3 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -99,6 +100,7 @@ Recent decisions affecting current work:
 - [Phase 03-telegram-bot]: Multichoice done button shows live count 'Gotovo (N)' for UX clarity
 - [Phase 04-payments]: Payment FK requires submission in get_or_create defaults — view fetches sub first via select_for_update then passes to defaults
 - [Phase 04-payments]: mark_paid() requires in_progress_basic — PayView auto-advances created→in_progress_basic before FSM transition
+- [Phase 04-payments]: Upsell tariff upgrade placed inside atomic PayView block; UpsellView reuses _get_client_profile for JWT identity; notify_bot_payment_success FSM transition catches errors silently for idempotency
 
 ### Pending Todos
 
@@ -112,6 +114,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-17T05:37:00.091Z
-Stopped at: Completed 04-payments-01-webhook-and-hmac-PLAN.md
+Last session: 2026-04-17T05:41:12.711Z
+Stopped at: Completed 04-payments-02-bot-notify-and-upsell-PLAN.md
 Resume file: None

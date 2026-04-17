@@ -66,9 +66,9 @@
 - [x] **PAY-03**: `POST /api/payments/cloudpayments/webhook/pay/` — Pay webhook с HMAC-валидацией
 - [x] **PAY-04**: Webhook идемпотентен: дубликаты по `TransactionId` не создают новый `Payment`
 - [x] **PAY-05**: При успешной оплате `Submission.status` переходит в `paid` через `select_for_update`
-- [ ] **PAY-06**: Celery-таск уведомляет бота о начале анкеты после `paid`
-- [ ] **PAY-07**: Поддержка Kaspi Pay через CloudPayments Widget (проверить активацию в кабинете CP)
-- [ ] **PAY-08**: Upsell: кнопка доплаты 90 000 ₸ апгрейдит тариф без повторной анкеты
+- [x] **PAY-06**: Celery-таск уведомляет бота о начале анкеты после `paid`
+- [x] **PAY-07**: Поддержка Kaspi Pay через CloudPayments Widget (проверить активацию в кабинете CP)
+- [x] **PAY-08**: Upsell: кнопка доплаты 90 000 ₸ апгрейдит тариф без повторной анкеты
 - [x] **PAY-09**: Цены тарифов редактируются в админке без деплоя
 
 ### Frontend (WEB)
@@ -203,9 +203,9 @@
 | PAY-03 | Phase 4: Payments | Complete |
 | PAY-04 | Phase 4: Payments | Complete |
 | PAY-05 | Phase 4: Payments | Complete |
-| PAY-06 | Phase 4: Payments | Pending |
-| PAY-07 | Phase 4: Payments | Pending |
-| PAY-08 | Phase 4: Payments | Pending |
+| PAY-06 | Phase 4: Payments | Complete |
+| PAY-07 | Phase 4: Payments | Complete |
+| PAY-08 | Phase 4: Payments | Complete |
 | PAY-09 | Phase 4: Payments | Complete |
 | WEB-01 | Phase 5: React Frontend | Pending |
 | WEB-02 | Phase 5: React Frontend | Pending |
