@@ -84,13 +84,13 @@
 
 ### PDF Generation (PDF)
 
-- [ ] **PDF-01**: Jinja2-шаблон Ashıde 1 (7–9 параметров, короткий отчёт)
-- [ ] **PDF-02**: Jinja2-шаблон Ashıde 2 (18–24 параметра, расширенный отчёт)
-- [ ] **PDF-03**: WeasyPrint рендерит PDF в фирменном стиле с Cyrillic-шрифтами
-- [ ] **PDF-04**: Имя клиента и название компании подставляются в заголовок и на обложку
-- [ ] **PDF-05**: Сгенерированный PDF сохраняется в MinIO с presigned URL (TTL ≥ 7 дней)
-- [ ] **PDF-06**: Celery-воркер `--pool=prefork --max-tasks-per-child=5` для PDF (защита от memory leak)
-- [ ] **PDF-07**: Таск идемпотентен: проверка `AuditReport.pdf_url` перед генерацией
+- [x] **PDF-01**: Jinja2-шаблон Ashıde 1 (7–9 параметров, короткий отчёт)
+- [x] **PDF-02**: Jinja2-шаблон Ashıde 2 (18–24 параметра, расширенный отчёт)
+- [x] **PDF-03**: WeasyPrint рендерит PDF в фирменном стиле с Cyrillic-шрифтами
+- [x] **PDF-04**: Имя клиента и название компании подставляются в заголовок и на обложку
+- [x] **PDF-05**: Сгенерированный PDF сохраняется в MinIO с presigned URL (TTL ≥ 7 дней)
+- [x] **PDF-06**: Celery-воркер `--pool=prefork --max-tasks-per-child=5` для PDF (защита от memory leak)
+- [x] **PDF-07**: Таск идемпотентен: проверка `AuditReport.pdf_url` перед генерацией
 
 ### Delivery (DLV)
 
@@ -215,13 +215,13 @@
 | WEB-06 | Phase 5: React Frontend | Complete |
 | WEB-07 | Phase 5: React Frontend | Complete |
 | WEB-08 | Phase 5: React Frontend | Complete |
-| PDF-01 | Phase 6: PDF Generation & Delivery | Pending |
-| PDF-02 | Phase 6: PDF Generation & Delivery | Pending |
-| PDF-03 | Phase 6: PDF Generation & Delivery | Pending |
-| PDF-04 | Phase 6: PDF Generation & Delivery | Pending |
-| PDF-05 | Phase 6: PDF Generation & Delivery | Pending |
-| PDF-06 | Phase 6: PDF Generation & Delivery | Pending |
-| PDF-07 | Phase 6: PDF Generation & Delivery | Pending |
+| PDF-01 | Phase 6: PDF Generation & Delivery | Complete |
+| PDF-02 | Phase 6: PDF Generation & Delivery | Complete |
+| PDF-03 | Phase 6: PDF Generation & Delivery | Complete |
+| PDF-04 | Phase 6: PDF Generation & Delivery | Complete |
+| PDF-05 | Phase 6: PDF Generation & Delivery | Complete |
+| PDF-06 | Phase 6: PDF Generation & Delivery | Complete |
+| PDF-07 | Phase 6: PDF Generation & Delivery | Complete |
 | DLV-01 | Phase 6: PDF Generation & Delivery | Pending |
 | DLV-02 | Phase 6: PDF Generation & Delivery | Pending |
 | DLV-03 | Phase 6: PDF Generation & Delivery | Pending |

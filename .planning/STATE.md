@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 6 plans verified
-last_updated: "2026-04-17T09:27:32.675Z"
+stopped_at: Completed 06-pdf-generation-delivery/06-01-PLAN.md
+last_updated: "2026-04-17T09:34:20.634Z"
 last_activity: "2026-04-16 — Plan 00 executed: DRF + SimpleJWT bootstrap, /api/v1/ URL namespace, factory-boy factories"
 progress:
   total_phases: 8
   completed_phases: 5
   total_plans: 18
-  completed_plans: 16
+  completed_plans: 17
   percent: 15
 ---
 
@@ -63,6 +63,7 @@ Progress: [██░░░░░░░░] 15%
 | Phase 05-react-frontend P01 | 15 | 2 tasks | 27 files |
 | Phase 05-react-frontend P03 | 10 | 2 tasks | 8 files |
 | Phase 05-react-frontend P02 | 18 | 2 tasks | 18 files |
+| Phase 06-pdf-generation-delivery P01 | 4 | 2 tasks | 11 files |
 
 ## Accumulated Context
 
@@ -112,6 +113,9 @@ Recent decisions affecting current work:
 - [Phase 05-react-frontend]: openPaymentWidget guards window.cp?.CloudPayments — alert if widget script not loaded
 - [Phase 05-react-frontend]: useContentBlocks uses placeholderData so real API data replaces fallback without cache mutation
 - [Phase 05-react-frontend]: TariffsPage fetches submissions/my/ when authenticated to get submission UUID for invoiceId
+- [Phase 06-pdf-generation-delivery]: boto3 client создаётся внутри функции upload_pdf_to_minio (не на уровне модуля) — fork-safety для Celery prefork workers
+- [Phase 06-pdf-generation-delivery]: Jinja2 отдельно от Django templates — custom filter format_answer_value для Answer.value typed dict {text/number/choice/choices}
+- [Phase 06-pdf-generation-delivery]: .si() immutable signature для deliver_* в Celery chain — получают report_id напрямую, не из результата generate_pdf
 
 ### Pending Todos
 
@@ -125,6 +129,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-17T09:27:32.666Z
-Stopped at: Phase 6 plans verified
-Resume file: .planning/phases/06-pdf-generation-delivery/06-01-PLAN.md
+Last session: 2026-04-17T09:34:20.630Z
+Stopped at: Completed 06-pdf-generation-delivery/06-01-PLAN.md
+Resume file: None

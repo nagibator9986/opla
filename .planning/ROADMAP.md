@@ -133,6 +133,6 @@ Plans:
 | 3. Telegram Bot | 3/3 | Complete   | 2026-04-16 |
 | 4. Payments | 2/2 | Complete   | 2026-04-17 |
 | 5. React Frontend | 3/3 | Complete   | 2026-04-17 |
-| 6. PDF Generation & Delivery | 0/2 | In progress | - |
+| 6. PDF Generation & Delivery | 1/2 | In Progress|  |
 | 7. Admin CRM | 0/? | Not started | - |
 | 8. Hardening & Production Readiness | 0/? | Not started | - |
