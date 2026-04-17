@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 5 plans verified
-last_updated: "2026-04-17T07:29:20.047Z"
+stopped_at: Completed 05-react-frontend-01-PLAN.md
+last_updated: "2026-04-17T07:41:38.992Z"
 last_activity: "2026-04-16 — Plan 00 executed: DRF + SimpleJWT bootstrap, /api/v1/ URL namespace, factory-boy factories"
 progress:
   total_phases: 8
   completed_phases: 4
   total_plans: 16
-  completed_plans: 13
+  completed_plans: 14
   percent: 15
 ---
 
@@ -60,6 +60,7 @@ Progress: [██░░░░░░░░] 15%
 | Phase 03-telegram-bot P02 | 5 | 2 tasks | 3 files |
 | Phase 04-payments P01 | 167 | 3 tasks | 8 files |
 | Phase 04-payments P02 | 137 | 3 tasks | 4 files |
+| Phase 05-react-frontend P01 | 15 | 2 tasks | 27 files |
 
 ## Accumulated Context
 
@@ -101,6 +102,9 @@ Recent decisions affecting current work:
 - [Phase 04-payments]: Payment FK requires submission in get_or_create defaults — view fetches sub first via select_for_update then passes to defaults
 - [Phase 04-payments]: mark_paid() requires in_progress_basic — PayView auto-advances created→in_progress_basic before FSM transition
 - [Phase 04-payments]: Upsell tariff upgrade placed inside atomic PayView block; UpsellView reuses _get_client_profile for JWT identity; notify_bot_payment_success FSM transition catches errors silently for idempotency
+- [Phase 05-react-frontend]: ContentBlock API returns flat dict {key: content} for simpler frontend consumption
+- [Phase 05-react-frontend]: Tailwind v4 @tailwindcss/vite plugin — no tailwind.config.js; CSS @import only
+- [Phase 05-react-frontend]: Axios failedQueue pattern prevents duplicate refresh on parallel 401 requests
 
 ### Pending Todos
 
@@ -114,6 +118,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-17T07:29:20.043Z
-Stopped at: Phase 5 plans verified
-Resume file: .planning/phases/05-react-frontend/05-01-PLAN.md
+Last session: 2026-04-17T07:41:38.990Z
+Stopped at: Completed 05-react-frontend-01-PLAN.md
+Resume file: None

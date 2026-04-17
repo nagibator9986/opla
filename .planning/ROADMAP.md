@@ -128,7 +128,7 @@ Plans:
 | 2. Core REST API | 4/4 | Complete   | 2026-04-16 |
 | 3. Telegram Bot | 3/3 | Complete   | 2026-04-16 |
 | 4. Payments | 2/2 | Complete   | 2026-04-17 |
-| 5. React Frontend | 0/3 | In progress | - |
+| 5. React Frontend | 1/3 | In Progress|  |
 | 6. PDF Generation & Delivery | 0/? | Not started | - |
 | 7. Admin CRM | 0/? | Not started | - |
 | 8. Hardening & Production Readiness | 0/? | Not started | - |

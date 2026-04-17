@@ -73,14 +73,14 @@
 
 ### Frontend (WEB)
 
-- [ ] **WEB-01**: Лендинг на React 18 + Vite + TypeScript + Tailwind
+- [x] **WEB-01**: Лендинг на React 18 + Vite + TypeScript + Tailwind
 - [ ] **WEB-02**: Секции лендинга: hero, метод, тарифы, кейсы, FAQ — тексты из `ContentBlock`
 - [ ] **WEB-03**: Страница тарифов с CloudPayments Widget и выбором Ashıde 1 / Ashıde 2
 - [ ] **WEB-04**: Страница клиентского кабинета со статусом заказа и ссылкой на PDF
 - [ ] **WEB-05**: Кнопка Upsell в кабинете клиентов с тарифом Ashıde 1
-- [ ] **WEB-06**: Deep-link landing: React обменивает UUID на JWT и логинит клиента
+- [x] **WEB-06**: Deep-link landing: React обменивает UUID на JWT и логинит клиента
 - [ ] **WEB-07**: Адаптивная вёрстка (mobile-first)
-- [ ] **WEB-08**: TanStack Query для fetch, Zustand для клиентского state
+- [x] **WEB-08**: TanStack Query для fetch, Zustand для клиентского state
 
 ### PDF Generation (PDF)
 
@@ -207,14 +207,14 @@
 | PAY-07 | Phase 4: Payments | Complete |
 | PAY-08 | Phase 4: Payments | Complete |
 | PAY-09 | Phase 4: Payments | Complete |
-| WEB-01 | Phase 5: React Frontend | Pending |
+| WEB-01 | Phase 5: React Frontend | Complete |
 | WEB-02 | Phase 5: React Frontend | Pending |
 | WEB-03 | Phase 5: React Frontend | Pending |
 | WEB-04 | Phase 5: React Frontend | Pending |
 | WEB-05 | Phase 5: React Frontend | Pending |
-| WEB-06 | Phase 5: React Frontend | Pending |
+| WEB-06 | Phase 5: React Frontend | Complete |
 | WEB-07 | Phase 5: React Frontend | Pending |
-| WEB-08 | Phase 5: React Frontend | Pending |
+| WEB-08 | Phase 5: React Frontend | Complete |
 | PDF-01 | Phase 6: PDF Generation & Delivery | Pending |
 | PDF-02 | Phase 6: PDF Generation & Delivery | Pending |
 | PDF-03 | Phase 6: PDF Generation & Delivery | Pending |
