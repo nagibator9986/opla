@@ -2,12 +2,13 @@ from django.contrib import admin
 
 from unfold.admin import ModelAdmin
 
-from apps.payments.models import Tariff, Payment
+from apps.payments.models import Payment, Tariff
 
 
 @admin.register(Tariff)
 class TariffAdmin(ModelAdmin):
     list_display = ("title", "code", "price_kzt", "is_active")
+    list_display_links = ("title",)
     list_editable = ("price_kzt", "is_active")
 
 
