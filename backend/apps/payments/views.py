@@ -141,8 +141,12 @@ class CloudPaymentsPayView(APIView):
                 )
                 return Response({"code": 0})
 
-            # FSM transition: advance submission to paid state
+            # FSM transition: advance submission to paid state.
+            # mark_paid() requires in_progress_basic; if submission is still in
+            # `created` (payment arrived before onboarding completed) we advance it first.
             try:
+                if sub.status == Submission.Status.CREATED:
+                    sub.start_onboarding()
                 sub.mark_paid()
                 sub.save()
                 log.info(
