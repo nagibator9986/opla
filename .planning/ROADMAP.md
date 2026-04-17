@@ -92,7 +92,11 @@ Plans:
   3. Клиент получает PDF в WhatsApp через Wazzup24 с сопроводительным текстом; `DeliveryLog` фиксирует `delivered` для канала `whatsapp`
   4. Повторный запуск таска генерации для уже сгенерированного отчёта не создаёт новый PDF (идемпотентность через `AuditReport.pdf_url`)
   5. Временные ошибки доставки (5xx) автоматически повторяются через Celery retry; после успеха `DeliveryLog.status` = `delivered`
-**Plans**: TBD
+**Plans**: 2 plans
+
+Plans:
+- [ ] 06-01-PLAN.md — Jinja2 PDF template + WeasyPrint generate_pdf task + MinIO upload + ApproveReportView API
+- [ ] 06-02-PLAN.md — deliver_telegram + deliver_whatsapp tasks + WhatsAppProvider + mark_delivered FSM
 
 ### Phase 7: Admin CRM
 **Goal**: Администратор может управлять всем жизненным циклом заказа, контентом и конфигурацией системы через веб-интерфейс без правки кода
@@ -129,6 +133,6 @@ Plans:
 | 3. Telegram Bot | 3/3 | Complete   | 2026-04-16 |
 | 4. Payments | 2/2 | Complete   | 2026-04-17 |
 | 5. React Frontend | 3/3 | Complete   | 2026-04-17 |
-| 6. PDF Generation & Delivery | 0/? | Not started | - |
+| 6. PDF Generation & Delivery | 0/2 | In progress | - |
 | 7. Admin CRM | 0/? | Not started | - |
 | 8. Hardening & Production Readiness | 0/? | Not started | - |
