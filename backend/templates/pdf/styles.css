@@ -1,0 +1,185 @@
+/* Baqsy System — PDF Audit Report Styles
+   WeasyPrint-compatible CSS (no Tailwind, no flex/grid layout)
+   Accent: amber-500 (#f59e0b) | Text: slate-900 (#1e293b)
+*/
+
+@page {
+    size: A4;
+    margin: 2cm;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    font-family: "Liberation Sans", "Roboto", "DejaVu Sans", sans-serif;
+    color: #1e293b;
+    font-size: 11pt;
+    line-height: 1.5;
+    margin: 0;
+    padding: 0;
+}
+
+/* ─── Cover Page ─────────────────────────────────────────────── */
+
+.cover-page {
+    page-break-after: always;
+    text-align: center;
+    padding: 3cm 1cm;
+    min-height: 25cm;
+    display: block;
+}
+
+.cover-logo {
+    font-size: 28pt;
+    font-weight: bold;
+    color: #f59e0b;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.5cm;
+}
+
+.cover-subtitle {
+    font-size: 13pt;
+    color: #64748b;
+    margin-bottom: 2cm;
+}
+
+.cover-divider {
+    border: none;
+    border-top: 3px solid #f59e0b;
+    width: 4cm;
+    margin: 0 auto 2cm auto;
+}
+
+.cover-client-name {
+    font-size: 20pt;
+    font-weight: bold;
+    color: #1e293b;
+    margin-bottom: 0.3cm;
+}
+
+.cover-company {
+    font-size: 15pt;
+    color: #1e293b;
+    margin-bottom: 0.2cm;
+}
+
+.cover-industry {
+    font-size: 11pt;
+    color: #64748b;
+    margin-bottom: 0.2cm;
+}
+
+.cover-tariff {
+    font-size: 11pt;
+    color: #64748b;
+    margin-bottom: 2cm;
+}
+
+.cover-date {
+    font-size: 10pt;
+    color: #94a3b8;
+    margin-top: 2cm;
+}
+
+/* ─── Section Headings ───────────────────────────────────────── */
+
+h1 {
+    font-size: 16pt;
+    font-weight: bold;
+    color: #1e293b;
+    border-bottom: 2px solid #f59e0b;
+    padding-bottom: 0.2cm;
+    margin-top: 1cm;
+    margin-bottom: 0.5cm;
+}
+
+h2 {
+    font-size: 13pt;
+    font-weight: bold;
+    color: #1e293b;
+    border-left: 4px solid #f59e0b;
+    padding-left: 0.3cm;
+    margin-top: 0.8cm;
+    margin-bottom: 0.4cm;
+}
+
+h3 {
+    font-size: 11pt;
+    font-weight: bold;
+    color: #334155;
+    margin-top: 0.5cm;
+    margin-bottom: 0.2cm;
+}
+
+/* ─── Audit Section (admin text) ─────────────────────────────── */
+
+.audit-section {
+    margin: 1em 0;
+    line-height: 1.6;
+}
+
+.audit-section p {
+    margin: 0.4em 0;
+}
+
+/* ─── Answer Items ───────────────────────────────────────────── */
+
+.answers-section {
+    margin-top: 1cm;
+}
+
+.answer-item {
+    border-left: 3px solid #f59e0b;
+    padding: 0.3cm 0.5cm;
+    margin-bottom: 0.4cm;
+    background-color: #fafaf9;
+    page-break-inside: avoid;
+}
+
+.answer-item strong {
+    display: block;
+    font-size: 10pt;
+    color: #64748b;
+    margin-bottom: 0.15cm;
+}
+
+.answer-item p {
+    margin: 0;
+    font-size: 11pt;
+    color: #1e293b;
+}
+
+/* ─── Extended Section (Ashide 2) ────────────────────────────── */
+
+.extended-section {
+    margin-top: 1cm;
+    border-top: 1px solid #e2e8f0;
+    padding-top: 0.5cm;
+}
+
+.extended-section h2 {
+    color: #1e293b;
+}
+
+/* ─── Footer ─────────────────────────────────────────────────── */
+
+.report-footer {
+    margin-top: 2cm;
+    border-top: 1px solid #e2e8f0;
+    padding-top: 0.3cm;
+    font-size: 9pt;
+    color: #94a3b8;
+    text-align: center;
+}
+
+/* ─── Utilities ──────────────────────────────────────────────── */
+
+.text-muted {
+    color: #64748b;
+}
+
+.page-break {
+    page-break-after: always;
+}

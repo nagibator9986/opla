@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Аудит-отчёт — {{ client.company }}</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+    <!-- ─── Cover Page ─────────────────────────────────────────── -->
+    <div class="cover-page">
+        <div class="cover-logo">BAQSY</div>
+        <div class="cover-subtitle">Бизнес-аудит</div>
+        <hr class="cover-divider">
+
+        <div class="cover-client-name">{{ client.name }}</div>
+        <div class="cover-company">{{ client.company }}</div>
+        <div class="cover-industry">
+            {% if client.industry %}{{ client.industry.name }}{% else %}—{% endif %}
+        </div>
+        <div class="cover-tariff">Тариф: {{ tariff.title }}</div>
+
+        <div class="cover-date">
+            Отчёт сформирован: {{ generated_at.strftime('%d.%m.%Y') }}
+        </div>
+    </div>
+
+    <!-- ─── Audit Analysis ────────────────────────────────────── -->
+    <h1>Анализ бизнеса</h1>
+    <div class="audit-section">
+        {{ report.admin_text | safe }}
+    </div>
+
+    <!-- ─── Questionnaire Answers ─────────────────────────────── -->
+    <div class="answers-section">
+        <h1>Данные анкеты</h1>
+        {% for answer in answers %}
+        <div class="answer-item">
+            <strong>{{ answer.question.text }}</strong>
+            <p>{{ answer.value | format_answer_value }}</p>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- ─── Extended Section (Ashide 2 only) ──────────────────── -->
+    {% if tariff.code == 'ashide_2' %}
+    <div class="extended-section">
+        <h2>Расширенный анализ</h2>
+        <p class="text-muted">
+            Данный раздел включён в тариф Ashide 2 и содержит расширенные параметры анализа.
+            Полный перечень параметров представлен в разделе «Данные анкеты» выше.
+        </p>
+    </div>
+    {% endif %}
+
+    <!-- ─── Footer ────────────────────────────────────────────── -->
+    <div class="report-footer">
+        Baqsy System &mdash; {{ generated_at.strftime('%Y') }} &mdash; Конфиденциально
+    </div>
+
+</body>
+</html>
