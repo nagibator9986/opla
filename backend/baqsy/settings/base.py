@@ -5,6 +5,8 @@ from datetime import timedelta
 from pathlib import Path
 
 import environ
+from django.urls import reverse_lazy
+from django.utils.translation import gettext_lazy as _
 
 # backend/baqsy/settings/base.py -> project root is 3 levels up from this file
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -21,6 +23,9 @@ DEBUG = env("DEBUG", default=True)
 ALLOWED_HOSTS = env("ALLOWED_HOSTS", default=["*"])
 
 INSTALLED_APPS = [
+    "unfold",
+    "unfold.contrib.filters",
+    "unfold.contrib.forms",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -32,6 +37,9 @@ INSTALLED_APPS = [
     "corsheaders",
     "django_celery_beat",
     "django_fsm",
+    "axes",
+    "adminsortable2",
+    "django_ckeditor_5",
     "apps.core",
     "apps.accounts",
     "apps.industries",
@@ -40,6 +48,7 @@ INSTALLED_APPS = [
     "apps.reports",
     "apps.delivery",
     "apps.content",
+    "apps.dashboard",
 ]
 
 MIDDLEWARE = [
@@ -51,6 +60,12 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "axes.middleware.AxesMiddleware",  # MUST be last
+]
+
+AUTHENTICATION_BACKENDS = [
+    "axes.backends.AxesStandaloneBackend",
+    "django.contrib.auth.backends.ModelBackend",
 ]
 
 ROOT_URLCONF = "baqsy.urls"
@@ -163,4 +178,118 @@ SIMPLE_JWT = {
     "AUTH_HEADER_TYPES": ("Bearer",),
     "USER_ID_FIELD": "id",
     "USER_ID_CLAIM": "user_id",
+}
+
+# django-axes brute-force protection
+AXES_ENABLED = True
+AXES_FAILURE_LIMIT = 10
+AXES_COOLOFF_TIME = timedelta(hours=1)
+AXES_LOCKOUT_PARAMETERS = ["ip_address"]
+AXES_RESET_ON_SUCCESS = True
+
+# django-unfold CRM admin
+UNFOLD = {
+    "SITE_TITLE": "Baqsy CRM",
+    "SITE_HEADER": "Baqsy System",
+    "SITE_URL": "/",
+    "SHOW_HISTORY": True,
+    "SHOW_VIEW_ON_SITE": False,
+    "DASHBOARD_CALLBACK": "apps.dashboard.views.dashboard_callback",
+    "SIDEBAR": {
+        "show_search": True,
+        "show_all_applications": False,
+        "navigation": [
+            {
+                "title": _("Аналитика"),
+                "items": [
+                    {
+                        "title": _("Дашборд"),
+                        "icon": "dashboard",
+                        "link": reverse_lazy("admin:index"),
+                    },
+                ],
+            },
+            {
+                "title": _("Заказы"),
+                "items": [
+                    {
+                        "title": _("Заявки"),
+                        "icon": "description",
+                        "link": reverse_lazy("admin:submissions_submission_changelist"),
+                    },
+                    {
+                        "title": _("Отчёты"),
+                        "icon": "picture_as_pdf",
+                        "link": reverse_lazy("admin:reports_auditreport_changelist"),
+                    },
+                    {
+                        "title": _("Оплаты"),
+                        "icon": "credit_card",
+                        "link": reverse_lazy("admin:payments_payment_changelist"),
+                    },
+                ],
+            },
+            {
+                "title": _("Контент"),
+                "items": [
+                    {
+                        "title": _("Тарифы"),
+                        "icon": "payments",
+                        "link": reverse_lazy("admin:payments_tariff_changelist"),
+                    },
+                    {
+                        "title": _("Блоки лендинга"),
+                        "icon": "web",
+                        "link": reverse_lazy("admin:content_contentblock_changelist"),
+                    },
+                ],
+            },
+            {
+                "title": _("Конфигурация"),
+                "items": [
+                    {
+                        "title": _("Отрасли"),
+                        "icon": "category",
+                        "link": reverse_lazy("admin:industries_industry_changelist"),
+                    },
+                    {
+                        "title": _("Шаблоны анкет"),
+                        "icon": "assignment",
+                        "link": reverse_lazy("admin:industries_questionnairetemplate_changelist"),
+                    },
+                ],
+            },
+            {
+                "title": _("Пользователи"),
+                "items": [
+                    {
+                        "title": _("Клиенты"),
+                        "icon": "people",
+                        "link": reverse_lazy("admin:accounts_clientprofile_changelist"),
+                    },
+                    {
+                        "title": _("Доставка"),
+                        "icon": "local_shipping",
+                        "link": reverse_lazy("admin:delivery_deliverylog_changelist"),
+                    },
+                ],
+            },
+        ],
+    },
+}
+
+# CKEditor 5
+CKEDITOR_5_CONFIGS = {
+    "content_block": {
+        "toolbar": {
+            "items": [
+                "heading", "|",
+                "bold", "italic", "underline", "|",
+                "link", "bulletedList", "numberedList", "|",
+                "blockQuote", "insertTable", "|",
+                "undo", "redo",
+            ]
+        },
+        "language": "ru",
+    },
 }

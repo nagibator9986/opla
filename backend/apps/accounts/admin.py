@@ -1,6 +1,8 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as DjangoUserAdmin
 
+from unfold.admin import ModelAdmin
+
 from apps.accounts.models import BaseUser, ClientProfile
 
 
@@ -20,7 +22,7 @@ class UserAdmin(DjangoUserAdmin):
 
 
 @admin.register(ClientProfile)
-class ClientProfileAdmin(admin.ModelAdmin):
+class ClientProfileAdmin(ModelAdmin):
     list_display = ("name", "company", "telegram_id", "city", "industry")
     search_fields = ("name", "company", "telegram_id")
     list_filter = ("industry", "city")
