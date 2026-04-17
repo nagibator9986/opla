@@ -1,0 +1,58 @@
+{% extends "unfold/layouts/base_simple.html" %}
+{% load i18n %}
+
+{% block content %}
+<div class="mb-6">
+  <form id="dashboard-filters"
+        hx-get="{% url 'admin_dashboard_stats' %}"
+        hx-target="#stats-cards"
+        hx-trigger="change"
+        class="flex flex-wrap gap-4 items-end p-4 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
+
+    <div class="flex flex-col">
+      <label class="text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">{% trans "Отрасль" %}</label>
+      <select name="industry" class="rounded border-gray-300 dark:border-gray-600 dark:bg-gray-700 text-sm">
+        <option value="">{% trans "Все" %}</option>
+        {% for ind in filter_industries %}
+        <option value="{{ ind.id }}" {% if active_filters.industry == ind.id|stringformat:"d" %}selected{% endif %}>{{ ind.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="flex flex-col">
+      <label class="text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">{% trans "Тариф" %}</label>
+      <select name="tariff" class="rounded border-gray-300 dark:border-gray-600 dark:bg-gray-700 text-sm">
+        <option value="">{% trans "Все" %}</option>
+        {% for t in filter_tariffs %}
+        <option value="{{ t.id }}" {% if active_filters.tariff == t.id|stringformat:"d" %}selected{% endif %}>{{ t.title }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="flex flex-col">
+      <label class="text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">{% trans "Город" %}</label>
+      <input type="text" name="city" value="{{ active_filters.city|default:'' }}"
+             placeholder="{% trans 'Город' %}"
+             class="rounded border-gray-300 dark:border-gray-600 dark:bg-gray-700 text-sm">
+    </div>
+
+    <div class="flex flex-col">
+      <label class="text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">{% trans "Дата от" %}</label>
+      <input type="date" name="date_from" value="{{ active_filters.date_from|default:'' }}"
+             class="rounded border-gray-300 dark:border-gray-600 dark:bg-gray-700 text-sm">
+    </div>
+
+    <div class="flex flex-col">
+      <label class="text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">{% trans "Дата до" %}</label>
+      <input type="date" name="date_to" value="{{ active_filters.date_to|default:'' }}"
+             class="rounded border-gray-300 dark:border-gray-600 dark:bg-gray-700 text-sm">
+    </div>
+  </form>
+</div>
+
+<div id="stats-cards">
+  {% include "admin/dashboard/_stats_cards.html" %}
+</div>
+
+<script src="https://unpkg.com/htmx.org@2.0.4"></script>
+{% endblock %}
