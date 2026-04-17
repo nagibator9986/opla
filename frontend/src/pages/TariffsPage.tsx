@@ -95,8 +95,8 @@ export function TariffsPage() {
   const { data: submission } = useQuery<Submission | null>({
     queryKey: ['my-submission'],
     queryFn: async () => {
-      const { data } = await api.get<Submission[]>('/submissions/my/')
-      return data[0] ?? null
+      const { data } = await api.get<Submission>('/submissions/my/')
+      return data
     },
     enabled: isAuthenticated,
   })
