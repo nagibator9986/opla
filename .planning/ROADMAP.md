@@ -108,7 +108,11 @@ Plans:
   3. Администратор меняет цену тарифа в редакторе тарифов → новая цена немедленно отображается на лендинге без деплоя
   4. Редактирование шаблона анкеты создаёт новую версию; исторические заказы по-прежнему ссылаются на старую версию и отображают корректные вопросы
   5. Вход по email+пароль работает; 10 неверных попыток подряд блокируют IP (django-axes)
-**Plans**: TBD
+**Plans**: 2 plans
+
+Plans:
+- [ ] 07-01-PLAN.md — Foundation: django-unfold + django-axes + dashboard + HTMX stats + all admin.py migration
+- [ ] 07-02-PLAN.md — Editors: Submission card + approve action + Template versioning + Question drag-n-drop + Tariff + CKEditor5
 
 ### Phase 8: Hardening & Production Readiness
 **Goal**: Система готова к production-развёртыванию: мониторинг ошибок, CI, TLS, защита от злоупотреблений, webhook-режим бота и полная документация
@@ -134,5 +138,5 @@ Plans:
 | 4. Payments | 2/2 | Complete   | 2026-04-17 |
 | 5. React Frontend | 3/3 | Complete   | 2026-04-17 |
 | 6. PDF Generation & Delivery | 2/2 | Complete   | 2026-04-17 |
-| 7. Admin CRM | 0/? | Not started | - |
+| 7. Admin CRM | 0/2 | Not started | - |
 | 8. Hardening & Production Readiness | 0/? | Not started | - |
