@@ -9,4 +9,5 @@ urlpatterns = [
     path("bot/", include("apps.accounts.bot_urls")),
     path("industries/", include("apps.industries.urls")),
     path("submissions/", include("apps.submissions.urls")),
+    path("payments/", include("apps.payments.urls")),
 ]
