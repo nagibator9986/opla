@@ -134,6 +134,10 @@ REDIS_URL = env("REDIS_URL", default=f"redis://{REDIS_HOST}:{REDIS_PORT}")
 # Bot API secret (X-Bot-Token header)
 BOT_API_SECRET = env("BOT_API_SECRET", default="dev-bot-secret")
 
+# CloudPayments KZ
+CLOUDPAYMENTS_PUBLIC_ID = env("CLOUDPAYMENTS_PUBLIC_ID", default="")
+CLOUDPAYMENTS_API_SECRET = env("CLOUDPAYMENTS_API_SECRET", default="")
+
 # Django REST Framework
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
