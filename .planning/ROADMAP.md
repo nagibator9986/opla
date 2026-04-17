@@ -122,7 +122,7 @@
 | 1. Infrastructure & Data Model | 4/4 | Complete | 2026-04-16 |
 | 2. Core REST API | 4/4 | Complete   | 2026-04-16 |
 | 3. Telegram Bot | 3/3 | Complete   | 2026-04-16 |
-| 4. Payments | 0/? | Not started | - |
+| 4. Payments | 1/2 | In Progress|  |
 | 5. React Frontend | 0/? | Not started | - |
 | 6. PDF Generation & Delivery | 0/? | Not started | - |
 | 7. Admin CRM | 0/? | Not started | - |

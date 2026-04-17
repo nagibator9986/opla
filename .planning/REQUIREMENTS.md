@@ -62,14 +62,14 @@
 ### Payments (PAY)
 
 - [ ] **PAY-01**: CloudPayments Widget встроен на странице тарифа (React)
-- [ ] **PAY-02**: `POST /api/payments/cloudpayments/webhook/check/` — Check webhook с HMAC-валидацией
-- [ ] **PAY-03**: `POST /api/payments/cloudpayments/webhook/pay/` — Pay webhook с HMAC-валидацией
-- [ ] **PAY-04**: Webhook идемпотентен: дубликаты по `TransactionId` не создают новый `Payment`
-- [ ] **PAY-05**: При успешной оплате `Submission.status` переходит в `paid` через `select_for_update`
+- [x] **PAY-02**: `POST /api/payments/cloudpayments/webhook/check/` — Check webhook с HMAC-валидацией
+- [x] **PAY-03**: `POST /api/payments/cloudpayments/webhook/pay/` — Pay webhook с HMAC-валидацией
+- [x] **PAY-04**: Webhook идемпотентен: дубликаты по `TransactionId` не создают новый `Payment`
+- [x] **PAY-05**: При успешной оплате `Submission.status` переходит в `paid` через `select_for_update`
 - [ ] **PAY-06**: Celery-таск уведомляет бота о начале анкеты после `paid`
 - [ ] **PAY-07**: Поддержка Kaspi Pay через CloudPayments Widget (проверить активацию в кабинете CP)
 - [ ] **PAY-08**: Upsell: кнопка доплаты 90 000 ₸ апгрейдит тариф без повторной анкеты
-- [ ] **PAY-09**: Цены тарифов редактируются в админке без деплоя
+- [x] **PAY-09**: Цены тарифов редактируются в админке без деплоя
 
 ### Frontend (WEB)
 
@@ -199,14 +199,14 @@
 | BOT-10 | Phase 3: Telegram Bot | Complete |
 | BOT-11 | Phase 3: Telegram Bot | Complete |
 | PAY-01 | Phase 4: Payments | Pending |
-| PAY-02 | Phase 4: Payments | Pending |
-| PAY-03 | Phase 4: Payments | Pending |
-| PAY-04 | Phase 4: Payments | Pending |
-| PAY-05 | Phase 4: Payments | Pending |
+| PAY-02 | Phase 4: Payments | Complete |
+| PAY-03 | Phase 4: Payments | Complete |
+| PAY-04 | Phase 4: Payments | Complete |
+| PAY-05 | Phase 4: Payments | Complete |
 | PAY-06 | Phase 4: Payments | Pending |
 | PAY-07 | Phase 4: Payments | Pending |
 | PAY-08 | Phase 4: Payments | Pending |
-| PAY-09 | Phase 4: Payments | Pending |
+| PAY-09 | Phase 4: Payments | Complete |
 | WEB-01 | Phase 5: React Frontend | Pending |
 | WEB-02 | Phase 5: React Frontend | Pending |
 | WEB-03 | Phase 5: React Frontend | Pending |

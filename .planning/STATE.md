@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 4 context gathered
-last_updated: "2026-04-17T05:30:33.398Z"
+stopped_at: Completed 04-payments-01-webhook-and-hmac-PLAN.md
+last_updated: "2026-04-17T05:37:00.093Z"
 last_activity: "2026-04-16 — Plan 00 executed: DRF + SimpleJWT bootstrap, /api/v1/ URL namespace, factory-boy factories"
 progress:
   total_phases: 8
   completed_phases: 3
-  total_plans: 11
-  completed_plans: 11
+  total_plans: 13
+  completed_plans: 12
   percent: 15
 ---
 
@@ -58,6 +58,7 @@ Progress: [██░░░░░░░░] 15%
 | Phase 03-telegram-bot P00 | 10 | 2 tasks | 5 files |
 | Phase 03-telegram-bot P01 | 3 | 3 tasks | 14 files |
 | Phase 03-telegram-bot P02 | 5 | 2 tasks | 3 files |
+| Phase 04-payments P01 | 167 | 3 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -96,6 +97,8 @@ Recent decisions affecting current work:
 - [Phase 03-telegram-bot]: _send_next_question в start.py импортируется в questionnaire.py — единственный источник истины для отображения вопросов
 - [Phase 03-telegram-bot]: Answer value always typed dict: {text:.., number:.., choice:.., choices:[..]} consistent with Answer.value JSONField
 - [Phase 03-telegram-bot]: Multichoice done button shows live count 'Gotovo (N)' for UX clarity
+- [Phase 04-payments]: Payment FK requires submission in get_or_create defaults — view fetches sub first via select_for_update then passes to defaults
+- [Phase 04-payments]: mark_paid() requires in_progress_basic — PayView auto-advances created→in_progress_basic before FSM transition
 
 ### Pending Todos
 
@@ -109,6 +112,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-17T05:30:33.390Z
-Stopped at: Phase 4 context gathered
-Resume file: .planning/phases/04-payments/04-CONTEXT.md
+Last session: 2026-04-17T05:37:00.091Z
+Stopped at: Completed 04-payments-01-webhook-and-hmac-PLAN.md
+Resume file: None
