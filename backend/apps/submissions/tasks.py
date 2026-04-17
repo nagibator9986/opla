@@ -37,6 +37,18 @@ def notify_bot_payment_success(self, submission_id: str):
         "Нажмите кнопку ниже, чтобы продолжить."
     )
 
+    # FSM: paid → in_progress_full
+    try:
+        sub.start_questionnaire()
+        sub.save()
+    except Exception as fsm_exc:
+        log.warning(
+            "notify_bot_payment_success: FSM start_questionnaire failed for sub=%s: %s "
+            "(may already be transitioned)",
+            sub.id,
+            fsm_exc,
+        )
+
     try:
         resp = requests.post(
             f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage",
