@@ -75,7 +75,12 @@
   3. Личный кабинет показывает текущий статус заказа; после доставки PDF доступна ссылка для скачивания
   4. Кнопка Upsell видна клиентам с тарифом Ashıde 1 и инициирует виджет CloudPayments на 90 000 ₸
   5. Лендинг и кабинет корректно отображаются на мобильных устройствах (mobile-first)
-**Plans**: TBD
+**Plans**: 3 plans
+
+Plans:
+- [ ] 05-01-PLAN.md — Backend API (ContentBlock, SubmissionDetail расширение) + Vite scaffold + Docker integration
+- [ ] 05-02-PLAN.md — Лендинг (Hero/Метод/Тарифы/Кейсы/FAQ) + TariffsPage + CloudPayments Widget
+- [ ] 05-03-PLAN.md — Deep-link auth flow + Личный кабинет + Upsell
 
 ### Phase 6: PDF Generation & Delivery
 **Goal**: После подтверждения аудита администратором система автоматически генерирует именной PDF и доставляет его клиенту в Telegram и WhatsApp
@@ -123,7 +128,7 @@
 | 2. Core REST API | 4/4 | Complete   | 2026-04-16 |
 | 3. Telegram Bot | 3/3 | Complete   | 2026-04-16 |
 | 4. Payments | 2/2 | Complete   | 2026-04-17 |
-| 5. React Frontend | 0/? | Not started | - |
+| 5. React Frontend | 0/3 | In progress | - |
 | 6. PDF Generation & Delivery | 0/? | Not started | - |
 | 7. Admin CRM | 0/? | Not started | - |
 | 8. Hardening & Production Readiness | 0/? | Not started | - |
