@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 06-pdf-generation-delivery/06-01-PLAN.md
-last_updated: "2026-04-17T09:34:20.634Z"
+stopped_at: Completed 06-pdf-generation-delivery/06-02-PLAN.md
+last_updated: "2026-04-17T09:39:58.973Z"
 last_activity: "2026-04-16 — Plan 00 executed: DRF + SimpleJWT bootstrap, /api/v1/ URL namespace, factory-boy factories"
 progress:
   total_phases: 8
-  completed_phases: 5
+  completed_phases: 6
   total_plans: 18
-  completed_plans: 17
+  completed_plans: 18
   percent: 15
 ---
 
@@ -64,6 +64,7 @@ Progress: [██░░░░░░░░] 15%
 | Phase 05-react-frontend P03 | 10 | 2 tasks | 8 files |
 | Phase 05-react-frontend P02 | 18 | 2 tasks | 18 files |
 | Phase 06-pdf-generation-delivery P01 | 4 | 2 tasks | 11 files |
+| Phase 06-pdf-generation-delivery P02 | 8 | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -116,6 +117,9 @@ Recent decisions affecting current work:
 - [Phase 06-pdf-generation-delivery]: boto3 client создаётся внутри функции upload_pdf_to_minio (не на уровне модуля) — fork-safety для Celery prefork workers
 - [Phase 06-pdf-generation-delivery]: Jinja2 отдельно от Django templates — custom filter format_answer_value для Answer.value typed dict {text/number/choice/choices}
 - [Phase 06-pdf-generation-delivery]: .si() immutable signature для deliver_* в Celery chain — получают report_id напрямую, не из результата generate_pdf
+- [Phase 06-pdf-generation-delivery]: Wazzup24Provider normalizes phone by stripping leading '+' — chatId must be digits-only
+- [Phase 06-pdf-generation-delivery]: select_for_update in _try_mark_delivered prevents race condition when both delivery channels complete simultaneously
+- [Phase 06-pdf-generation-delivery]: get_or_create for DeliveryLog in deliver tasks ensures idempotency across Celery retries (DLV-04)
 
 ### Pending Todos
 
@@ -129,6 +133,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-17T09:34:20.630Z
-Stopped at: Completed 06-pdf-generation-delivery/06-01-PLAN.md
+Last session: 2026-04-17T09:39:58.970Z
+Stopped at: Completed 06-pdf-generation-delivery/06-02-PLAN.md
 Resume file: None

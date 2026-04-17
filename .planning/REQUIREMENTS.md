@@ -94,12 +94,12 @@
 
 ### Delivery (DLV)
 
-- [ ] **DLV-01**: Отправка PDF в Telegram после подтверждения админа (sendDocument через Bot API)
-- [ ] **DLV-02**: Отправка PDF в WhatsApp через Wazzup24 v3 API
-- [ ] **DLV-03**: Абстракция `WhatsAppProvider` с интерфейсом `send_document(phone, url, caption)`
-- [ ] **DLV-04**: `DeliveryLog` фиксирует `queued → delivered` для каждого канала
-- [ ] **DLV-05**: Retry через Celery при временных ошибках доставки (5xx, network)
-- [ ] **DLV-06**: Сопроводительный текст «Спасибо за обращение» отправляется перед PDF
+- [x] **DLV-01**: Отправка PDF в Telegram после подтверждения админа (sendDocument через Bot API)
+- [x] **DLV-02**: Отправка PDF в WhatsApp через Wazzup24 v3 API
+- [x] **DLV-03**: Абстракция `WhatsAppProvider` с интерфейсом `send_document(phone, url, caption)`
+- [x] **DLV-04**: `DeliveryLog` фиксирует `queued → delivered` для каждого канала
+- [x] **DLV-05**: Retry через Celery при временных ошибках доставки (5xx, network)
+- [x] **DLV-06**: Сопроводительный текст «Спасибо за обращение» отправляется перед PDF
 
 ### Admin CRM (CRM)
 
@@ -222,12 +222,12 @@
 | PDF-05 | Phase 6: PDF Generation & Delivery | Complete |
 | PDF-06 | Phase 6: PDF Generation & Delivery | Complete |
 | PDF-07 | Phase 6: PDF Generation & Delivery | Complete |
-| DLV-01 | Phase 6: PDF Generation & Delivery | Pending |
-| DLV-02 | Phase 6: PDF Generation & Delivery | Pending |
-| DLV-03 | Phase 6: PDF Generation & Delivery | Pending |
-| DLV-04 | Phase 6: PDF Generation & Delivery | Pending |
-| DLV-05 | Phase 6: PDF Generation & Delivery | Pending |
-| DLV-06 | Phase 6: PDF Generation & Delivery | Pending |
+| DLV-01 | Phase 6: PDF Generation & Delivery | Complete |
+| DLV-02 | Phase 6: PDF Generation & Delivery | Complete |
+| DLV-03 | Phase 6: PDF Generation & Delivery | Complete |
+| DLV-04 | Phase 6: PDF Generation & Delivery | Complete |
+| DLV-05 | Phase 6: PDF Generation & Delivery | Complete |
+| DLV-06 | Phase 6: PDF Generation & Delivery | Complete |
 | CRM-01 | Phase 7: Admin CRM | Pending |
 | CRM-02 | Phase 7: Admin CRM | Pending |
 | CRM-03 | Phase 7: Admin CRM | Pending |
