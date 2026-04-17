@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 7 context gathered
-last_updated: "2026-04-17T11:14:48.158Z"
+stopped_at: Completed 07-01-PLAN.md
+last_updated: "2026-04-17T12:22:41.931Z"
 last_activity: "2026-04-16 — Plan 00 executed: DRF + SimpleJWT bootstrap, /api/v1/ URL namespace, factory-boy factories"
 progress:
   total_phases: 8
   completed_phases: 6
-  total_plans: 18
-  completed_plans: 18
+  total_plans: 20
+  completed_plans: 19
   percent: 15
 ---
 
@@ -65,6 +65,7 @@ Progress: [██░░░░░░░░] 15%
 | Phase 05-react-frontend P02 | 18 | 2 tasks | 18 files |
 | Phase 06-pdf-generation-delivery P01 | 4 | 2 tasks | 11 files |
 | Phase 06-pdf-generation-delivery P02 | 8 | 2 tasks | 6 files |
+| Phase 07-admin-crm P01 | 22 | 2 tasks | 20 files |
 
 ## Accumulated Context
 
@@ -120,6 +121,9 @@ Recent decisions affecting current work:
 - [Phase 06-pdf-generation-delivery]: Wazzup24Provider normalizes phone by stripping leading '+' — chatId must be digits-only
 - [Phase 06-pdf-generation-delivery]: select_for_update in _try_mark_delivered prevents race condition when both delivery channels complete simultaneously
 - [Phase 06-pdf-generation-delivery]: get_or_create for DeliveryLog in deliver tasks ensures idempotency across Celery retries (DLV-04)
+- [Phase 07-admin-crm]: unfold first in INSTALLED_APPS before django.contrib.admin — template override requires position
+- [Phase 07-admin-crm]: AxesMiddleware last in MIDDLEWARE + test.py AXES_ENABLED=False — brute-force protection without test interference; @override_settings per-method for pytest classes
+- [Phase 07-admin-crm]: dashboard URL before admin/ catch-all — /admin/dashboard/stats/ HTMX endpoint must not be swallowed by admin URL router
 
 ### Pending Todos
 
@@ -133,6 +137,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-17T11:14:48.154Z
-Stopped at: Phase 7 context gathered
-Resume file: .planning/phases/07-admin-crm/07-CONTEXT.md
+Last session: 2026-04-17T12:22:36.948Z
+Stopped at: Completed 07-01-PLAN.md
+Resume file: None

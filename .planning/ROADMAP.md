@@ -138,5 +138,5 @@ Plans:
 | 4. Payments | 2/2 | Complete   | 2026-04-17 |
 | 5. React Frontend | 3/3 | Complete   | 2026-04-17 |
 | 6. PDF Generation & Delivery | 2/2 | Complete   | 2026-04-17 |
-| 7. Admin CRM | 0/2 | Not started | - |
+| 7. Admin CRM | 1/2 | In Progress|  |
 | 8. Hardening & Production Readiness | 0/? | Not started | - |
