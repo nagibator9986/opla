@@ -105,13 +105,13 @@
 
 - [x] **CRM-01**: Dashboard со счётчиками: всего заказов, в работе, завершённых, выручка за период
 - [x] **CRM-02**: Фильтры дашборда: отрасль, регион, тариф, оборот, дата
-- [ ] **CRM-03**: Список заказов с поиском и сортировкой по статусу
-- [ ] **CRM-04**: Карточка заказа: слева все ответы клиента, справа поле для аудита, снизу кнопка «Подтвердить и отправить»
-- [ ] **CRM-05**: Редактор отраслей (CRUD)
-- [ ] **CRM-06**: Редактор шаблонов анкет: создание новой версии при изменении, просмотр истории
-- [ ] **CRM-07**: Редактор вопросов внутри шаблона (порядок drag-n-drop, типы полей, обязательность)
-- [ ] **CRM-08**: Редактор тарифов (цена, описание, активность)
-- [ ] **CRM-09**: Редактор контент-блоков лендинга (WYSIWYG)
+- [x] **CRM-03**: Список заказов с поиском и сортировкой по статусу
+- [x] **CRM-04**: Карточка заказа: слева все ответы клиента, справа поле для аудита, снизу кнопка «Подтвердить и отправить»
+- [x] **CRM-05**: Редактор отраслей (CRUD)
+- [x] **CRM-06**: Редактор шаблонов анкет: создание новой версии при изменении, просмотр истории
+- [x] **CRM-07**: Редактор вопросов внутри шаблона (порядок drag-n-drop, типы полей, обязательность)
+- [x] **CRM-08**: Редактор тарифов (цена, описание, активность)
+- [x] **CRM-09**: Редактор контент-блоков лендинга (WYSIWYG)
 - [x] **CRM-10**: Вход админа по email+пароль с защитой от брутфорса (django-axes)
 
 ### Hardening (HARD)
@@ -230,13 +230,13 @@
 | DLV-06 | Phase 6: PDF Generation & Delivery | Complete |
 | CRM-01 | Phase 7: Admin CRM | Complete |
 | CRM-02 | Phase 7: Admin CRM | Complete |
-| CRM-03 | Phase 7: Admin CRM | Pending |
-| CRM-04 | Phase 7: Admin CRM | Pending |
-| CRM-05 | Phase 7: Admin CRM | Pending |
-| CRM-06 | Phase 7: Admin CRM | Pending |
-| CRM-07 | Phase 7: Admin CRM | Pending |
-| CRM-08 | Phase 7: Admin CRM | Pending |
-| CRM-09 | Phase 7: Admin CRM | Pending |
+| CRM-03 | Phase 7: Admin CRM | Complete |
+| CRM-04 | Phase 7: Admin CRM | Complete |
+| CRM-05 | Phase 7: Admin CRM | Complete |
+| CRM-06 | Phase 7: Admin CRM | Complete |
+| CRM-07 | Phase 7: Admin CRM | Complete |
+| CRM-08 | Phase 7: Admin CRM | Complete |
+| CRM-09 | Phase 7: Admin CRM | Complete |
 | CRM-10 | Phase 7: Admin CRM | Complete |
 | HARD-01 | Phase 8: Hardening & Production Readiness | Pending |
 | HARD-02 | Phase 8: Hardening & Production Readiness | Pending |

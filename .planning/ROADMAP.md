@@ -12,7 +12,7 @@
 - [x] **Phase 4: Payments** — CloudPayments Widget + HMAC webhook + идемпотентность + sandbox-тест (completed 2026-04-17)
 - [x] **Phase 5: React Frontend** — лендинг, тарифы с CP виджетом, кабинет клиента, upsell (completed 2026-04-17)
 - [x] **Phase 6: PDF Generation & Delivery** — WeasyPrint + Jinja2 + MinIO + Telegram sendDocument + Wazzup24 (completed 2026-04-17)
-- [ ] **Phase 7: Admin CRM** — дашборд, карточка заказа с редактором аудита, редакторы контента/шаблонов/тарифов
+- [x] **Phase 7: Admin CRM** — дашборд, карточка заказа с редактором аудита, редакторы контента/шаблонов/тарифов (completed 2026-04-17)
 - [ ] **Phase 8: Hardening & Production Readiness** — structlog, Sentry, CI, TLS, rate limiting, webhook mode, документация
 
 ## Phase Details
@@ -138,5 +138,5 @@ Plans:
 | 4. Payments | 2/2 | Complete   | 2026-04-17 |
 | 5. React Frontend | 3/3 | Complete   | 2026-04-17 |
 | 6. PDF Generation & Delivery | 2/2 | Complete   | 2026-04-17 |
-| 7. Admin CRM | 1/2 | In Progress|  |
+| 7. Admin CRM | 2/2 | Complete   | 2026-04-17 |
 | 8. Hardening & Production Readiness | 0/? | Not started | - |
