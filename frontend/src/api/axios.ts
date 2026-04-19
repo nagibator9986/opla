@@ -35,7 +35,8 @@ api.interceptors.response.use(
         return Promise.reject(error)
       }
       try {
-        const { data } = await axios.post('/api/v1/auth/token/refresh/', { refresh: refreshToken })
+        const baseURL = import.meta.env.VITE_API_URL ?? '/api/v1'
+        const { data } = await axios.post(`${baseURL}/auth/token/refresh/`, { refresh: refreshToken })
         localStorage.setItem('access_token', data.access)
         failedQueue.forEach(({ resolve }) => resolve(data.access))
         failedQueue = []

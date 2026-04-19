@@ -1,4 +1,4 @@
-from adminsortable2.admin import SortableInlineAdminMixin
+from adminsortable2.admin import SortableAdminBase, SortableInlineAdminMixin
 from django.contrib import admin, messages
 from django.utils.translation import gettext_lazy as _
 
@@ -23,7 +23,7 @@ class IndustryAdmin(ModelAdmin):
 
 
 @admin.register(QuestionnaireTemplate)
-class QuestionnaireTemplateAdmin(ModelAdmin):
+class QuestionnaireTemplateAdmin(SortableAdminBase, ModelAdmin):
     list_display = ("name", "industry", "version", "is_active", "published_at")
     list_filter = ("industry", "is_active")
     inlines = [QuestionInline]

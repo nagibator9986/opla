@@ -80,6 +80,14 @@ async def start_regular(message: Message, state: FSMContext):
     await state.set_state(OnboardingStates.waiting_name)
 
 
+@router.callback_query(F.data == "start_fresh")
+async def start_fresh(callback, state: FSMContext):
+    """User chose to start fresh — clear state and restart onboarding."""
+    await state.clear()
+    await callback.answer()
+    await start_regular(callback.message, state)
+
+
 @router.callback_query(F.data == "resume_questionnaire")
 async def resume_questionnaire(callback, state: FSMContext):
     data = await state.get_data()
