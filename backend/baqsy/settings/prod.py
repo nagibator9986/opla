@@ -1,11 +1,16 @@
+import logging
+
 from django.core.exceptions import ImproperlyConfigured
 
 from .base import *  # noqa
 
 DEBUG = False
 
-# Refuse to boot if ALLOWED_HOSTS is missing or wildcard in production —
-# wildcard allows Host-header injection and cache poisoning.
+_prod_log = logging.getLogger("baqsy.prod")
+
+# Hard-fail checks — these leave the service insecure if missing, so we refuse
+# to boot at all. Payment secrets (CloudPayments, WhatsApp) degrade features
+# but don't compromise the rest of the app, so they only log a warning.
 if not ALLOWED_HOSTS or ALLOWED_HOSTS == ["*"]:
     raise ImproperlyConfigured(
         "ALLOWED_HOSTS must be explicitly set in production (comma-separated env)."
@@ -14,11 +19,14 @@ if not ALLOWED_HOSTS or ALLOWED_HOSTS == ["*"]:
 if SECRET_KEY.startswith("dev-"):
     raise ImproperlyConfigured("DJANGO_SECRET_KEY must be set in production.")
 
-if not env("CLOUDPAYMENTS_API_SECRET", default=""):
-    raise ImproperlyConfigured("CLOUDPAYMENTS_API_SECRET must be set in production.")
-
 if not env("BOT_API_SECRET", default="") or BOT_API_SECRET == "dev-bot-secret":
     raise ImproperlyConfigured("BOT_API_SECRET must be set in production.")
+
+if not env("CLOUDPAYMENTS_API_SECRET", default=""):
+    _prod_log.warning(
+        "CLOUDPAYMENTS_API_SECRET is not set — webhooks will reject all payments "
+        "until it is configured. Safe for pre-launch; required before going live."
+    )
 
 SECURE_SSL_REDIRECT = env("SECURE_SSL_REDIRECT", default=True)
 SESSION_COOKIE_SECURE = True
@@ -31,12 +39,22 @@ SECURE_REFERRER_POLICY = "strict-origin-when-cross-origin"
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 X_FRAME_OPTIONS = "DENY"
 
-# CORS must be explicitly configured in prod — never allow-all
+# CORS must be explicitly configured in prod — never allow-all.
+# If neither CORS_ALLOWED_ORIGINS nor CSRF_TRUSTED_ORIGINS are set we fall
+# back to ALLOWED_HOSTS-derived https:// origins and warn, so a misconfigured
+# deployment doesn't silently break the frontend.
 CORS_ALLOW_ALL_ORIGINS = False
 if not CORS_ALLOWED_ORIGINS:
-    raise ImproperlyConfigured(
-        "CORS_ALLOWED_ORIGINS must be set in production (comma-separated)."
-    )
+    _derived = [f"https://{h}" for h in ALLOWED_HOSTS if "." in h and h != "localhost"]
+    if _derived:
+        CORS_ALLOWED_ORIGINS = _derived
+        _prod_log.warning(
+            "CORS_ALLOWED_ORIGINS not set — using derived defaults: %s", _derived
+        )
+    else:
+        raise ImproperlyConfigured(
+            "CORS_ALLOWED_ORIGINS must be set in production (comma-separated)."
+        )
 
 CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=CORS_ALLOWED_ORIGINS)
 
