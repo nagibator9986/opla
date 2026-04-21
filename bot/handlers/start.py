@@ -54,7 +54,7 @@ async def start_regular(message: Message, state: FSMContext):
 
     # Check if profile exists (returning user without active submission)
     try:
-        jwt_data = await api_client.get_jwt(telegram_id)
+        await api_client.get_jwt(telegram_id)
         # Has profile — offer site link
         deeplink = await api_client.create_deeplink(telegram_id)
         from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
@@ -62,8 +62,10 @@ async def start_regular(message: Message, state: FSMContext):
             [InlineKeyboardButton(text="Выбрать тариф", url=f"{SITE_URL}/auth/{deeplink['token']}")],
         ])
         await message.answer(
-            "Добро пожаловать в Baqsy System!\n\n"
-            "Для нового аудита выберите тариф на сайте:",
+            "С возвращением в Baqsy System!\n\n"
+            "Для нового аудита выберите тариф на сайте.\n"
+            "После оплаты бот пришлёт первый вопрос анкеты.\n\n"
+            "Команды: /status — проверить заказ, /reset — удалить профиль.",
             reply_markup=kb,
         )
         return

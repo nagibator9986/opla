@@ -115,6 +115,12 @@ async def get_jwt(telegram_id):
     return r.json()
 
 
+async def reset_profile(telegram_id):
+    r = await _request("POST", "/bot/profile/reset/", json={"telegram_id": telegram_id})
+    _raise_for_status(r)
+    return r.json()
+
+
 async def get_active_submission(telegram_id):
     r = await _request("GET", "/bot/active-submission/", params={"telegram_id": telegram_id})
     if r.status_code == 404:
