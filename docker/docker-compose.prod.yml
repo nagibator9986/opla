@@ -1,0 +1,128 @@
+# Baqsy System — production compose for VPS with host nginx.
+# The host machine's nginx serves /opt/baqsy/frontend/dist and reverse-proxies
+# /api /admin /health to 127.0.0.1:8000 (this compose). Frontend is built
+# separately (npm run build on the host, output lands in frontend/dist).
+
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_INITDB_ARGS: "--locale=C.UTF-8 --encoding=UTF8"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  minio:
+    image: minio/minio:latest
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY}
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  web:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file: ../.env
+    volumes:
+      - ../backend:/app
+      - ./entrypoint.sh:/docker/entrypoint.sh:ro
+      - /opt/baqsy/backend/staticfiles:/app/staticfiles
+      - /opt/baqsy/backend/media:/app/media
+    entrypoint: ["/docker/entrypoint.sh"]
+    ports:
+      - "127.0.0.1:8000:8000"
+    environment:
+      - GUNICORN_WORKERS=2
+      - GUNICORN_THREADS=2
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/health/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+
+  worker:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file: ../.env
+    volumes:
+      - ../backend:/app
+    command: celery -A baqsy worker -Q default --pool=prefork --concurrency=2 --max-tasks-per-child=50 --loglevel=INFO
+    depends_on:
+      web:
+        condition: service_healthy
+
+  beat:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file: ../.env
+    volumes:
+      - ../backend:/app
+    command: celery -A baqsy beat --scheduler django_celery_beat.schedulers:DatabaseScheduler --loglevel=INFO
+    depends_on:
+      web:
+        condition: service_healthy
+
+  bot:
+    build:
+      context: ../bot
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file: ../.env
+    volumes:
+      - ../bot:/app/bot
+    working_dir: /app
+    command: python -m bot.main
+    depends_on:
+      web:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+volumes:
+  pg_data:
+  redis_data:
+  minio_data:
