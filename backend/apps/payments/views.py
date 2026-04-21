@@ -7,11 +7,12 @@ from django.views.decorators.csrf import csrf_exempt
 from rest_framework import generics, status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.throttling import AnonRateThrottle, UserRateThrottle
 from rest_framework.views import APIView
 
 from apps.payments.models import Payment, Tariff
 from apps.payments.serializers import TariffSerializer
-from apps.payments.services import validate_hmac
+from apps.payments.services import parse_webhook_body, validate_hmac
 from apps.submissions.models import Submission
 
 log = logging.getLogger(__name__)
@@ -22,6 +23,7 @@ class TariffListView(generics.ListAPIView):
 
     serializer_class = TariffSerializer
     permission_classes = [AllowAny]
+    throttle_classes = [AnonRateThrottle, UserRateThrottle]
     queryset = Tariff.objects.filter(is_active=True).order_by("price_kzt")
 
 
@@ -37,14 +39,14 @@ class CloudPaymentsCheckView(APIView):
     authentication_classes = []
 
     def post(self, request):
-        # HMAC validation
+        # HMAC validation — compute on raw bytes, then parse those same bytes
         body = request.body
         received_hmac = request.headers.get("Content-HMAC", "")
         if not validate_hmac(body, received_hmac):
             log.warning("CloudPayments Check: invalid HMAC")
             return Response(status=status.HTTP_400_BAD_REQUEST)
 
-        data = request.POST
+        data = parse_webhook_body(body)
         invoice_id = data.get("InvoiceId", "")
         amount = data.get("Amount", "")
 
@@ -100,10 +102,14 @@ class CloudPaymentsPayView(APIView):
             log.warning("CloudPayments Pay: invalid HMAC")
             return Response(status=status.HTTP_400_BAD_REQUEST)
 
-        data = request.POST
+        data = parse_webhook_body(body)
         transaction_id = data.get("TransactionId", "")
         invoice_id = data.get("InvoiceId", "")
         amount_raw = data.get("Amount", "0")
+
+        if not transaction_id:
+            log.warning("CloudPayments Pay: missing TransactionId in payload")
+            return Response(status=status.HTTP_400_BAD_REQUEST)
 
         with transaction.atomic():
             # Locate submission first — required FK for Payment
@@ -131,7 +137,7 @@ class CloudPaymentsPayView(APIView):
                     "amount": amount,
                     "currency": data.get("Currency", "KZT"),
                     "status": Payment.Status.SUCCEEDED,
-                    "raw_webhook": dict(data),
+                    "raw_webhook": data,
                 },
             )
 
@@ -145,20 +151,25 @@ class CloudPaymentsPayView(APIView):
             # FSM transition: advance submission to paid state.
             # mark_paid() requires in_progress_basic; if submission is still in
             # `created` (payment arrived before onboarding completed) we advance it first.
+            from django_fsm import TransitionNotAllowed
+
             try:
                 if sub.status == Submission.Status.CREATED:
                     sub.start_onboarding()
-                sub.mark_paid()
+                if sub.status == Submission.Status.IN_PROGRESS_BASIC:
+                    sub.mark_paid()
                 sub.save()
                 log.info(
                     "CloudPayments Pay: submission %s transitioned to paid (TransactionId=%s)",
                     sub.id,
                     transaction_id,
                 )
-            except Exception as exc:
-                log.error(
-                    "CloudPayments Pay: FSM transition failed for sub=%s tx=%s: %s",
+            except TransitionNotAllowed as exc:
+                # Most often: upsell for an already-delivered submission — no transition needed.
+                log.info(
+                    "CloudPayments Pay: no FSM transition for sub=%s (status=%s, tx=%s): %s",
                     sub.id,
+                    sub.status,
                     transaction_id,
                     exc,
                 )

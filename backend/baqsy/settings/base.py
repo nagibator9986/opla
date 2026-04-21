@@ -20,7 +20,7 @@ environ.Env.read_env(str(BASE_DIR.parent / ".env"))
 
 SECRET_KEY = env("DJANGO_SECRET_KEY", default="dev-secret-key-change-in-prod")
 DEBUG = env("DEBUG", default=True)
-ALLOWED_HOSTS = env("ALLOWED_HOSTS", default=["*"])
+ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=["*"] if DEBUG else [])
 
 INSTALLED_APPS = [
     "unfold",
@@ -140,6 +140,8 @@ AWS_QUERYSTRING_EXPIRE = 60 * 60 * 24 * 7  # 7 days
 
 # CORS
 CORS_ALLOW_ALL_ORIGINS = DEBUG  # locked down in prod
+CORS_ALLOWED_ORIGINS = env.list("CORS_ALLOWED_ORIGINS", default=[])
+CORS_ALLOW_CREDENTIALS = True
 
 # Redis
 REDIS_HOST = env("REDIS_HOST", default="redis")
@@ -167,6 +169,14 @@ REST_FRAMEWORK = {
     "DEFAULT_RENDERER_CLASSES": [
         "rest_framework.renderers.JSONRenderer",
     ],
+    "DEFAULT_THROTTLE_CLASSES": [
+        "rest_framework.throttling.AnonRateThrottle",
+        "rest_framework.throttling.UserRateThrottle",
+    ],
+    "DEFAULT_THROTTLE_RATES": {
+        "anon": "60/min",
+        "user": "240/min",
+    },
     "EXCEPTION_HANDLER": "apps.core.exceptions.custom_exception_handler",
 }
 

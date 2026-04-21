@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /cabinet
+Disallow: /auth
+Disallow: /payment
+
+Sitemap: https://baqsy.kz/sitemap.xml

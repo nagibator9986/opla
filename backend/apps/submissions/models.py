@@ -40,6 +40,11 @@ class Submission(UUIDModel, TimestampedModel):
         verbose_name = "Заказ"
         verbose_name_plural = "Заказы"
         ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["client", "-created_at"]),
+            models.Index(fields=["status"]),
+            models.Index(fields=["status", "-created_at"]),
+        ]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -103,6 +108,9 @@ class Answer(TimestampedModel):
         verbose_name_plural = "Ответы"
         unique_together = [("submission", "question")]
         ordering = ["question__order"]
+        indexes = [
+            models.Index(fields=["submission", "question"]),
+        ]
 
     def __str__(self):
         return f"Ответ на Q{self.question.order} ({self.submission_id})"

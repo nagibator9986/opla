@@ -46,6 +46,10 @@ class Payment(UUIDModel, TimestampedModel):
         verbose_name = "Платёж"
         verbose_name_plural = "Платежи"
         ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["submission", "-created_at"]),
+            models.Index(fields=["status"]),
+        ]
 
     def __str__(self):
         return f"Payment {self.transaction_id} ({self.status})"

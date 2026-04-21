@@ -6,7 +6,14 @@ import { router } from './router'
 import './index.css'
 
 const queryClient = new QueryClient({
-  defaultOptions: { queries: { retry: 1, staleTime: 30_000 } },
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      staleTime: 5 * 60 * 1000,
+      gcTime: 10 * 60 * 1000,
+      refetchOnWindowFocus: false,
+    },
+  },
 })
 
 createRoot(document.getElementById('root')!).render(
