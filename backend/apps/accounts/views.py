@@ -172,6 +172,24 @@ class BotJWTView(APIView):
         })
 
 
+class ProfileResetView(APIView):
+    """POST /api/v1/bot/profile/reset/ — delete ClientProfile and cascade submissions.
+
+    Used by the bot's /reset command so a user can redo onboarding from scratch.
+    Silently succeeds if no profile exists (idempotent).
+    """
+
+    authentication_classes = []
+    permission_classes = [IsBotAuthenticated]
+
+    def post(self, request):
+        telegram_id = request.data.get("telegram_id")
+        if not telegram_id:
+            return Response({"detail": "telegram_id required"}, status=status.HTTP_400_BAD_REQUEST)
+        deleted, _ = ClientProfile.objects.filter(telegram_id=telegram_id).delete()
+        return Response({"deleted": deleted}, status=status.HTTP_200_OK)
+
+
 class ActiveSubmissionView(APIView):
     """GET /api/v1/bot/active-submission/?telegram_id=N — find in-progress submission."""
 

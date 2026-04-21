@@ -1,7 +1,9 @@
 import base64
 import hashlib
 import hmac
+import json
 import logging
+from typing import Any
 from urllib.parse import parse_qs
 
 from django.conf import settings
@@ -38,3 +40,21 @@ def parse_webhook_body(body: bytes) -> dict[str, str]:
         return {}
     parsed = parse_qs(payload, keep_blank_values=True)
     return {k: (v[0] if v else "") for k, v in parsed.items()}
+
+
+def parse_webhook_data(payload: dict[str, str]) -> dict[str, Any]:
+    """Parse the nested `Data` JSON field from a CloudPayments webhook payload.
+
+    CloudPayments sends custom metadata (e.g. tariff_code, submission_id) via the
+    `Data` field as a JSON string. We decode it here so callers can look up
+    semantic flags without re-parsing.
+    """
+    raw = payload.get("Data", "")
+    if not raw:
+        return {}
+    try:
+        decoded = json.loads(raw)
+    except (json.JSONDecodeError, TypeError):
+        log.warning("CloudPayments: unable to decode Data field: %r", raw[:200])
+        return {}
+    return decoded if isinstance(decoded, dict) else {}

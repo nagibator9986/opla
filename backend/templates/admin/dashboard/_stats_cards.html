@@ -1,23 +1,23 @@
 {% load i18n %}
 
-<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
-    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">{% trans "Всего заказов" %}</p>
-    <p class="text-3xl font-bold text-gray-900 dark:text-white mt-1">{{ stats.total }}</p>
+<div class="bdash-grid">
+  <div class="bdash-panel bdash-stat">
+    <p class="bdash-stat-label">{% trans "Всего заказов" %}</p>
+    <p class="bdash-stat-value">{{ stats.total|default:0 }}</p>
   </div>
 
-  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
-    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">{% trans "В работе" %}</p>
-    <p class="text-3xl font-bold text-blue-600 dark:text-blue-400 mt-1">{{ stats.in_progress }}</p>
+  <div class="bdash-panel bdash-stat">
+    <p class="bdash-stat-label">{% trans "В работе" %}</p>
+    <p class="bdash-stat-value bdash-accent-blue">{{ stats.in_progress|default:0 }}</p>
   </div>
 
-  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
-    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">{% trans "Завершённых" %}</p>
-    <p class="text-3xl font-bold text-green-600 dark:text-green-400 mt-1">{{ stats.delivered }}</p>
+  <div class="bdash-panel bdash-stat">
+    <p class="bdash-stat-label">{% trans "Завершённых" %}</p>
+    <p class="bdash-stat-value bdash-accent-green">{{ stats.delivered|default:0 }}</p>
   </div>
 
-  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
-    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">{% trans "Выручка" %}</p>
-    <p class="text-3xl font-bold text-amber-600 dark:text-amber-400 mt-1">{{ stats.revenue|floatformat:0 }} &#8376;</p>
+  <div class="bdash-panel bdash-stat">
+    <p class="bdash-stat-label">{% trans "Выручка" %}</p>
+    <p class="bdash-stat-value bdash-accent-amber">{{ stats.revenue|floatformat:0 }} &#8376;</p>
   </div>
 </div>

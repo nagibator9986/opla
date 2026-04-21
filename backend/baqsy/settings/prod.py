@@ -28,9 +28,12 @@ if not env("CLOUDPAYMENTS_API_SECRET", default=""):
         "until it is configured. Safe for pre-launch; required before going live."
     )
 
-SECURE_SSL_REDIRECT = env("SECURE_SSL_REDIRECT", default=True)
-SESSION_COOKIE_SECURE = True
-CSRF_COOKIE_SECURE = True
+SECURE_SSL_REDIRECT = env.bool("SECURE_SSL_REDIRECT", default=True)
+# Cookie Secure flags default True for safety. Turn off only while the site is
+# temporarily served over plain HTTP (no TLS certificate yet) — otherwise the
+# browser drops the CSRF/session cookies and admin login becomes impossible.
+SESSION_COOKIE_SECURE = env.bool("SESSION_COOKIE_SECURE", default=True)
+CSRF_COOKIE_SECURE = env.bool("CSRF_COOKIE_SECURE", default=True)
 SECURE_HSTS_SECONDS = 60 * 60 * 24 * 30  # 30 days
 SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 SECURE_HSTS_PRELOAD = True

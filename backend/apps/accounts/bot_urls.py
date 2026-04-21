@@ -7,6 +7,7 @@ from apps.accounts.views import (
     DeeplinkCreateView,
     DeeplinkExchangeView,
     OnboardingView,
+    ProfileResetView,
 )
 
 urlpatterns = [
@@ -15,4 +16,5 @@ urlpatterns = [
     path("deeplink/exchange/", DeeplinkExchangeView.as_view(), name="bot-deeplink-exchange"),
     path("jwt/", BotJWTView.as_view(), name="bot-jwt"),
     path("active-submission/", ActiveSubmissionView.as_view(), name="bot-active-submission"),
+    path("profile/reset/", ProfileResetView.as_view(), name="bot-profile-reset"),
 ]

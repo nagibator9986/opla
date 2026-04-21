@@ -1,57 +1,244 @@
 {% extends "unfold/layouts/base_simple.html" %}
 {% load i18n %}
 
-{% block content %}
-<div class="mb-6">
-  <form id="dashboard-filters"
-        hx-get="{% url 'admin_dashboard_stats' %}"
-        hx-target="#stats-cards"
-        hx-trigger="change"
-        class="flex flex-wrap gap-4 items-end p-4 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
+{% block extrastyle %}
+{{ block.super }}
+<style>
+  .bdash-panel {
+    background: #ffffff;
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    border-radius: 12px;
+    padding: 16px 18px;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 4px 14px rgba(15, 23, 42, 0.06);
+  }
+  .dark .bdash-panel {
+    background: #1e293b;
+    border-color: rgba(255, 255, 255, 0.08);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  }
 
-    <div class="flex flex-col">
-      <label class="text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">{% trans "Отрасль" %}</label>
-      <select name="industry" class="rounded border-gray-300 dark:border-gray-600 dark:bg-gray-700 text-sm">
-        <option value="">{% trans "Все" %}</option>
+  .bdash-filters {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 12px;
+  }
+  .bdash-field label {
+    display: block;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #64748b;
+    margin-bottom: 6px;
+  }
+  .dark .bdash-field label { color: #94a3b8; }
+  .bdash-field input,
+  .bdash-field select {
+    width: 100%;
+    padding: 9px 12px;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    background: #ffffff;
+    color: #0f172a;
+    font-size: 14px;
+    line-height: 1.4;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  .bdash-field input:focus,
+  .bdash-field select:focus {
+    outline: none;
+    border-color: #f59e0b;
+    box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.2);
+  }
+  .bdash-field input::placeholder { color: #94a3b8; }
+  .dark .bdash-field input,
+  .dark .bdash-field select {
+    background: #0f172a;
+    color: #f1f5f9;
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+  .dark .bdash-field input::placeholder { color: #64748b; }
+
+  .bdash-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-top: 20px;
+  }
+  .bdash-stat {
+    padding: 20px 22px;
+  }
+  .bdash-stat-label {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #64748b;
+    font-weight: 600;
+    margin: 0 0 8px 0;
+  }
+  .dark .bdash-stat-label { color: #94a3b8; }
+  .bdash-stat-value {
+    font-size: 32px;
+    font-weight: 700;
+    line-height: 1.1;
+    margin: 0;
+    font-variant-numeric: tabular-nums;
+    color: #0f172a;
+  }
+  .dark .bdash-stat-value { color: #f8fafc; }
+  .bdash-stat-value.bdash-accent-blue    { color: #2563eb; }
+  .bdash-stat-value.bdash-accent-green   { color: #059669; }
+  .bdash-stat-value.bdash-accent-amber   { color: #d97706; }
+  .dark .bdash-stat-value.bdash-accent-blue  { color: #60a5fa; }
+  .dark .bdash-stat-value.bdash-accent-green { color: #34d399; }
+  .dark .bdash-stat-value.bdash-accent-amber { color: #fbbf24; }
+
+  .bdash-shortcuts {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
+    margin-top: 24px;
+  }
+  .bdash-shortcut {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    border-radius: 10px;
+    background: #ffffff;
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    color: #0f172a;
+    text-decoration: none;
+    transition: border-color .15s, transform .15s, box-shadow .15s;
+  }
+  .bdash-shortcut:hover {
+    border-color: #f59e0b;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(245, 158, 11, 0.15);
+  }
+  .dark .bdash-shortcut {
+    background: #1e293b;
+    color: #f1f5f9;
+    border-color: rgba(255, 255, 255, 0.08);
+  }
+  .bdash-shortcut-icon {
+    flex-shrink: 0;
+    width: 36px; height: 36px;
+    border-radius: 8px;
+    background: #fef3c7;
+    color: #b45309;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+  .dark .bdash-shortcut-icon { background: rgba(245, 158, 11, 0.15); color: #fcd34d; }
+  .bdash-shortcut-title { font-weight: 600; font-size: 14px; }
+  .bdash-shortcut-sub { font-size: 12px; color: #64748b; margin-top: 2px; }
+  .dark .bdash-shortcut-sub { color: #94a3b8; }
+
+  .bdash-section-title {
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #64748b;
+    margin: 28px 0 10px;
+  }
+  .dark .bdash-section-title { color: #94a3b8; }
+</style>
+{% endblock %}
+
+{% block content %}
+<form id="dashboard-filters"
+      hx-get="{% url 'admin_dashboard_stats' %}"
+      hx-target="#stats-cards"
+      hx-trigger="change delay:200ms, keyup changed delay:400ms from:input[name='city']"
+      class="bdash-panel">
+  <div class="bdash-filters">
+    <div class="bdash-field">
+      <label>{% trans "Отрасль" %}</label>
+      <select name="industry">
+        <option value="">{% trans "Все отрасли" %}</option>
         {% for ind in filter_industries %}
         <option value="{{ ind.id }}" {% if active_filters.industry == ind.id|stringformat:"d" %}selected{% endif %}>{{ ind.name }}</option>
         {% endfor %}
       </select>
     </div>
 
-    <div class="flex flex-col">
-      <label class="text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">{% trans "Тариф" %}</label>
-      <select name="tariff" class="rounded border-gray-300 dark:border-gray-600 dark:bg-gray-700 text-sm">
-        <option value="">{% trans "Все" %}</option>
+    <div class="bdash-field">
+      <label>{% trans "Тариф" %}</label>
+      <select name="tariff">
+        <option value="">{% trans "Все тарифы" %}</option>
         {% for t in filter_tariffs %}
         <option value="{{ t.id }}" {% if active_filters.tariff == t.id|stringformat:"d" %}selected{% endif %}>{{ t.title }}</option>
         {% endfor %}
       </select>
     </div>
 
-    <div class="flex flex-col">
-      <label class="text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">{% trans "Город" %}</label>
-      <input type="text" name="city" value="{{ active_filters.city|default:'' }}"
-             placeholder="{% trans 'Город' %}"
-             class="rounded border-gray-300 dark:border-gray-600 dark:bg-gray-700 text-sm">
+    <div class="bdash-field">
+      <label>{% trans "Город" %}</label>
+      <input type="text" name="city" value="{{ active_filters.city|default:'' }}" placeholder="{% trans 'Начните вводить…' %}">
     </div>
 
-    <div class="flex flex-col">
-      <label class="text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">{% trans "Дата от" %}</label>
-      <input type="date" name="date_from" value="{{ active_filters.date_from|default:'' }}"
-             class="rounded border-gray-300 dark:border-gray-600 dark:bg-gray-700 text-sm">
+    <div class="bdash-field">
+      <label>{% trans "Дата от" %}</label>
+      <input type="date" name="date_from" value="{{ active_filters.date_from|default:'' }}">
     </div>
 
-    <div class="flex flex-col">
-      <label class="text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">{% trans "Дата до" %}</label>
-      <input type="date" name="date_to" value="{{ active_filters.date_to|default:'' }}"
-             class="rounded border-gray-300 dark:border-gray-600 dark:bg-gray-700 text-sm">
+    <div class="bdash-field">
+      <label>{% trans "Дата до" %}</label>
+      <input type="date" name="date_to" value="{{ active_filters.date_to|default:'' }}">
     </div>
-  </form>
-</div>
+  </div>
+</form>
 
 <div id="stats-cards">
   {% include "admin/dashboard/_stats_cards.html" %}
+</div>
+
+<p class="bdash-section-title">{% trans "Быстрые действия" %}</p>
+<div class="bdash-shortcuts">
+  <a class="bdash-shortcut" href="{% url 'admin:submissions_submission_changelist' %}">
+    <span class="bdash-shortcut-icon">📋</span>
+    <span>
+      <span class="bdash-shortcut-title">{% trans "Заказы клиентов" %}</span>
+      <span class="bdash-shortcut-sub">{% trans "Статусы, анкеты, аудит" %}</span>
+    </span>
+  </a>
+  <a class="bdash-shortcut" href="{% url 'admin:content_contentblock_changelist' %}">
+    <span class="bdash-shortcut-icon">✏️</span>
+    <span>
+      <span class="bdash-shortcut-title">{% trans "Тексты лендинга" %}</span>
+      <span class="bdash-shortcut-sub">{% trans "Hero, метод, кейсы, FAQ" %}</span>
+    </span>
+  </a>
+  <a class="bdash-shortcut" href="{% url 'admin:payments_tariff_changelist' %}">
+    <span class="bdash-shortcut-icon">💳</span>
+    <span>
+      <span class="bdash-shortcut-title">{% trans "Тарифы и цены" %}</span>
+      <span class="bdash-shortcut-sub">{% trans "Ashıde 1, Ashıde 2, Upsell" %}</span>
+    </span>
+  </a>
+  <a class="bdash-shortcut" href="{% url 'admin:accounts_clientprofile_changelist' %}">
+    <span class="bdash-shortcut-icon">👥</span>
+    <span>
+      <span class="bdash-shortcut-title">{% trans "Клиенты" %}</span>
+      <span class="bdash-shortcut-sub">{% trans "Профили, Telegram, WhatsApp" %}</span>
+    </span>
+  </a>
+  <a class="bdash-shortcut" href="{% url 'admin:industries_questionnairetemplate_changelist' %}">
+    <span class="bdash-shortcut-icon">📑</span>
+    <span>
+      <span class="bdash-shortcut-title">{% trans "Анкеты" %}</span>
+      <span class="bdash-shortcut-sub">{% trans "Шаблоны и 27 вопросов" %}</span>
+    </span>
+  </a>
+  <a class="bdash-shortcut" href="{% url 'admin:reports_auditreport_changelist' %}">
+    <span class="bdash-shortcut-icon">📄</span>
+    <span>
+      <span class="bdash-shortcut-title">{% trans "Аудиты и отчёты" %}</span>
+      <span class="bdash-shortcut-sub">{% trans "Писать текст и выдавать PDF" %}</span>
+    </span>
+  </a>
 </div>
 
 <script src="https://unpkg.com/htmx.org@2.0.4"></script>
