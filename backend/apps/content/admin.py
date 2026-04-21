@@ -1,8 +1,8 @@
+from django import forms
 from django.contrib import admin
 from django.db import models
 from django.utils.html import format_html
 
-from django_ckeditor_5.widgets import CKEditor5Widget
 from unfold.admin import ModelAdmin
 
 from apps.content.models import ContentBlock
@@ -29,8 +29,8 @@ def _section_for_key(key: str) -> str:
 
 @admin.register(ContentBlock)
 class ContentBlockAdmin(ModelAdmin):
-    list_display = ("section_badge", "title", "key", "preview", "is_active")
-    list_display_links = ("title",)
+    list_display = ("title", "section_badge", "preview", "key", "is_active")
+    list_display_links = ("title", "key")
     list_filter = ("is_active", "content_type")
     search_fields = ("key", "title", "content")
     list_editable = ("is_active",)
@@ -50,9 +50,12 @@ class ContentBlockAdmin(ModelAdmin):
         }),
     )
     readonly_fields = ()
+    # Plain Textarea with a comfortable size. The landing renders ContentBlock
+    # values as plain text via JSX — pushing HTML here would just print tags as
+    # literal characters on the site. Keep it simple.
     formfield_overrides = {
         models.TextField: {
-            "widget": CKEditor5Widget(config_name="content_block")
+            "widget": forms.Textarea(attrs={"rows": 6, "style": "width: 100%; font-size: 15px;"})
         },
     }
 
