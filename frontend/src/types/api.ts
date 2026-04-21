@@ -33,7 +33,7 @@ export interface UpsellConfig {
   invoiceId: string
   description: string
   accountId: string
-  tariff_code: string
+  data?: Record<string, unknown>
 }
 
 export interface ContentBlocks {

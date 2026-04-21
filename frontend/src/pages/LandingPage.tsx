@@ -4,22 +4,23 @@ import { Footer } from '../components/layout/Footer'
 import { HeroSection } from '../components/landing/HeroSection'
 import { MethodSection } from '../components/landing/MethodSection'
 import { TariffsSection } from '../components/landing/TariffsSection'
+import { TrustSection } from '../components/landing/TrustSection'
 import { CasesSection } from '../components/landing/CasesSection'
 import { FaqSection } from '../components/landing/FaqSection'
 import { CtaFooter } from '../components/landing/CtaFooter'
 
 export function LandingPage() {
   const { data: content } = useContentBlocks()
-
   const c = content ?? {}
 
   return (
-    <div className="scroll-smooth">
-      <Header />
-      <main className="pt-16">
+    <div className="flex flex-col min-h-screen bg-white">
+      <Header variant="transparent" />
+      <main className="flex-1">
         <HeroSection content={c} />
         <MethodSection content={c} />
         <TariffsSection content={c} />
+        <TrustSection />
         <CasesSection content={c} />
         <FaqSection content={c} />
         <CtaFooter />

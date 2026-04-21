@@ -13,13 +13,17 @@ export function openPaymentWidget(
   onSuccess: () => void,
   onFail?: (reason: string) => void,
 ): void {
+  if (!options.publicId) {
+    onFail?.('Платёжный модуль не настроен. Обратитесь в поддержку.')
+    return
+  }
   if (!window.cp?.CloudPayments) {
-    alert('Платёжный модуль не загружен. Обновите страницу.')
+    onFail?.('Платёжный модуль не загружен. Обновите страницу.')
     return
   }
   const widget = new window.cp.CloudPayments()
   widget.pay('charge', options, {
     onSuccess: () => onSuccess(),
-    onFail: (reason) => onFail?.(reason),
+    onFail: (reason: string) => onFail?.(reason),
   })
 }

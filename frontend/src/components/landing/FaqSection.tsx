@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { Container, Section } from '../ui/Container'
+import { Badge } from '../ui/Badge'
 
 interface FaqSectionProps {
   content: Record<string, string>
@@ -21,47 +23,71 @@ function getFaqItems(content: Record<string, string>): FaqItem[] {
 
 export function FaqSection({ content }: FaqSectionProps) {
   const items = getFaqItems(content)
-  const [openIndex, setOpenIndex] = useState<number | null>(null)
+  const [openIndex, setOpenIndex] = useState<number | null>(0)
 
   const toggle = (i: number) => setOpenIndex((prev) => (prev === i ? null : i))
 
+  if (items.length === 0) return null
+
   return (
-    <section id="faq" className="py-20 bg-white">
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-14">
-          <h2 className="text-3xl md:text-4xl font-bold text-slate-900">Частые вопросы</h2>
+    <Section id="faq" background="white">
+      <Container size="sm">
+        <div className="text-center mb-12 md:mb-16">
+          <Badge variant="neutral" className="mb-4">Вопросы и ответы</Badge>
+          <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-ink-900 tracking-tight">
+            Частые вопросы
+          </h2>
+          <p className="mt-4 text-base md:text-lg text-ink-600 leading-relaxed">
+            Не нашли ответ? Напишите в Telegram-бот — ответим в течение часа.
+          </p>
         </div>
 
         <div className="space-y-3">
-          {items.map((item, i) => (
-            <div key={i} className="border border-slate-200 rounded-xl overflow-hidden">
-              <button
-                className="w-full flex items-center justify-between px-6 py-4 text-left font-semibold text-slate-900 hover:bg-slate-50 transition-colors"
-                onClick={() => toggle(i)}
-              >
-                <span>{item.question}</span>
-                <svg
-                  className={`w-5 h-5 flex-shrink-0 text-slate-500 transition-transform duration-200 ${
-                    openIndex === i ? 'rotate-180' : ''
-                  }`}
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
+          {items.map((item, i) => {
+            const isOpen = openIndex === i
+            return (
               <div
-                className={`overflow-hidden transition-all duration-300 ${
-                  openIndex === i ? 'max-h-96' : 'max-h-0'
+                key={i}
+                className={`rounded-2xl border transition-all duration-300 overflow-hidden ${
+                  isOpen
+                    ? 'bg-white border-ink-300 shadow-[0_4px_14px_rgb(15_23_42_/_0.08)]'
+                    : 'bg-white border-ink-200 hover:border-ink-300'
                 }`}
               >
-                <p className="px-6 pb-4 text-slate-600">{item.answer}</p>
+                <button
+                  className="w-full flex items-center justify-between gap-4 px-5 md:px-6 py-4 md:py-5 text-left"
+                  onClick={() => toggle(i)}
+                  aria-expanded={isOpen}
+                >
+                  <span className="font-semibold text-ink-900 text-base md:text-lg leading-snug">
+                    {item.question}
+                  </span>
+                  <span
+                    className={`flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-full transition-all duration-200 ${
+                      isOpen ? 'bg-brand-500 text-white rotate-45' : 'bg-ink-100 text-ink-600'
+                    }`}
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 20 20" stroke="currentColor" strokeWidth="2.5">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M10 4v12M4 10h12" />
+                    </svg>
+                  </span>
+                </button>
+                <div
+                  className={`grid transition-all duration-300 ease-out ${
+                    isOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'
+                  }`}
+                >
+                  <div className="overflow-hidden">
+                    <p className="px-5 md:px-6 pb-5 md:pb-6 text-ink-600 leading-relaxed">
+                      {item.answer}
+                    </p>
+                  </div>
+                </div>
               </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
-      </div>
-    </section>
+      </Container>
+    </Section>
   )
 }
