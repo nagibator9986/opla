@@ -15,17 +15,20 @@ log = logging.getLogger(__name__)
 
 
 class ApproveReportView(APIView):
-    """POST /api/v1/reports/{report_id}/approve/ — staff approves and queues delivery.
+    """POST /api/v1/reports/{report_id}/approve/ — staff approves + generates PDF.
 
-    Requires:
-    - Staff user (IsAdminUser permission)
-    - report.admin_text must be non-empty
+    Flow:
+    - Staff user writes `admin_text` in admin → clicks «Подтвердить и отправить PDF»
+    - This view transitions the submission FSM to `under_audit`, sets `approved_at`,
+      and queues ``generate_pdf`` — which renders the WeasyPrint template, uploads
+      to MinIO, and stores the presigned URL on ``report.pdf_url``.
+    - Once PDF is ready the admin sees the green «💬 Отправить клиенту» button in
+      the reports list and clicks it — opens WhatsApp with a pre-filled message
+      containing the client's name, company, and PDF link.
 
-    On success:
-    - Transitions submission completed → under_audit (idempotent if already under_audit)
-    - Sets report.approved_at if not already set
-    - Enqueues Celery chain: generate_pdf | group(deliver_telegram, deliver_whatsapp)
-    - Returns 200 {"status": "queued"}
+    The legacy Telegram/WhatsApp auto-delivery chain (``deliver_telegram``,
+    ``deliver_whatsapp``) was removed along with the bot — manual WA send
+    is now the single delivery path.
     """
 
     permission_classes = [IsAdminUser]
@@ -36,7 +39,6 @@ class ApproveReportView(APIView):
         except AuditReport.DoesNotExist:
             return Response({"detail": "Report not found."}, status=404)
 
-        # Validate admin_text is present
         if not report.admin_text or not report.admin_text.strip():
             return Response(
                 {"error": "admin_text is required before approval"},
@@ -45,20 +47,18 @@ class ApproveReportView(APIView):
 
         sub = report.submission
 
-        # FSM transition: completed → under_audit (idempotent for under_audit)
+        # FSM: completed → under_audit (idempotent when already under_audit)
         if sub.status == Submission.Status.COMPLETED:
             try:
                 sub.start_audit()
                 sub.save(update_fields=["status"])
-                log.info("ApproveReportView: sub=%s transitioned to under_audit", sub.id)
+                log.info("ApproveReportView: sub=%s → under_audit", sub.id)
             except Exception as exc:
                 log.warning(
                     "ApproveReportView: FSM transition failed for sub=%s: %s", sub.id, exc
                 )
         elif sub.status == Submission.Status.UNDER_AUDIT:
-            log.info(
-                "ApproveReportView: sub=%s already under_audit, skipping FSM", sub.id
-            )
+            log.info("ApproveReportView: sub=%s already under_audit", sub.id)
         else:
             log.warning(
                 "ApproveReportView: sub=%s in unexpected status=%s for approval",
@@ -66,25 +66,15 @@ class ApproveReportView(APIView):
                 sub.status,
             )
 
-        # Set approved_at if not already set
         if not report.approved_at:
             report.approved_at = timezone.now()
             report.save(update_fields=["approved_at"])
 
-        # Enqueue Celery chain: generate_pdf → group(deliver_telegram, deliver_whatsapp)
-        from celery import chain, group
-
-        from apps.delivery.tasks import deliver_telegram, deliver_whatsapp
+        # Generate PDF. Delivery is initiated manually by the admin from the
+        # AuditReport admin list (WhatsApp button).
         from apps.reports.tasks import generate_pdf
 
-        workflow = chain(
-            generate_pdf.s(str(report.id)),
-            group(
-                deliver_telegram.si(str(report.id)),
-                deliver_whatsapp.si(str(report.id)),
-            ),
-        )
-        workflow.delay()
+        generate_pdf.delay(str(report.id))
 
-        log.info("ApproveReportView: queued pipeline for report=%s", report.id)
+        log.info("ApproveReportView: queued PDF generation for report=%s", report.id)
         return Response({"status": "queued"}, status=200)

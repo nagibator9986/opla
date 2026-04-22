@@ -27,7 +27,7 @@ class AuditReportAdmin(ModelAdmin):
     search_fields = ("submission__client__name", "submission__client__company")
     readonly_fields = ("submission", "pdf_url", "status", "approved_at", "created_at", "updated_at")
     fields = ("submission", "admin_text", "status", "pdf_url", "approved_at", "created_at", "updated_at")
-    actions_detail = ["approve_and_send"]
+    actions_detail = ["approve_and_send", "mark_delivered"]
 
     @admin.display(description="Клиент")
     def client_name(self, obj):
@@ -80,6 +80,31 @@ class AuditReportAdmin(ModelAdmin):
             'background:#25D366;color:#fff;font-size:12px;font-weight:600;'
             'text-decoration:none;">💬 Отправить клиенту</a>',
             wa_url,
+        )
+
+    @action(description=_("Отметить доставленным"), url_path="mark-delivered")
+    def mark_delivered(self, request, object_id):
+        """Admin confirmed they've sent the PDF via wa.me → move FSM to 'delivered'."""
+        from apps.submissions.models import Submission
+
+        report = AuditReport.objects.select_related("submission").get(pk=object_id)
+        sub = report.submission
+        if sub.status == Submission.Status.UNDER_AUDIT:
+            try:
+                sub.mark_delivered()
+                sub.save(update_fields=["status"])
+                report.status = AuditReport.Status.SENT
+                report.save(update_fields=["status"])
+                messages.success(request, _("Заявка помечена как доставленная."))
+            except Exception as exc:
+                messages.error(request, f"Ошибка FSM: {exc}")
+        else:
+            messages.warning(
+                request,
+                f"Нельзя перевести в 'delivered' из статуса '{sub.get_status_display()}'.",
+            )
+        return HttpResponseRedirect(
+            reverse("admin:reports_auditreport_change", args=(object_id,))
         )
 
     @action(
