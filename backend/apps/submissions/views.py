@@ -15,15 +15,27 @@ from apps.submissions.serializers import (
 
 
 def _get_client_profile(user):
-    """Get ClientProfile for JWT-authenticated user (tg_*@baqsy.internal)."""
-    email = user.email
-    if not email.startswith("tg_") or not email.endswith("@baqsy.internal"):
+    """Get ClientProfile linked to the JWT-authenticated user.
+
+    Supports both legacy tg_<id>@baqsy.internal emails (bot era) and the new
+    chat_<uuid>@baqsy.internal identities issued by the AI chat flow. Primary
+    lookup is the reverse OneToOne from BaseUser → ClientProfile.
+    """
+    if not getattr(user, "is_authenticated", False):
         return None
-    telegram_id = email.replace("tg_", "").replace("@baqsy.internal", "")
-    try:
-        return ClientProfile.objects.get(telegram_id=int(telegram_id))
-    except (ClientProfile.DoesNotExist, ValueError):
-        return None
+    # Preferred path: direct FK
+    profile = getattr(user, "client_profile", None)
+    if profile is not None:
+        return profile
+    # Legacy fallback: bot-era email encoding still works for existing users
+    email = getattr(user, "email", "") or ""
+    if email.startswith("tg_") and email.endswith("@baqsy.internal"):
+        telegram_id = email.replace("tg_", "").replace("@baqsy.internal", "")
+        try:
+            return ClientProfile.objects.get(telegram_id=int(telegram_id))
+        except (ClientProfile.DoesNotExist, ValueError):
+            return None
+    return None
 
 
 class SubmissionCreateView(APIView):

@@ -6,7 +6,8 @@ All paths are relative to the /api/v1/ prefix mounted in baqsy/urls.py.
 from django.urls import include, path
 
 urlpatterns = [
-    path("bot/", include("apps.accounts.bot_urls")),
+    path("chat/", include("apps.ai.urls")),
+    path("cases/", include("apps.cases.urls")),
     path("content/", include("apps.content.urls")),
     path("industries/", include("apps.industries.urls")),
     path("submissions/", include("apps.submissions.urls")),

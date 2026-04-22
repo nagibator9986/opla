@@ -33,7 +33,7 @@ class ClientProfile(TimestampedModel):
         blank=True,
         related_name="client_profile",
     )
-    telegram_id = models.BigIntegerField(unique=True)
+    telegram_id = models.BigIntegerField(unique=True, null=True, blank=True)
     name = models.CharField(max_length=255)
     company = models.CharField(max_length=255)
     phone_wa = models.CharField(max_length=20, blank=True)

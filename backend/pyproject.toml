@@ -7,7 +7,7 @@ readme = "README.md"
 package-mode = false
 
 [tool.poetry.dependencies]
-python = "^3.12"
+python = ">=3.12,<3.14"
 django = "5.2"
 django-fsm-2 = "4.2.4"
 psycopg2-binary = "2.9.10"
@@ -28,6 +28,8 @@ django-unfold = "0.90.0"
 django-axes = "8.3.1"
 django-admin-sortable2 = "2.2.8"
 django-ckeditor-5 = "0.2.20"
+openai = ">=1.60,<3"
+Pillow = "^10.4"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3"

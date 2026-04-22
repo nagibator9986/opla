@@ -49,6 +49,8 @@ INSTALLED_APPS = [
     "apps.delivery",
     "apps.content",
     "apps.dashboard",
+    "apps.ai",
+    "apps.cases",
 ]
 
 MIDDLEWARE = [
@@ -252,6 +254,26 @@ UNFOLD = {
                         "icon": "web",
                         "link": reverse_lazy("admin:content_contentblock_changelist"),
                     },
+                    {
+                        "title": _("Кейсы"),
+                        "icon": "auto_stories",
+                        "link": reverse_lazy("admin:cases_case_changelist"),
+                    },
+                ],
+            },
+            {
+                "title": _("AI-ассистент"),
+                "items": [
+                    {
+                        "title": _("Конфигурация"),
+                        "icon": "smart_toy",
+                        "link": reverse_lazy("admin:ai_aiassistantconfig_changelist"),
+                    },
+                    {
+                        "title": _("Чат-сессии"),
+                        "icon": "chat",
+                        "link": reverse_lazy("admin:ai_chatsession_changelist"),
+                    },
                 ],
             },
             {
@@ -287,6 +309,9 @@ UNFOLD = {
         ],
     },
 }
+
+# OpenAI — used by apps.ai for the landing chat widget
+OPENAI_API_KEY = env("OPENAI_API_KEY", default="")
 
 # CKEditor 5
 CKEDITOR_5_CONFIGS = {
