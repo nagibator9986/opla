@@ -95,19 +95,6 @@ services:
       web:
         condition: service_healthy
 
-  bot:
-    build:
-      context: ../bot
-      dockerfile: Dockerfile
-    env_file: ../.env
-    volumes:
-      - ../bot:/app
-    depends_on:
-      web:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-
   frontend:
     build:
       context: ../frontend

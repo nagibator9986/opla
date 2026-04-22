@@ -6,6 +6,7 @@ import { Footer } from '../components/layout/Footer'
 import { Container } from '../components/ui/Container'
 import { Badge } from '../components/ui/Badge'
 import { TariffCard, TariffSkeleton } from '../components/tariff/TariffCard'
+import { FloatingChatButton } from '../components/chat/ChatLauncher'
 import api from '../api/axios'
 import type { Submission } from '../types/api'
 
@@ -50,15 +51,9 @@ export function TariffsPage() {
                   </svg>
                 </div>
                 <p className="text-sm text-left text-ink-700">
-                  Для оплаты сначала пройдите онбординг в{' '}
-                  <a
-                    href="https://t.me/Baqsysystembot"
-                    className="font-semibold text-brand-700 hover:text-brand-600 underline underline-offset-2"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    Telegram-боте @Baqsysystembot
-                  </a>
+                  Для оплаты сначала пройдите короткий онбординг с{' '}
+                  <span className="font-semibold text-brand-700">ассистентом Baqsy AI</span>{' '}
+                  — нажмите на плавающую кнопку чата в правом нижнем углу.
                 </p>
               </div>
             )}
@@ -132,6 +127,7 @@ export function TariffsPage() {
         </Container>
       </main>
       <Footer />
+      <FloatingChatButton />
     </div>
   )
 }

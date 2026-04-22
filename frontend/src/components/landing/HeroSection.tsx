@@ -1,6 +1,7 @@
 import { Button } from '../ui/Button'
 import { Container } from '../ui/Container'
 import { Badge } from '../ui/Badge'
+import { ChatLauncher } from '../chat/ChatLauncher'
 
 interface HeroSectionProps {
   content: Record<string, string>
@@ -43,12 +44,18 @@ export function HeroSection({ content }: HeroSectionProps) {
             </h1>
             <p className="mt-6 text-base sm:text-lg md:text-xl text-ink-300 max-w-2xl mx-auto lg:mx-0 leading-relaxed">
               {content.hero_subtitle ??
-                'Заполните отраслевую анкету в Telegram-боте, получите именной PDF-отчёт с анализом ключевых параметров за 3–5 дней.'}
+                'Ответьте на несколько вопросов ассистенту Baqsy AI — мы подберём формат аудита под вашу отрасль и пришлём именной PDF-отчёт за 3–5 дней.'}
             </p>
 
             <div className="mt-8 md:mt-10 flex flex-col sm:flex-row gap-3 justify-center lg:justify-start">
-              <Button variant="secondary" size="xl" onClick={handleScroll}>
-                {content.hero_cta ?? 'Выбрать тариф'}
+              <ChatLauncher variant="secondary" size="xl">
+                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                {content.hero_cta ?? 'Начать диалог'}
+              </ChatLauncher>
+              <Button variant="outline" size="xl" onClick={handleScroll} className="bg-white/5 border-white/15 text-white hover:bg-white/10">
+                Посмотреть тарифы
                 <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
                   <path
                     fillRule="evenodd"
@@ -57,17 +64,6 @@ export function HeroSection({ content }: HeroSectionProps) {
                   />
                 </svg>
               </Button>
-              <a
-                href="https://t.me/Baqsysystembot"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl border border-white/15 bg-white/5 text-white font-semibold hover:bg-white/10 transition-colors backdrop-blur"
-              >
-                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M9.78 18.65l.28-4.23 7.68-6.92c.34-.31-.07-.46-.52-.19L7.74 13.3 3.64 12c-.88-.25-.89-.86.2-1.3l15.97-6.16c.73-.33 1.43.18 1.15 1.3l-2.72 12.81c-.19.91-.74 1.13-1.5.71L12.6 16.3l-1.99 1.93c-.23.23-.42.42-.83.42z" />
-                </svg>
-                Открыть бот
-              </a>
             </div>
 
             <dl className="mt-10 md:mt-12 grid grid-cols-3 gap-4 sm:gap-6 max-w-lg mx-auto lg:mx-0">

@@ -106,22 +106,6 @@ services:
       web:
         condition: service_healthy
 
-  bot:
-    build:
-      context: ../bot
-      dockerfile: Dockerfile
-    restart: unless-stopped
-    env_file: ../.env
-    volumes:
-      - ../bot:/app/bot
-    working_dir: /app
-    command: python -m bot.main
-    depends_on:
-      web:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-
 volumes:
   pg_data:
   redis_data:

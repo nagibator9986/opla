@@ -8,6 +8,7 @@ import { Badge } from '../components/ui/Badge'
 import { StatusProgress } from '../components/cabinet/StatusProgress'
 import { PdfDownloadButton } from '../components/cabinet/PdfDownloadButton'
 import { UpsellCard } from '../components/cabinet/UpsellCard'
+import { FloatingChatButton } from '../components/chat/ChatLauncher'
 import { useSubmission } from '../hooks/useSubmission'
 import { useAuthStore } from '../store/authStore'
 
@@ -97,7 +98,7 @@ export function CabinetPage() {
                   <div className="flex items-center justify-between gap-3 mb-3">
                     <div className="min-w-0">
                       <h3 className="text-base font-bold text-ink-900">Прогресс анкеты</h3>
-                      <p className="text-sm text-ink-500">Отвечайте в Telegram-боте</p>
+                      <p className="text-sm text-ink-500">Заполняется в диалоге с ассистентом</p>
                     </div>
                     <span className="text-2xl font-bold text-brand-600 tabular-nums flex-shrink-0">
                       {answered}<span className="text-ink-300">/</span>{total}
@@ -109,17 +110,9 @@ export function CabinetPage() {
                       style={{ width: `${pct}%` }}
                     />
                   </div>
-                  <a
-                    href="https://t.me/Baqsysystembot"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-brand-700 hover:text-brand-600 transition-colors"
-                  >
-                    Продолжить в Telegram
-                    <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" />
-                    </svg>
-                  </a>
+                  <p className="mt-5 text-sm text-ink-500">
+                    Откройте плавающий чат в правом нижнем углу и продолжите диалог — ассистент всё сохранит.
+                  </p>
                 </Card>
               )}
 
@@ -153,6 +146,7 @@ export function CabinetPage() {
         </Container>
       </main>
       <Footer />
+      <FloatingChatButton />
     </div>
   )
 }
@@ -207,8 +201,8 @@ function EmptyState() {
         Профиль создан. Осталось выбрать тариф.
       </h2>
       <p className="text-ink-600 mb-7 max-w-md mx-auto leading-relaxed">
-        После оплаты Telegram-бот пришлёт первый вопрос отраслевой анкеты.
-        Прохождение займёт 15–25 минут, можно прерывать и возвращаться.
+        После оплаты ассистент Baqsy AI задаст вам 27 отраслевых вопросов прямо в чате.
+        Можно прерывать и возвращаться — прогресс сохраняется.
       </p>
       <div className="flex flex-col sm:flex-row gap-3 justify-center">
         <Link to="/tariffs">
@@ -223,14 +217,6 @@ function EmptyState() {
             </svg>
           </Button>
         </Link>
-        <a href="https://t.me/Baqsysystembot" target="_blank" rel="noopener noreferrer">
-          <Button variant="outline" size="lg" fullWidth>
-            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M9.78 18.65l.28-4.23 7.68-6.92c.34-.31-.07-.46-.52-.19L7.74 13.3 3.64 12c-.88-.25-.89-.86.2-1.3l15.97-6.16c.73-.33 1.43.18 1.15 1.3l-2.72 12.81c-.19.91-.74 1.13-1.5.71L12.6 16.3l-1.99 1.93c-.23.23-.42.42-.83.42z" />
-            </svg>
-            Открыть бот
-          </Button>
-        </a>
       </div>
     </Card>
   )

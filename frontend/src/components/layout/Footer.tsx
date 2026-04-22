@@ -15,8 +15,7 @@ const sections = [
     title: 'Контакты',
     links: [
       { label: 'info@baqsy.kz', href: 'mailto:info@baqsy.kz' },
-      { label: 'Telegram-бот', href: 'https://t.me/Baqsysystembot', external: true },
-      { label: 'WhatsApp', href: 'https://wa.me/77000000000', external: true },
+      { label: 'WhatsApp', href: 'https://wa.me/77002259184', external: true },
     ],
   },
   {
@@ -36,7 +35,8 @@ export function Footer() {
           <div className="col-span-2 md:col-span-1">
             <Logo variant="light" />
             <p className="mt-4 text-sm text-ink-400 leading-relaxed max-w-xs">
-              Персональный бизнес-аудит для компаний Казахстана. Отчёт в Telegram и WhatsApp за 3–5 дней.
+              Персональный бизнес-аудит для компаний Казахстана.
+              Живой эксперт, именной PDF, доставка в WhatsApp за 3–5 дней.
             </p>
           </div>
 
@@ -68,18 +68,7 @@ export function Footer() {
             &copy; {new Date().getFullYear()} Baqsy System. Все права защищены.
           </p>
           <div className="flex items-center gap-4">
-            <a
-              href="https://t.me/Baqsysystembot"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-white/5 text-ink-300 hover:bg-white/10 hover:text-white transition-colors"
-              aria-label="Telegram"
-            >
-              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M9.78 18.65l.28-4.23 7.68-6.92c.34-.31-.07-.46-.52-.19L7.74 13.3 3.64 12c-.88-.25-.89-.86.2-1.3l15.97-6.16c.73-.33 1.43.18 1.15 1.3l-2.72 12.81c-.19.91-.74 1.13-1.5.71L12.6 16.3l-1.99 1.93c-.23.23-.42.42-.83.42z" />
-              </svg>
-            </a>
-            <span className="text-xs text-ink-500">Оплата через CloudPayments KZ</span>
+            <span className="text-xs text-ink-500">Оплата через CloudPayments KZ • Powered by OpenAI</span>
           </div>
         </div>
       </Container>

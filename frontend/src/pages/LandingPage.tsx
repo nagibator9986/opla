@@ -8,6 +8,7 @@ import { TrustSection } from '../components/landing/TrustSection'
 import { CasesSection } from '../components/landing/CasesSection'
 import { FaqSection } from '../components/landing/FaqSection'
 import { CtaFooter } from '../components/landing/CtaFooter'
+import { FloatingChatButton } from '../components/chat/ChatLauncher'
 
 export function LandingPage() {
   const { data: content } = useContentBlocks()
@@ -26,6 +27,7 @@ export function LandingPage() {
         <CtaFooter />
       </main>
       <Footer />
+      <FloatingChatButton />
     </div>
   )
 }

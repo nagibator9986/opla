@@ -64,8 +64,8 @@ export function TariffCard({ tariff, featured = false, submission, features, onS
     if (!isAuthenticated) {
       toast.show({
         kind: 'info',
-        title: 'Для оплаты нужен Telegram',
-        description: 'Начните диалог с ботом @Baqsysystembot, и мы выдадим ссылку в личный кабинет.',
+        title: 'Сначала заполните профиль',
+        description: 'Нажмите «Начать диалог» — ассистент Baqsy AI соберёт данные и откроет оплату.',
       })
       return
     }
@@ -74,7 +74,7 @@ export function TariffCard({ tariff, featured = false, submission, features, onS
       toast.show({
         kind: 'error',
         title: 'Оплата временно недоступна',
-        description: 'Платёжный модуль не настроен. Напишите нам в Telegram — мы поможем оформить заказ.',
+        description: 'Платёжный модуль настраивается. Напишите на info@baqsy.kz — оформим заказ вручную.',
       })
       return
     }
