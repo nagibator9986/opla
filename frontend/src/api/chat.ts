@@ -11,17 +11,40 @@ export interface ChatConfig {
   quick_replies: QuickReply[]
 }
 
+export type ChatMode = 'chat' | 'questionnaire'
+
+export interface QuestionPayload {
+  question_id: number
+  order: number
+  stage: string
+  text: string
+  field_type: 'text' | 'longtext' | 'number' | 'choice' | 'multichoice' | 'url'
+  placeholder: string
+  choices: string[]
+  progress: { done: number; total: number }
+}
+
 export interface ChatStartResponse {
   session_id: string
   greeting: string
   quick_replies: QuickReply[]
+  mode: ChatMode
 }
 
 export interface AssistantReply {
-  id: number
+  id?: number
   role: 'assistant'
   content: string
-  created_at: string
+  created_at?: string
+}
+
+export interface ChatMessageResponse {
+  reply: AssistantReply
+  mode?: ChatMode
+  completed?: boolean
+  validation_error?: string
+  next_question?: QuestionPayload | null
+  user_message_id?: number
 }
 
 export interface CollectedData {
@@ -35,7 +58,7 @@ export interface CollectedData {
 
 export interface ChatSessionState {
   id: string
-  status: 'active' | 'qualified' | 'paid' | 'abandoned'
+  status: string
   collected_data: CollectedData
 }
 
@@ -44,6 +67,14 @@ export interface AuthTokens {
   refresh: string
   client_profile_id: number
   name: string
+}
+
+export interface StartQuestionnaireResponse {
+  session_id: string
+  intro: string
+  mode: ChatMode
+  submission_id: string
+  next_question: QuestionPayload | null
 }
 
 export async function getChatConfig(): Promise<ChatConfig> {
@@ -58,11 +89,11 @@ export async function startChat(): Promise<ChatStartResponse> {
 
 export async function sendMessage(
   sessionId: string,
-  content: string,
-): Promise<{ reply: AssistantReply }> {
-  const { data } = await api.post<{ reply: AssistantReply }>('/chat/message/', {
+  content: string | string[],
+): Promise<ChatMessageResponse> {
+  const { data } = await api.post<ChatMessageResponse>('/chat/message/', {
     session_id: sessionId,
-    content,
+    content: Array.isArray(content) ? content.join(', ') : content,
   })
   return data
 }
@@ -81,6 +112,17 @@ export async function collectProfile(
 export async function exchangeForTokens(sessionId: string): Promise<AuthTokens> {
   const { data } = await api.post<AuthTokens>('/chat/auth-token/', {
     session_id: sessionId,
+  })
+  return data
+}
+
+export async function startQuestionnaire(
+  sessionId: string,
+  submissionId: string,
+): Promise<StartQuestionnaireResponse> {
+  const { data } = await api.post<StartQuestionnaireResponse>('/chat/start-questionnaire/', {
+    session_id: sessionId,
+    submission_id: submissionId,
   })
   return data
 }

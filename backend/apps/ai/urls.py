@@ -6,6 +6,7 @@ from apps.ai.views import (
     ChatCollectView,
     ChatMessageView,
     ChatStartView,
+    StartQuestionnaireView,
 )
 
 urlpatterns = [
@@ -14,4 +15,5 @@ urlpatterns = [
     path("message/", ChatMessageView.as_view(), name="chat-message"),
     path("collect/", ChatCollectView.as_view(), name="chat-collect"),
     path("auth-token/", ChatAuthTokenView.as_view(), name="chat-auth-token"),
+    path("start-questionnaire/", StartQuestionnaireView.as_view(), name="chat-start-questionnaire"),
 ]

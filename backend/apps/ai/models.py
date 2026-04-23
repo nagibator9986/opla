@@ -100,7 +100,13 @@ class ChatSession(TimestampedModel):
         ACTIVE = "active", "Идёт диалог"
         QUALIFIED = "qualified", "Готов к оплате"
         PAID = "paid", "Оплачено"
+        QUESTIONNAIRE = "questionnaire", "Проходит анкету"
+        COMPLETED = "completed", "Анкета завершена"
         ABANDONED = "abandoned", "Заброшен"
+
+    class Mode(models.TextChoices):
+        CHAT = "chat", "Свободный диалог с AI"
+        QUESTIONNAIRE = "questionnaire", "Анкета (по одному вопросу)"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     client = models.ForeignKey(
@@ -109,6 +115,18 @@ class ChatSession(TimestampedModel):
         null=True,
         blank=True,
         related_name="chat_sessions",
+    )
+    submission = models.ForeignKey(
+        "submissions.Submission",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="chat_sessions",
+        help_text="Привязанная заявка — появляется после оплаты и запуска анкеты.",
+    )
+    mode = models.CharField(
+        max_length=20, choices=Mode.choices, default=Mode.CHAT,
+        help_text="Режим чата: свободный диалог или пошаговая анкета.",
     )
     collected_data = models.JSONField(
         default=dict,

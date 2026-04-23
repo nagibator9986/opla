@@ -8,20 +8,22 @@ import {
   getChatConfig,
   sendMessage,
   startChat,
+  startQuestionnaire,
   type CollectedData,
+  type QuestionPayload,
   type QuickReply,
 } from '../../api/chat'
 import { cn } from '../../lib/cn'
 import { useAuthStore } from '../../store/authStore'
 import { useToast } from '../ui/toast-context'
 
-type ChatMessage =
-  | { id: string; role: 'assistant' | 'user'; content: string }
-  | { id: string; role: 'assistant'; content: string; quickReplies: QuickReply[] }
+type ChatMsg = { id: string; role: 'assistant' | 'user'; content: string }
 
 interface ChatWidgetProps {
   open: boolean
   onClose: () => void
+  /** If set, widget auto-starts the questionnaire for this submission. */
+  autoStartQuestionnaireFor?: { sessionId: string; submissionId: string } | null
 }
 
 const STORAGE_KEY = 'baqsy_chat_session_id'
@@ -30,7 +32,6 @@ function saveSessionId(id: string | null) {
   if (id) localStorage.setItem(STORAGE_KEY, id)
   else localStorage.removeItem(STORAGE_KEY)
 }
-
 function loadSessionId(): string | null {
   try {
     return localStorage.getItem(STORAGE_KEY)
@@ -39,13 +40,15 @@ function loadSessionId(): string | null {
   }
 }
 
-export function ChatWidget({ open, onClose }: ChatWidgetProps) {
+export function ChatWidget({ open, onClose, autoStartQuestionnaireFor }: ChatWidgetProps) {
   const navigate = useNavigate()
   const setAuth = useAuthStore((s) => s.setAuth)
   const toast = useToast()
   const [sessionId, setSessionId] = useState<string | null>(loadSessionId())
-  const [messages, setMessages] = useState<ChatMessage[]>([])
+  const [messages, setMessages] = useState<ChatMsg[]>([])
   const [quickReplies, setQuickReplies] = useState<QuickReply[]>([])
+  const [currentQuestion, setCurrentQuestion] = useState<QuestionPayload | null>(null)
+  const [multichoicePicked, setMultichoicePicked] = useState<string[]>([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [formVisible, setFormVisible] = useState(false)
@@ -57,14 +60,17 @@ export function ChatWidget({ open, onClose }: ChatWidgetProps) {
     return `${prefix}-${nextIdRef.current}`
   }
 
-  // Pull config for assistant name
   const { data: config } = useQuery({
     queryKey: ['chat-config'],
     queryFn: getChatConfig,
     staleTime: 5 * 60 * 1000,
   })
 
-  // Initialize a chat session the first time the widget opens
+  const pushAssistant = (content: string) => {
+    setMessages((prev) => [...prev, { id: nextId('a'), role: 'assistant', content }])
+  }
+
+  // Bootstrap — start session if needed
   useEffect(() => {
     if (!open || sessionId !== null) return
     let cancelled = false
@@ -74,36 +80,59 @@ export function ChatWidget({ open, onClose }: ChatWidgetProps) {
         if (cancelled) return
         setSessionId(resp.session_id)
         saveSessionId(resp.session_id)
-        setMessages([
-          {
-            id: nextId('greet'),
-            role: 'assistant',
-            content: resp.greeting,
-          },
-        ])
+        setMessages([{ id: nextId('greet'), role: 'assistant', content: resp.greeting }])
         setQuickReplies(resp.quick_replies)
       } catch (err) {
         console.error(err)
         toast.show({
           kind: 'error',
           title: 'Не удалось открыть чат',
-          description: 'Попробуйте перезагрузить страницу или написать info@baqsy.kz',
+          description: 'Попробуйте перезагрузить страницу или напишите info@baqsy.kz',
         })
       }
     })()
     return () => {
       cancelled = true
     }
-  }, [open, sessionId, toast])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, sessionId])
 
-  // Auto-scroll messages
+  // Auto-start questionnaire
   useEffect(() => {
-    if (listRef.current) {
-      listRef.current.scrollTop = listRef.current.scrollHeight
+    if (!open || !autoStartQuestionnaireFor || !sessionId) return
+    if (autoStartQuestionnaireFor.sessionId !== sessionId) return
+    let cancelled = false
+    ;(async () => {
+      setLoading(true)
+      try {
+        const resp = await startQuestionnaire(
+          autoStartQuestionnaireFor.sessionId,
+          autoStartQuestionnaireFor.submissionId,
+        )
+        if (cancelled) return
+        pushAssistant(resp.intro)
+        setQuickReplies([])
+        if (resp.next_question) {
+          pushAssistant(prefixStage(resp.next_question))
+          setCurrentQuestion(resp.next_question)
+        }
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : 'Не удалось начать анкету.'
+        toast.show({ kind: 'error', title: 'Ошибка', description: msg })
+      } finally {
+        setLoading(false)
+      }
+    })()
+    return () => {
+      cancelled = true
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, sessionId, autoStartQuestionnaireFor])
+
+  useEffect(() => {
+    if (listRef.current) listRef.current.scrollTop = listRef.current.scrollHeight
   }, [messages, loading])
 
-  // Esc closes
   useEffect(() => {
     if (!open) return
     const onKey = (e: KeyboardEvent) => {
@@ -113,33 +142,29 @@ export function ChatWidget({ open, onClose }: ChatWidgetProps) {
     return () => window.removeEventListener('keydown', onKey)
   }, [open, onClose])
 
-  const pushUser = (text: string): string => {
-    const id = nextId('u')
-    setMessages((prev) => [...prev, { id, role: 'user', content: text }])
-    return id
-  }
-  const pushAssistant = (content: string) => {
-    setMessages((prev) => [
-      ...prev,
-      { id: nextId('a'), role: 'assistant', content },
-    ])
+  const pushUser = (text: string) => {
+    setMessages((prev) => [...prev, { id: nextId('u'), role: 'user', content: text }])
   }
 
-  const handleSend = async (text: string) => {
-    const trimmed = text.trim()
-    if (!trimmed || !sessionId || loading) return
-    pushUser(trimmed)
+  const sendContent = async (content: string | string[]) => {
+    if (!sessionId || loading) return
+    const display = Array.isArray(content) ? content.join(', ') : content
+    if (!display.trim()) return
+    pushUser(display)
     setInput('')
     setQuickReplies([])
+    setMultichoicePicked([])
     setLoading(true)
     try {
-      const resp = await sendMessage(sessionId, trimmed)
-      pushAssistant(resp.reply.content)
+      const resp = await sendMessage(sessionId, content)
+      if (resp.reply?.content) pushAssistant(resp.reply.content)
+      if (resp.next_question) {
+        setCurrentQuestion(resp.next_question)
+      } else if (resp.completed) {
+        setCurrentQuestion(null)
+      }
     } catch (err) {
-      const message =
-        err instanceof Error
-          ? err.message
-          : 'AI-ассистент временно недоступен.'
+      const message = err instanceof Error ? err.message : 'AI-ассистент временно недоступен.'
       pushAssistant(message)
     } finally {
       setLoading(false)
@@ -147,7 +172,7 @@ export function ChatWidget({ open, onClose }: ChatWidgetProps) {
   }
 
   const handleQuickReply = (qr: QuickReply) => {
-    handleSend(qr.payload)
+    sendContent(qr.payload)
   }
 
   const handleFormSubmit = async (e: React.FormEvent) => {
@@ -168,16 +193,14 @@ export function ChatWidget({ open, onClose }: ChatWidgetProps) {
         `Спасибо, ${session.collected_data.name}! Профиль создан. Сейчас я выдам ссылку для оплаты.`,
       )
       setFormVisible(false)
-
-      // If we have a client linked — issue JWT and go to /tariffs as authed user
       try {
         const tokens = await exchangeForTokens(sessionId)
-        setAuth({ id: tokens.client_profile_id, name: tokens.name }, tokens.access, tokens.refresh)
-        toast.show({
-          kind: 'success',
-          title: 'Профиль создан',
-          description: 'Выбираем тариф…',
-        })
+        setAuth(
+          { id: tokens.client_profile_id, name: tokens.name },
+          tokens.access,
+          tokens.refresh,
+        )
+        toast.show({ kind: 'success', title: 'Профиль создан', description: 'Выбираем тариф…' })
         navigate('/tariffs')
         onClose()
       } catch (err) {
@@ -192,6 +215,11 @@ export function ChatWidget({ open, onClose }: ChatWidgetProps) {
   }
 
   if (!open) return null
+
+  const isQuestionnaireMode = currentQuestion !== null
+  const progress = currentQuestion?.progress
+  const progressPct =
+    progress && progress.total > 0 ? Math.round(((progress.done + 1) / progress.total) * 100) : 0
 
   return (
     <div
@@ -214,7 +242,9 @@ export function ChatWidget({ open, onClose }: ChatWidgetProps) {
             </span>
             <div>
               <p className="text-sm font-semibold">{config?.name ?? 'Baqsy AI'}</p>
-              <p className="text-xs text-ink-300">Онлайн • отвечает мгновенно</p>
+              <p className="text-xs text-ink-300">
+                {isQuestionnaireMode ? 'Анкета Digital Baqsylyq' : 'Онлайн • отвечает мгновенно'}
+              </p>
             </div>
           </div>
           <button
@@ -228,11 +258,24 @@ export function ChatWidget({ open, onClose }: ChatWidgetProps) {
           </button>
         </header>
 
-        {/* Messages */}
-        <div
-          ref={listRef}
-          className="flex-1 overflow-y-auto px-4 py-5 space-y-3 bg-ink-50/40"
-        >
+        {isQuestionnaireMode && progress && (
+          <div className="flex-shrink-0 px-5 py-2 bg-ink-50 border-b border-ink-100">
+            <div className="flex justify-between text-[11px] font-semibold text-ink-600 uppercase tracking-wide mb-1">
+              <span className="truncate pr-2">{currentQuestion?.stage || 'Вопрос'}</span>
+              <span className="tabular-nums flex-shrink-0">
+                {progress.done + 1} / {progress.total}
+              </span>
+            </div>
+            <div className="h-1.5 rounded-full bg-ink-200 overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-brand-400 to-brand-600 rounded-full transition-all duration-500"
+                style={{ width: `${progressPct}%` }}
+              />
+            </div>
+          </div>
+        )}
+
+        <div ref={listRef} className="flex-1 overflow-y-auto px-4 py-5 space-y-3 bg-ink-50/40">
           {messages.map((m) => (
             <MessageBubble key={m.id} role={m.role}>
               {m.content}
@@ -245,8 +288,7 @@ export function ChatWidget({ open, onClose }: ChatWidgetProps) {
           )}
         </div>
 
-        {/* Quick replies — shown under greeting, cleared after first message */}
-        {!formVisible && quickReplies.length > 0 && (
+        {!formVisible && !isQuestionnaireMode && quickReplies.length > 0 && (
           <div className="flex-shrink-0 px-4 py-2 flex flex-wrap gap-2 bg-white border-t border-ink-100">
             {quickReplies.map((qr) => (
               <button
@@ -260,8 +302,16 @@ export function ChatWidget({ open, onClose }: ChatWidgetProps) {
           </div>
         )}
 
-        {/* Input area OR profile form */}
-        {formVisible ? (
+        {isQuestionnaireMode && currentQuestion && !loading && (
+          <QuestionnaireInput
+            question={currentQuestion}
+            multichoicePicked={multichoicePicked}
+            onMultichoiceChange={setMultichoicePicked}
+            onSubmit={sendContent}
+          />
+        )}
+
+        {!isQuestionnaireMode && formVisible && (
           <form
             onSubmit={handleFormSubmit}
             className="flex-shrink-0 p-4 border-t border-ink-100 bg-white space-y-3"
@@ -290,7 +340,9 @@ export function ChatWidget({ open, onClose }: ChatWidgetProps) {
               </button>
             </div>
           </form>
-        ) : (
+        )}
+
+        {!isQuestionnaireMode && !formVisible && (
           <>
             <div className="flex-shrink-0 px-4 pt-3 pb-1 bg-white border-t border-ink-100">
               <button
@@ -306,7 +358,7 @@ export function ChatWidget({ open, onClose }: ChatWidgetProps) {
             <form
               onSubmit={(e) => {
                 e.preventDefault()
-                handleSend(input)
+                sendContent(input)
               }}
               className="flex-shrink-0 flex gap-2 p-3 bg-white border-t border-ink-100"
             >
@@ -333,6 +385,135 @@ export function ChatWidget({ open, onClose }: ChatWidgetProps) {
         )}
       </div>
     </div>
+  )
+}
+
+function prefixStage(q: QuestionPayload): string {
+  return q.stage ? `[${q.stage}] ${q.text}` : q.text
+}
+
+function QuestionnaireInput({
+  question,
+  multichoicePicked,
+  onMultichoiceChange,
+  onSubmit,
+}: {
+  question: QuestionPayload
+  multichoicePicked: string[]
+  onMultichoiceChange: (v: string[]) => void
+  onSubmit: (content: string | string[]) => void
+}) {
+  const [text, setText] = useState('')
+
+  // Reset local text when question changes — canonical useEffect use case:
+  // syncing UI state with an external identity change.
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setText('')
+    onMultichoiceChange([])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [question.question_id])
+
+  const ft = question.field_type
+
+  if (ft === 'choice') {
+    return (
+      <div className="flex-shrink-0 p-3 bg-white border-t border-ink-100 flex flex-wrap gap-2">
+        {question.choices.map((c) => (
+          <button
+            key={c}
+            onClick={() => onSubmit(c)}
+            className="px-4 py-2.5 rounded-xl text-sm font-semibold bg-gradient-to-b from-brand-400 to-brand-500 text-ink-950 shadow-sm hover:from-brand-300 hover:to-brand-400 transition-colors"
+          >
+            {c}
+          </button>
+        ))}
+      </div>
+    )
+  }
+
+  if (ft === 'multichoice') {
+    const toggle = (c: string) => {
+      onMultichoiceChange(
+        multichoicePicked.includes(c)
+          ? multichoicePicked.filter((x) => x !== c)
+          : [...multichoicePicked, c],
+      )
+    }
+    return (
+      <div className="flex-shrink-0 p-3 bg-white border-t border-ink-100 space-y-2">
+        <div className="flex flex-wrap gap-2">
+          {question.choices.map((c) => {
+            const picked = multichoicePicked.includes(c)
+            return (
+              <button
+                key={c}
+                type="button"
+                onClick={() => toggle(c)}
+                className={cn(
+                  'px-3 py-2 rounded-xl text-sm font-semibold transition-colors',
+                  picked
+                    ? 'bg-brand-500 text-white'
+                    : 'bg-ink-100 text-ink-700 hover:bg-ink-200',
+                )}
+              >
+                {picked ? '✓ ' : ''}
+                {c}
+              </button>
+            )
+          })}
+        </div>
+        <button
+          type="button"
+          disabled={multichoicePicked.length === 0}
+          onClick={() => onSubmit(multichoicePicked)}
+          className="w-full px-4 py-2.5 rounded-xl bg-ink-900 text-white text-sm font-semibold hover:bg-ink-800 disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          Ответить ({multichoicePicked.length} выбрано)
+        </button>
+      </div>
+    )
+  }
+
+  const multiline = ft === 'longtext'
+  const inputType = ft === 'number' ? 'number' : ft === 'url' ? 'url' : 'text'
+
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault()
+        if (text.trim()) onSubmit(text.trim())
+      }}
+      className="flex-shrink-0 flex gap-2 p-3 bg-white border-t border-ink-100"
+    >
+      {multiline ? (
+        <textarea
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          placeholder={question.placeholder || 'Ваш ответ…'}
+          rows={3}
+          className="flex-1 px-4 py-2.5 rounded-xl border border-ink-200 text-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-200 resize-none"
+        />
+      ) : (
+        <input
+          type={inputType}
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          placeholder={question.placeholder || 'Ваш ответ…'}
+          className="flex-1 px-4 py-2.5 rounded-xl border border-ink-200 text-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-200"
+        />
+      )}
+      <button
+        type="submit"
+        disabled={!text.trim()}
+        className="inline-flex items-center justify-center w-11 h-11 rounded-xl bg-ink-900 text-white hover:bg-ink-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors self-end"
+        aria-label="Ответить"
+      >
+        <svg className="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
+          <path d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" />
+        </svg>
+      </button>
+    </form>
   )
 }
 
