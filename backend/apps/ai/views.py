@@ -348,7 +348,10 @@ def _freeform_chat(session: ChatSession, user_content: str):
             messages=messages,
         )
     except RuntimeError as exc:
-        return Response({"detail": str(exc)}, status=502)
+        # 503 = service unavailable. Used when OpenAI isn't configured, SDK not
+        # installed, or OpenAI returned an error. The message in `exc` is already
+        # a user-facing Russian string set in apps/ai/services.py.
+        return Response({"detail": str(exc)}, status=503)
 
     reply_msg = ChatMessage.objects.create(
         session=session,

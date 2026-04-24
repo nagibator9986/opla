@@ -27,6 +27,14 @@ COPY pyproject.toml ./
 # poetry.lock is optional on first build; Poetry will generate + install
 RUN poetry install --no-root --only main
 
+# Belt-and-suspenders: install critical newer deps with pip so we don't rely on
+# Poetry's resolver inside the cache layer. openai 1.50 (what pyproject used to
+# pin) is incompatible with httpx 0.28+ (drops `proxies` kwarg) — use 1.60+.
+# Pillow is needed for Django ImageField (Case.logo, Case.cover_image).
+RUN /opt/pysetup/.venv/bin/pip install --no-cache-dir \
+    "openai>=1.60,<3" \
+    "Pillow>=10.4"
+
 ## Stage 2: runtime — slim image with WeasyPrint system libs + Cyrillic fonts
 FROM python:3.12-slim AS runtime
 
