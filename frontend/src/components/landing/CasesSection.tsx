@@ -3,7 +3,10 @@ import { useQuery } from '@tanstack/react-query'
 
 import { Container, Section } from '../ui/Container'
 import { Badge } from '../ui/Badge'
+import { ChatLauncher } from '../chat/ChatLauncher'
 import { listCases, type CaseSummary } from '../../api/cases'
+import { useAuthStore } from '../../store/authStore'
+import { cn } from '../../lib/cn'
 
 interface CasesSectionProps {
   content: Record<string, string>
@@ -19,6 +22,7 @@ const ACCENT_GRADIENT: Record<CaseSummary['accent'], string> = {
 }
 
 export function CasesSection({ content }: CasesSectionProps) {
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
   const { data: cases, isLoading } = useQuery({
     queryKey: ['cases'],
     queryFn: listCases,
@@ -29,82 +33,148 @@ export function CasesSection({ content }: CasesSectionProps) {
     <Section id="cases" background="ink-50">
       <Container>
         <div className="max-w-2xl mx-auto text-center mb-12 md:mb-16">
-          <Badge variant="neutral" className="mb-4">Кейсы</Badge>
+          <Badge variant="neutral" className="mb-4">
+            Кейсы мировых компаний
+          </Badge>
           <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-ink-900 tracking-tight">
-            {content.cases_title ?? 'Результаты наших клиентов'}
+            {content.cases_title ?? 'Разборы по Коду Вечного Иля'}
           </h2>
           <p className="mt-4 text-base md:text-lg text-ink-600 leading-relaxed">
-            Реальные цифры из реальных компаний. Некоторые имена скрыты по запросу клиентов.
+            Примеры применения метода Baqsy на известных компаниях. Полный
+            доступ открывается{' '}
+            <span className="font-semibold text-ink-900">
+              после заполнения базового профиля в чате
+            </span>
+            .
           </p>
         </div>
 
-        {isLoading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
-            <CaseSkeleton />
-            <CaseSkeleton />
-          </div>
-        ) : (cases ?? []).length === 0 ? (
-          <p className="text-center text-ink-500">
-            Кейсы появятся совсем скоро — мы готовим первые публикации.
-          </p>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
-            {cases!.map((c) => (
-              <Link
-                key={c.slug}
-                to={`/cases/${c.slug}`}
-                className="group relative overflow-hidden bg-white rounded-2xl p-7 md:p-8 border border-ink-200/70 shadow-[0_1px_2px_rgb(15_23_42_/_0.04)] hover:shadow-[0_10px_30px_rgb(15_23_42_/_0.1)] hover:-translate-y-1 transition-all duration-300 flex flex-col"
-              >
-                <div
-                  aria-hidden
-                  className={`absolute -top-24 -right-24 w-48 h-48 rounded-full bg-gradient-to-br ${ACCENT_GRADIENT[c.accent]} opacity-10 group-hover:opacity-20 transition-opacity blur-2xl`}
-                />
-                <div className="relative flex flex-col flex-1">
-                  <div className="flex items-center justify-between mb-5">
-                    {c.logo_url ? (
-                      <img
-                        src={c.logo_url}
-                        alt={c.company_name || c.title}
-                        className="max-h-9 max-w-[120px] object-contain"
-                      />
-                    ) : (
-                      <Badge variant="neutral" size="sm">
-                        {c.industry || '—'}
-                      </Badge>
-                    )}
-                    <svg className="w-8 h-8 text-ink-200" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M3 21c3 0 7-1 7-8V5c0-1.25-.76-2.02-2-2H4c-1.25 0-2 .75-2 2v4c0 1.25.75 2 2 2h2s.73 2.66-2.66 4c-.48.15-.35.85.66.85zm14 0c3 0 7-1 7-8V5c0-1.25-.76-2.02-2-2h-4c-1.25 0-2 .75-2 2v4c0 1.25.75 2 2 2h2s.73 2.66-2.66 4c-.48.15-.35.85.66.85z" />
-                    </svg>
-                  </div>
-                  <h3 className="text-xl md:text-2xl font-bold text-ink-900 mb-3">{c.title}</h3>
-                  <p className="text-ink-600 leading-relaxed mb-6 flex-1">
-                    {c.short_text || c.subtitle}
-                  </p>
-                  {(c.metric || c.metric_label) && (
-                    <div className="flex items-end gap-3 pt-5 border-t border-ink-100">
-                      {c.metric && (
-                        <span
-                          className={`text-4xl md:text-5xl font-bold bg-gradient-to-br ${ACCENT_GRADIENT[c.accent]} bg-clip-text text-transparent leading-none`}
-                        >
-                          {c.metric}
-                        </span>
+        <div className="relative">
+          {isLoading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
+              <CaseSkeleton />
+              <CaseSkeleton />
+            </div>
+          ) : (cases ?? []).length === 0 ? (
+            <p className="text-center text-ink-500">
+              Кейсы появятся совсем скоро — мы готовим первые публикации.
+            </p>
+          ) : (
+            <div
+              className={cn(
+                'grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 transition-all duration-300',
+                !isAuthenticated && 'pointer-events-none select-none',
+              )}
+              aria-hidden={!isAuthenticated}
+            >
+              {cases!.map((c) => (
+                <article
+                  key={c.slug}
+                  className="group relative overflow-hidden bg-white rounded-2xl p-7 md:p-8 border border-ink-200/70 shadow-[0_1px_2px_rgb(15_23_42_/_0.04)]"
+                >
+                  <div
+                    aria-hidden
+                    className={`absolute -top-24 -right-24 w-48 h-48 rounded-full bg-gradient-to-br ${ACCENT_GRADIENT[c.accent]} opacity-10 blur-2xl`}
+                  />
+                  <div className="relative">
+                    <div className="flex items-center justify-between mb-5">
+                      {c.logo_url ? (
+                        <img
+                          src={c.logo_url}
+                          alt={c.company_name || c.title}
+                          className={cn(
+                            'max-h-9 max-w-[120px] object-contain',
+                            !isAuthenticated && 'blur-md',
+                          )}
+                        />
+                      ) : (
+                        <Badge variant="neutral" size="sm">
+                          {c.industry || '—'}
+                        </Badge>
                       )}
-                      {c.metric_label && (
-                        <span className="text-sm text-ink-500 mb-1">{c.metric_label}</span>
-                      )}
-                      <span className="ml-auto inline-flex items-center gap-1 text-sm font-semibold text-brand-700 group-hover:text-brand-600 mb-0.5">
-                        Подробнее
-                        <svg className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" viewBox="0 0 20 20" fill="currentColor">
-                          <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" />
-                        </svg>
-                      </span>
+                      <svg
+                        className="w-8 h-8 text-ink-200"
+                        viewBox="0 0 24 24"
+                        fill="currentColor"
+                      >
+                        <path d="M3 21c3 0 7-1 7-8V5c0-1.25-.76-2.02-2-2H4c-1.25 0-2 .75-2 2v4c0 1.25.75 2 2 2h2s.73 2.66-2.66 4c-.48.15-.35.85.66.85zm14 0c3 0 7-1 7-8V5c0-1.25-.76-2.02-2-2h-4c-1.25 0-2 .75-2 2v4c0 1.25.75 2 2 2h2s.73 2.66-2.66 4c-.48.15-.35.85.66.85z" />
+                      </svg>
                     </div>
+                    <h3
+                      className={cn(
+                        'text-xl md:text-2xl font-bold text-ink-900 mb-3',
+                        !isAuthenticated && 'blur-sm',
+                      )}
+                    >
+                      {c.title}
+                    </h3>
+                    <p
+                      className={cn(
+                        'text-ink-600 leading-relaxed mb-6',
+                        !isAuthenticated && 'blur-sm',
+                      )}
+                    >
+                      {c.short_text || c.subtitle}
+                    </p>
+                    {(c.metric || c.metric_label) && (
+                      <div className="flex items-end gap-3 pt-5 border-t border-ink-100">
+                        {c.metric && (
+                          <span
+                            className={`text-4xl md:text-5xl font-bold bg-gradient-to-br ${ACCENT_GRADIENT[c.accent]} bg-clip-text text-transparent leading-none ${!isAuthenticated ? 'blur-sm' : ''}`}
+                          >
+                            {c.metric}
+                          </span>
+                        )}
+                        {c.metric_label && (
+                          <span
+                            className={cn(
+                              'text-sm text-ink-500 mb-1',
+                              !isAuthenticated && 'blur-sm',
+                            )}
+                          >
+                            {c.metric_label}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  {isAuthenticated && (
+                    <Link
+                      to={`/cases/${c.slug}`}
+                      className="absolute inset-0"
+                      aria-label={`Открыть кейс ${c.title}`}
+                    />
                   )}
+                </article>
+              ))}
+            </div>
+          )}
+
+          {/* Lock overlay when not authenticated */}
+          {!isAuthenticated && (cases ?? []).length > 0 && (
+            <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-b from-ink-50/40 via-ink-50/80 to-ink-50 backdrop-blur-[2px] rounded-2xl">
+              <div className="bg-white rounded-2xl shadow-xl border border-ink-200 p-7 md:p-8 max-w-md text-center">
+                <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-brand-100 text-brand-700 mb-4">
+                  <svg className="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <rect x="3" y="11" width="18" height="11" rx="2" strokeLinecap="round" strokeLinejoin="round" />
+                    <path d="M7 11V7a5 5 0 0110 0v4" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
                 </div>
-              </Link>
-            ))}
-          </div>
-        )}
+                <h3 className="text-xl font-bold text-ink-900 mb-2">
+                  Кейсы открываются после регистрации
+                </h3>
+                <p className="text-sm text-ink-600 mb-6 leading-relaxed">
+                  Откройте чат и заполните паспорт компании — это блок 1 анкеты,
+                  занимает 2 минуты. После этого вы получите доступ к разбору
+                  мировых компаний.
+                </p>
+                <ChatLauncher variant="primary" size="lg">
+                  Открыть Baqsy AI
+                </ChatLauncher>
+              </div>
+            </div>
+          )}
+        </div>
       </Container>
     </Section>
   )

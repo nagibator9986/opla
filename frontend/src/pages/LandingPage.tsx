@@ -2,13 +2,11 @@ import { useContentBlocks } from '../hooks/useContentBlocks'
 import { Header } from '../components/layout/Header'
 import { Footer } from '../components/layout/Footer'
 import { HeroSection } from '../components/landing/HeroSection'
-import { MethodSection } from '../components/landing/MethodSection'
-import { TariffsSection } from '../components/landing/TariffsSection'
-import { TrustSection } from '../components/landing/TrustSection'
+import { PackagesSection } from '../components/landing/PackagesSection'
+import { BlogSection } from '../components/landing/BlogSection'
 import { CasesSection } from '../components/landing/CasesSection'
 import { FaqSection } from '../components/landing/FaqSection'
-import { CtaFooter } from '../components/landing/CtaFooter'
-import { FloatingChatButton } from '../components/chat/ChatLauncher'
+import { DockedChatPanel } from '../components/chat/ChatLauncher'
 
 export function LandingPage() {
   const { data: content } = useContentBlocks()
@@ -19,15 +17,13 @@ export function LandingPage() {
       <Header variant="transparent" />
       <main className="flex-1">
         <HeroSection content={c} />
-        <MethodSection content={c} />
-        <TariffsSection content={c} />
-        <TrustSection />
+        <PackagesSection content={c} />
+        <BlogSection />
         <CasesSection content={c} />
         <FaqSection content={c} />
-        <CtaFooter />
       </main>
       <Footer />
-      <FloatingChatButton />
+      <DockedChatPanel />
     </div>
   )
 }

@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     "apps.dashboard",
     "apps.ai",
     "apps.cases",
+    "apps.blog",
 ]
 
 MIDDLEWARE = [
@@ -259,6 +260,11 @@ UNFOLD = {
                         "icon": "auto_stories",
                         "link": reverse_lazy("admin:cases_case_changelist"),
                     },
+                    {
+                        "title": _("Блог · Глоссарий"),
+                        "icon": "article",
+                        "link": reverse_lazy("admin:blog_blogpost_changelist"),
+                    },
                 ],
             },
             {
@@ -312,6 +318,24 @@ UNFOLD = {
 
 # OpenAI — used by apps.ai for the landing chat widget
 OPENAI_API_KEY = env("OPENAI_API_KEY", default="")
+
+# Email — used by group-audit invitations (apps/submissions/group_invites.py).
+# Falls back to console backend in DEBUG so dev environments don't try to talk
+# to a real SMTP server.
+EMAIL_BACKEND = env(
+    "EMAIL_BACKEND",
+    default="django.core.mail.backends.console.EmailBackend"
+    if DEBUG
+    else "django.core.mail.backends.smtp.EmailBackend",
+)
+EMAIL_HOST = env("EMAIL_HOST", default="")
+EMAIL_PORT = env.int("EMAIL_PORT", default=587)
+EMAIL_HOST_USER = env("EMAIL_HOST_USER", default="")
+EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD", default="")
+EMAIL_USE_TLS = env.bool("EMAIL_USE_TLS", default=True)
+EMAIL_USE_SSL = env.bool("EMAIL_USE_SSL", default=False)
+DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="noreply@baqsy.kz")
+EMAIL_TIMEOUT = 15
 
 # CKEditor 5
 CKEDITOR_5_CONFIGS = {
