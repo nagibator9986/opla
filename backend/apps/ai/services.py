@@ -80,16 +80,55 @@ def chat_completion(
         )
     except Exception as exc:  # SDK exceptions subclass OpenAIError
         log.exception("OpenAI chat.completions failed")
-        raise RuntimeError(
-            "AI-ассистент сейчас не отвечает. Попробуйте через минуту или "
-            "напишите нам на info@baqsy.kz."
-        ) from exc
+        # Map common OpenAI failure modes to user-readable messages so the
+        # operator can fix the right thing without grepping logs.
+        msg = _describe_openai_error(exc)
+        raise RuntimeError(msg) from exc
 
     choice = resp.choices[0] if resp.choices else None
     text = (choice.message.content or "").strip() if choice else ""
     usage = getattr(resp, "usage", None)
     tokens = getattr(usage, "total_tokens", None) if usage else None
     return text, tokens
+
+
+def _describe_openai_error(exc: Exception) -> str:
+    """Return a user-facing message for an OpenAI SDK exception.
+
+    The OpenAI Python SDK raises typed exceptions: ``RateLimitError`` (429),
+    ``AuthenticationError`` (401), ``BadRequestError`` (400),
+    ``APIConnectionError``, etc. We classify them so the operator sees
+    *what* needs fixing, not just «service down».
+    """
+    cls = type(exc).__name__
+    body = str(exc)
+    body_lower = body.lower()
+
+    if "insufficient_quota" in body_lower or "you exceeded your current quota" in body_lower:
+        return (
+            "AI-ассистент временно остановлен: исчерпан баланс OpenAI на "
+            "стороне сервиса. Администратор уже уведомлён. Напишите на "
+            "info@baqsy.kz — ответим лично, ваш диалог не потеряется."
+        )
+    if cls == "RateLimitError" or "rate limit" in body_lower:
+        return (
+            "Слишком много запросов в минуту. Попробуйте ещё раз через "
+            "10–15 секунд."
+        )
+    if cls == "AuthenticationError" or "invalid api key" in body_lower or "incorrect api key" in body_lower:
+        return (
+            "AI-ассистент в режиме обслуживания: ключ доступа OpenAI "
+            "недействителен. Администратор уже уведомлён."
+        )
+    if cls in ("APIConnectionError", "APITimeoutError"):
+        return (
+            "Не удалось дозвониться до серверов OpenAI. Это бывает редко — "
+            "попробуйте через минуту."
+        )
+    return (
+        "AI-ассистент сейчас не отвечает. Попробуйте через минуту или "
+        "напишите нам на info@baqsy.kz."
+    )
 
 
 def extract_client_data(raw_text: str) -> dict:

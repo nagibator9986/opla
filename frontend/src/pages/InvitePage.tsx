@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 
 import { Container } from '../components/ui/Container'
 import { Logo } from '../components/ui/Logo'
+import { apiErrorMessage } from '../lib/apiError'
 import {
   getInviteContext,
   submitInviteAnswer,
@@ -97,9 +98,10 @@ function Runner({ token, initial }: { token: string; initial: InviteContext }) {
       }
     } catch (err: unknown) {
       setErrorText(
-        err instanceof Error
-          ? err.message
-          : 'Не удалось сохранить ответ. Проверьте интернет и попробуйте ещё раз.',
+        apiErrorMessage(
+          err,
+          'Не удалось сохранить ответ. Проверьте интернет и попробуйте ещё раз.',
+        ),
       )
     } finally {
       setSubmitting(false)

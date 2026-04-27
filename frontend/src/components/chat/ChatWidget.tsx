@@ -14,6 +14,7 @@ import {
   type QuickReply,
 } from '../../api/chat'
 import { cn } from '../../lib/cn'
+import { apiErrorMessage } from '../../lib/apiError'
 import { useAuthStore } from '../../store/authStore'
 import { useToast } from '../ui/toast-context'
 
@@ -117,8 +118,11 @@ export function ChatWidget({ open, onClose, autoStartQuestionnaireFor }: ChatWid
           setCurrentQuestion(resp.next_question)
         }
       } catch (err: unknown) {
-        const msg = err instanceof Error ? err.message : 'Не удалось начать анкету.'
-        toast.show({ kind: 'error', title: 'Ошибка', description: msg })
+        toast.show({
+          kind: 'error',
+          title: 'Ошибка',
+          description: apiErrorMessage(err, 'Не удалось начать анкету.'),
+        })
       } finally {
         setLoading(false)
       }
@@ -164,8 +168,7 @@ export function ChatWidget({ open, onClose, autoStartQuestionnaireFor }: ChatWid
         setCurrentQuestion(null)
       }
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'AI-ассистент временно недоступен.'
-      pushAssistant(message)
+      pushAssistant(apiErrorMessage(err, 'AI-ассистент временно недоступен.'))
     } finally {
       setLoading(false)
     }
@@ -207,8 +210,11 @@ export function ChatWidget({ open, onClose, autoStartQuestionnaireFor }: ChatWid
         console.warn('auth-token failed', err)
       }
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Ошибка'
-      toast.show({ kind: 'error', title: 'Не удалось сохранить', description: message })
+      toast.show({
+        kind: 'error',
+        title: 'Не удалось сохранить',
+        description: apiErrorMessage(err, 'Ошибка сохранения'),
+      })
     } finally {
       setLoading(false)
     }
