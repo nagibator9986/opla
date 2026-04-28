@@ -91,9 +91,6 @@ class AuditParameterAdmin(ModelAdmin):
         )
 
 
-_AUDIT_PARAMETER_REGISTERED = True  # marker that AuditParameter section sits above
-
-
 class QuestionInline(SortableInlineAdminMixin, TabularInline):
     """Quick-edit inline used inside QuestionnaireTemplate.
 
@@ -201,17 +198,27 @@ class QuestionAdmin(ModelAdmin):
     quick edits, but setting up dependencies is easier here.
     """
 
-    list_display = ("order", "stage_badge", "preview", "field_type", "required_badge", "template")
+    list_display = (
+        "order", "stage_badge", "preview", "field_type",
+        "parameter", "required_badge", "template",
+    )
     list_display_links = ("preview",)
-    list_filter = ("template", "field_type", "required", "block")
+    list_filter = ("template", "parameter", "field_type", "required", "block")
+    list_editable = ("parameter",)
     search_fields = ("text", "stage", "template__name")
     ordering = ("template", "order")
-    autocomplete_fields = ("condition_question",)
+    autocomplete_fields = ("condition_question", "parameter")
     save_on_top = True
 
     fieldsets = (
         (None, {
-            "fields": ("template", "order", "stage", "block", "required"),
+            "fields": ("template", "order", "stage", "block", "required", "parameter"),
+            "description": (
+                "<strong>parameter</strong> — к какому из 12 параметров аудита "
+                "относится вопрос. От этого зависит, какой ИИ-ассистент "
+                "будет анализировать ответ при сборке отчёта. Можно "
+                "оставить пустым, тогда вопрос не попадёт в финальный отчёт."
+            ),
         }),
         ("Вопрос", {
             "fields": ("text", "placeholder", "field_type", "options"),
@@ -247,6 +254,35 @@ class QuestionAdmin(ModelAdmin):
             )
         },
     }
+
+    actions = ["assign_parameter_action"]
+
+    def get_actions(self, request):
+        # Динамически добавляем по экшену на каждый активный параметр —
+        # удобно массово привязывать выбранные вопросы к параметру.
+        actions = super().get_actions(request)
+        for param in AuditParameter.objects.filter(is_active=True).order_by("order", "name"):
+            slug = f"assign_param_{param.id}"
+
+            def make_action(p):
+                def action(modeladmin, request, queryset):
+                    n = queryset.update(parameter=p)
+                    messages.success(
+                        request,
+                        f"К параметру «{p.name}» привязано вопросов: {n}.",
+                    )
+                action.short_description = f"Привязать к параметру: {param.name}"
+                return action
+
+            actions[slug] = (make_action(param), slug, f"Привязать к параметру: {param.name}")
+        return actions
+
+    def assign_parameter_action(self, request, queryset):
+        """Сбросить parameter (отвязать) у выбранных вопросов."""
+        n = queryset.update(parameter=None)
+        messages.success(request, f"Отвязано вопросов от параметра: {n}.")
+
+    assign_parameter_action.short_description = "Отвязать от параметра (сбросить)"
 
     @admin.display(description="Этап", ordering="stage")
     def stage_badge(self, obj):

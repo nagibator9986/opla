@@ -143,12 +143,20 @@ def analyze_parameter(submission: Submission, parameter: AuditParameter) -> Anal
 def assemble_full_report(submission: Submission) -> str:
     """Прогнать ВСЕ активные параметры и собрать markdown-отчёт.
 
-    Используется кнопкой «Собрать отчёт по всем параметрам» в админке
-    AuditReport. Каждая секция — отдельный вызов OpenAI.
+    Параметры без привязанных вопросов или без ответов клиента
+    помечаются как пропущенные — не тратим токены OpenAI впустую.
     """
     sections: list[str] = []
     parameters = AuditParameter.objects.filter(is_active=True).order_by("order", "name")
     for p in parameters:
+        rows = collect_answers_for_parameter(submission, p)
+        if not rows:
+            sections.append(
+                f"## {p.order}. {p.name}\n\n"
+                f"_(нет ответов клиента, привязанных к этому параметру — "
+                f"свяжите вопросы с параметром в админке)_"
+            )
+            continue
         try:
             r = analyze_parameter(submission, p)
             sections.append(f"## {p.order}. {p.name}\n\n{r.text}")

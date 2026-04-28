@@ -29,6 +29,10 @@ if not env("CLOUDPAYMENTS_API_SECRET", default=""):
     )
 
 SECURE_SSL_REDIRECT = env.bool("SECURE_SSL_REDIRECT", default=True)
+# /health/ должен быть доступен напрямую по HTTP — это endpoint для
+# Docker healthcheck'а, который ходит к localhost:8000 без TLS. Без этого
+# исключения healthcheck получает 301 и Django пишет это в error-лог.
+SECURE_REDIRECT_EXEMPT = [r"^health/?$"]
 # Cookie Secure flags default True for safety. Turn off only while the site is
 # temporarily served over plain HTTP (no TLS certificate yet) — otherwise the
 # browser drops the CSRF/session cookies and admin login becomes impossible.
