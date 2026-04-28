@@ -49,9 +49,18 @@ export interface ChatMessageResponse {
 
 export interface CollectedData {
   name?: string
-  company?: string
   phone_wa?: string
+  // Stage I — company passport
+  company?: string
+  company_website?: string
+  industry_field?: string
   city?: string
+  employees_count?: string
+  company_age?: string
+  parent_company?: string
+  // Stage II — role
+  role?: string
+  // legacy
   industry_code?: string
   goals?: string
 }

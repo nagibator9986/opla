@@ -143,7 +143,12 @@ class ChatCollectView(APIView):
                 collected[k] = v
         session.collected_data = collected
 
-        required = ("name", "company")
+        # Регистрация = Этап I (паспорт компании) + Этап II (роль)
+        # JWT выдаём только когда клиент прошёл оба этапа целиком.
+        required = (
+            "name", "company", "industry_field", "city",
+            "employees_count", "company_age", "role",
+        )
         if all(collected.get(r) for r in required) and session.client_id is None:
             industry = None
             code = collected.get("industry_code")

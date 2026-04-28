@@ -41,9 +41,93 @@ function loadSessionId(): string | null {
   }
 }
 
+// ──────────────────────────────────────────────────────────────────────────
+// Регистрация = Этап I (паспорт компании, 7) + Этап II (роль, 1).
+// Шаг 0 — имя, далее 1..7 — Этап I, 8 — Этап II.
+// ──────────────────────────────────────────────────────────────────────────
+
+type StepType = 'text' | 'longtext' | 'choice'
+
+interface RegStep {
+  key: keyof CollectedData
+  label: string
+  prompt: string
+  type: StepType
+  choices?: string[]
+  placeholder?: string
+}
+
+const REG_STEPS: RegStep[] = [
+  {
+    key: 'name',
+    label: 'Имя',
+    prompt: 'Здравствуйте! Давайте познакомимся. Как Вас зовут? (имя и фамилия)',
+    type: 'text',
+    placeholder: 'Например, Айдар Жунусов',
+  },
+  {
+    key: 'company',
+    label: 'Этап I · 1/7 · Компания',
+    prompt: '[Этап I · 1/7] Название компании или бренда?',
+    type: 'text',
+    placeholder: 'ТОО «Baqsy Audit»',
+  },
+  {
+    key: 'company_website',
+    label: 'Этап I · 2/7 · Сайт',
+    prompt: '[Этап I · 2/7] Ссылка на сайт или бизнес-аккаунт компании? Если нет — напишите «нет».',
+    type: 'text',
+    placeholder: 'https://example.com или нет',
+  },
+  {
+    key: 'industry_field',
+    label: 'Этап I · 3/7 · Сфера',
+    prompt: '[Этап I · 3/7] Сфера деятельности компании?',
+    type: 'text',
+    placeholder: 'Ритейл, IT, Производство, Услуги, F&B…',
+  },
+  {
+    key: 'city',
+    label: 'Этап I · 4/7 · Локация',
+    prompt: '[Этап I · 4/7] Локация компании (регион, город)?',
+    type: 'text',
+    placeholder: 'Алматы / Астана / РК, регион…',
+  },
+  {
+    key: 'employees_count',
+    label: 'Этап I · 5/7 · Сотрудники',
+    prompt: '[Этап I · 5/7] Количество сотрудников?',
+    type: 'text',
+    placeholder: '5 / 25 / 200…',
+  },
+  {
+    key: 'company_age',
+    label: 'Этап I · 6/7 · Срок',
+    prompt: '[Этап I · 6/7] Срок существования компании? (например, «5 лет» или «с 2019»)',
+    type: 'text',
+    placeholder: '5 лет / с 2019',
+  },
+  {
+    key: 'parent_company',
+    label: 'Этап I · 7/7 · Холдинг',
+    prompt:
+      '[Этап I · 7/7] Название головной компании? Если организация входит в холдинг — название холдинга. Если нет — просто повторите название компании.',
+    type: 'text',
+    placeholder: 'Название холдинга или той же компании',
+  },
+  {
+    key: 'role',
+    label: 'Этап II · Роль',
+    prompt: '[Этап II] Ваш уровень ответственности в системе?',
+    type: 'choice',
+    choices: ['Владелец / Совладелец', 'Топ-менеджер', 'Менеджер среднего / нижнего звена'],
+  },
+]
+
 export function ChatWidget({ open, onClose, autoStartQuestionnaireFor }: ChatWidgetProps) {
   const navigate = useNavigate()
   const setAuth = useAuthStore((s) => s.setAuth)
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
   const toast = useToast()
   const [sessionId, setSessionId] = useState<string | null>(loadSessionId())
   const [messages, setMessages] = useState<ChatMsg[]>([])
@@ -52,8 +136,9 @@ export function ChatWidget({ open, onClose, autoStartQuestionnaireFor }: ChatWid
   const [multichoicePicked, setMultichoicePicked] = useState<string[]>([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
-  const [formVisible, setFormVisible] = useState(false)
-  const [form, setForm] = useState<CollectedData>({})
+  // Регистрация: -1 = не начата, 0..N = текущий шаг, N+1 = завершена
+  const [regStep, setRegStep] = useState<number>(-1)
+  const [regAnswers, setRegAnswers] = useState<Partial<CollectedData>>({})
   const listRef = useRef<HTMLDivElement>(null)
   const nextIdRef = useRef(0)
   const nextId = (prefix: string) => {
@@ -69,6 +154,9 @@ export function ChatWidget({ open, onClose, autoStartQuestionnaireFor }: ChatWid
 
   const pushAssistant = (content: string) => {
     setMessages((prev) => [...prev, { id: nextId('a'), role: 'assistant', content }])
+  }
+  const pushUser = (text: string) => {
+    setMessages((prev) => [...prev, { id: nextId('u'), role: 'user', content: text }])
   }
 
   // Bootstrap — start session if needed
@@ -146,8 +234,12 @@ export function ChatWidget({ open, onClose, autoStartQuestionnaireFor }: ChatWid
     return () => window.removeEventListener('keydown', onKey)
   }, [open, onClose])
 
-  const pushUser = (text: string) => {
-    setMessages((prev) => [...prev, { id: nextId('u'), role: 'user', content: text }])
+  // Запуск регистрации
+  const startRegistration = () => {
+    if (regStep !== -1) return
+    setRegStep(0)
+    pushAssistant(REG_STEPS[0].prompt)
+    setQuickReplies([])
   }
 
   const sendContent = async (content: string | string[]) => {
@@ -178,24 +270,30 @@ export function ChatWidget({ open, onClose, autoStartQuestionnaireFor }: ChatWid
     sendContent(qr.payload)
   }
 
-  const handleFormSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!sessionId) return
-    if (!form.name || !form.company) {
-      toast.show({
-        kind: 'info',
-        title: 'Заполните имя и компанию',
-        description: 'Остальные поля можно оставить пустыми — уточним в чате.',
-      })
+  // Шаг регистрации: сохранить ответ → следующий вопрос → или финализировать
+  const handleRegistrationAnswer = async (answer: string) => {
+    if (regStep < 0 || regStep >= REG_STEPS.length || !sessionId) return
+    const step = REG_STEPS[regStep]
+    pushUser(answer)
+    setInput('')
+    const merged: Partial<CollectedData> = { ...regAnswers, [step.key]: answer }
+    setRegAnswers(merged)
+
+    const nextIdx = regStep + 1
+    if (nextIdx < REG_STEPS.length) {
+      setRegStep(nextIdx)
+      pushAssistant(REG_STEPS[nextIdx].prompt)
       return
     }
+
+    // Все шаги пройдены — отправляем профиль и выдаём JWT
+    setRegStep(REG_STEPS.length)
     setLoading(true)
     try {
-      const session = await collectProfile(sessionId, form)
+      const session = await collectProfile(sessionId, merged as CollectedData)
       pushAssistant(
-        `Спасибо, ${session.collected_data.name}! Профиль создан. Сейчас я выдам ссылку для оплаты.`,
+        `Спасибо, ${session.collected_data?.name || answer}! Профиль создан, регистрация завершена.`,
       )
-      setFormVisible(false)
       try {
         const tokens = await exchangeForTokens(sessionId)
         setAuth(
@@ -203,18 +301,29 @@ export function ChatWidget({ open, onClose, autoStartQuestionnaireFor }: ChatWid
           tokens.access,
           tokens.refresh,
         )
-        toast.show({ kind: 'success', title: 'Профиль создан', description: 'Выбираем тариф…' })
+        toast.show({
+          kind: 'success',
+          title: 'Регистрация успешна',
+          description: 'Открываем тарифы…',
+        })
         navigate('/tariffs')
         onClose()
       } catch (err) {
         console.warn('auth-token failed', err)
+        toast.show({
+          kind: 'error',
+          title: 'Не удалось завершить вход',
+          description: apiErrorMessage(err, 'Попробуйте ещё раз позже.'),
+        })
       }
     } catch (err) {
       toast.show({
         kind: 'error',
-        title: 'Не удалось сохранить',
+        title: 'Не удалось сохранить профиль',
         description: apiErrorMessage(err, 'Ошибка сохранения'),
       })
+      // откатываем шаг — даём возможность переответить
+      setRegStep(REG_STEPS.length - 1)
     } finally {
       setLoading(false)
     }
@@ -226,6 +335,13 @@ export function ChatWidget({ open, onClose, autoStartQuestionnaireFor }: ChatWid
   const progress = currentQuestion?.progress
   const progressPct =
     progress && progress.total > 0 ? Math.round(((progress.done + 1) / progress.total) * 100) : 0
+
+  // В режиме регистрации показываем тот же progress-bar
+  const isRegistering = regStep >= 0 && regStep < REG_STEPS.length
+  const regProgressPct = isRegistering
+    ? Math.round(((regStep + 1) / REG_STEPS.length) * 100)
+    : 0
+  const regCurrentStep = isRegistering ? REG_STEPS[regStep] : null
 
   return (
     <div
@@ -249,7 +365,11 @@ export function ChatWidget({ open, onClose, autoStartQuestionnaireFor }: ChatWid
             <div>
               <p className="text-sm font-semibold">{config?.name ?? 'Baqsy AI'}</p>
               <p className="text-xs text-ink-300">
-                {isQuestionnaireMode ? 'Анкета Digital Baqsylyq' : 'Онлайн • отвечает мгновенно'}
+                {isQuestionnaireMode
+                  ? 'Анкета Digital Baqsylyq'
+                  : isRegistering
+                  ? 'Регистрация · Этапы I + II'
+                  : 'Онлайн • отвечает мгновенно'}
               </p>
             </div>
           </div>
@@ -281,6 +401,23 @@ export function ChatWidget({ open, onClose, autoStartQuestionnaireFor }: ChatWid
           </div>
         )}
 
+        {isRegistering && regCurrentStep && (
+          <div className="flex-shrink-0 px-5 py-2 bg-ink-50 border-b border-ink-100">
+            <div className="flex justify-between text-[11px] font-semibold text-ink-600 uppercase tracking-wide mb-1">
+              <span className="truncate pr-2">{regCurrentStep.label}</span>
+              <span className="tabular-nums flex-shrink-0">
+                {regStep + 1} / {REG_STEPS.length}
+              </span>
+            </div>
+            <div className="h-1.5 rounded-full bg-ink-200 overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-brand-400 to-brand-600 rounded-full transition-all duration-500"
+                style={{ width: `${regProgressPct}%` }}
+              />
+            </div>
+          </div>
+        )}
+
         <div ref={listRef} className="flex-1 overflow-y-auto px-4 py-5 space-y-3 bg-ink-50/40">
           {messages.map((m) => (
             <MessageBubble key={m.id} role={m.role}>
@@ -294,7 +431,8 @@ export function ChatWidget({ open, onClose, autoStartQuestionnaireFor }: ChatWid
           )}
         </div>
 
-        {!formVisible && !isQuestionnaireMode && quickReplies.length > 0 && (
+        {/* Quick replies — только в свободном чате до регистрации */}
+        {!isQuestionnaireMode && !isRegistering && quickReplies.length > 0 && (
           <div className="flex-shrink-0 px-4 py-2 flex flex-wrap gap-2 bg-white border-t border-ink-100">
             {quickReplies.map((qr) => (
               <button
@@ -308,6 +446,7 @@ export function ChatWidget({ open, onClose, autoStartQuestionnaireFor }: ChatWid
           </div>
         )}
 
+        {/* Режим анкеты после оплаты */}
         {isQuestionnaireMode && currentQuestion && !loading && (
           <QuestionnaireInput
             question={currentQuestion}
@@ -317,77 +456,59 @@ export function ChatWidget({ open, onClose, autoStartQuestionnaireFor }: ChatWid
           />
         )}
 
-        {!isQuestionnaireMode && formVisible && (
-          <form
-            onSubmit={handleFormSubmit}
-            className="flex-shrink-0 p-4 border-t border-ink-100 bg-white space-y-3"
-          >
-            <p className="text-sm font-semibold text-ink-900">Давайте заполним профиль</p>
-            <div className="grid grid-cols-2 gap-2">
-              <FormField label="Имя *" value={form.name ?? ''} onChange={(v) => setForm({ ...form, name: v })} />
-              <FormField label="Компания *" value={form.company ?? ''} onChange={(v) => setForm({ ...form, company: v })} />
-              <FormField label="Город" value={form.city ?? ''} onChange={(v) => setForm({ ...form, city: v })} />
-              <FormField label="WhatsApp" value={form.phone_wa ?? ''} onChange={(v) => setForm({ ...form, phone_wa: v })} placeholder="+7 777…" />
-            </div>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => setFormVisible(false)}
-                className="flex-1 px-4 py-2.5 rounded-xl border border-ink-200 text-sm font-semibold text-ink-700 hover:bg-ink-50"
-              >
-                Назад
-              </button>
-              <button
-                type="submit"
-                disabled={loading}
-                className="flex-1 px-4 py-2.5 rounded-xl bg-ink-900 text-white text-sm font-semibold hover:bg-ink-800 disabled:opacity-50"
-              >
-                Сохранить и к тарифу
-              </button>
-            </div>
-          </form>
+        {/* Режим регистрации (Этапы I + II) */}
+        {isRegistering && regCurrentStep && !loading && (
+          <RegistrationInput
+            step={regCurrentStep}
+            onSubmit={handleRegistrationAnswer}
+            input={input}
+            setInput={setInput}
+          />
         )}
 
-        {!isQuestionnaireMode && !formVisible && (
-          <>
-            <div className="flex-shrink-0 px-4 pt-3 pb-1 bg-white border-t border-ink-100">
-              <button
-                onClick={() => setFormVisible(true)}
-                className="text-xs font-semibold text-brand-700 hover:text-brand-600 flex items-center gap-1"
-              >
-                <svg className="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor">
-                  <path d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" />
-                </svg>
-                Быстро заполнить профиль и перейти к оплате
-              </button>
-            </div>
-            <form
-              onSubmit={(e) => {
-                e.preventDefault()
-                sendContent(input)
-              }}
-              className="flex-shrink-0 flex gap-2 p-3 bg-white border-t border-ink-100"
+        {/* CTA «Зарегистрироваться» — для гостей до старта рег-флоу */}
+        {!isQuestionnaireMode && !isRegistering && !isAuthenticated && (
+          <div className="flex-shrink-0 px-4 pt-3 pb-1 bg-white border-t border-ink-100">
+            <button
+              onClick={startRegistration}
+              className="text-xs font-semibold text-brand-700 hover:text-brand-600 flex items-center gap-1"
             >
-              <input
-                type="text"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder="Напишите сообщение…"
-                disabled={loading}
-                className="flex-1 px-4 py-2.5 rounded-xl border border-ink-200 text-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-200 disabled:bg-ink-50"
-              />
-              <button
-                type="submit"
-                disabled={loading || !input.trim()}
-                className="inline-flex items-center justify-center w-11 h-11 rounded-xl bg-ink-900 text-white hover:bg-ink-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                aria-label="Отправить"
-              >
-                <svg className="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
-                  <path d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" />
-                </svg>
-              </button>
-            </form>
-          </>
+              <svg className="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" />
+              </svg>
+              Пройти регистрацию (Этап I + Этап II)
+            </button>
+          </div>
+        )}
+
+        {/* Свободный чат — текстовый инпут */}
+        {!isQuestionnaireMode && !isRegistering && (
+          <form
+            onSubmit={(e) => {
+              e.preventDefault()
+              sendContent(input)
+            }}
+            className="flex-shrink-0 flex gap-2 p-3 bg-white border-t border-ink-100"
+          >
+            <input
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder="Напишите сообщение…"
+              disabled={loading}
+              className="flex-1 px-4 py-2.5 rounded-xl border border-ink-200 text-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-200 disabled:bg-ink-50"
+            />
+            <button
+              type="submit"
+              disabled={loading || !input.trim()}
+              className="inline-flex items-center justify-center w-11 h-11 rounded-xl bg-ink-900 text-white hover:bg-ink-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              aria-label="Отправить"
+            >
+              <svg className="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" />
+              </svg>
+            </button>
+          </form>
         )}
       </div>
     </div>
@@ -396,6 +517,64 @@ export function ChatWidget({ open, onClose, autoStartQuestionnaireFor }: ChatWid
 
 function prefixStage(q: QuestionPayload): string {
   return q.stage ? `[${q.stage}] ${q.text}` : q.text
+}
+
+function RegistrationInput({
+  step,
+  onSubmit,
+  input,
+  setInput,
+}: {
+  step: RegStep
+  onSubmit: (answer: string) => void
+  input: string
+  setInput: (v: string) => void
+}) {
+  if (step.type === 'choice') {
+    return (
+      <div className="flex-shrink-0 p-3 bg-white border-t border-ink-100 flex flex-wrap gap-2">
+        {(step.choices ?? []).map((c) => (
+          <button
+            key={c}
+            type="button"
+            onClick={() => onSubmit(c)}
+            className="px-4 py-2.5 rounded-xl text-sm font-semibold bg-gradient-to-b from-brand-400 to-brand-500 text-ink-950 shadow-sm hover:from-brand-300 hover:to-brand-400 transition-colors"
+          >
+            {c}
+          </button>
+        ))}
+      </div>
+    )
+  }
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault()
+        const v = input.trim()
+        if (v) onSubmit(v)
+      }}
+      className="flex-shrink-0 flex gap-2 p-3 bg-white border-t border-ink-100"
+    >
+      <input
+        type="text"
+        autoFocus
+        value={input}
+        onChange={(e) => setInput(e.target.value)}
+        placeholder={step.placeholder || 'Ваш ответ…'}
+        className="flex-1 px-4 py-2.5 rounded-xl border border-ink-200 text-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-200"
+      />
+      <button
+        type="submit"
+        disabled={!input.trim()}
+        className="inline-flex items-center justify-center w-11 h-11 rounded-xl bg-ink-900 text-white hover:bg-ink-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+        aria-label="Ответить"
+      >
+        <svg className="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
+          <path d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" />
+        </svg>
+      </button>
+    </form>
+  )
 }
 
 function QuestionnaireInput({
@@ -548,32 +727,5 @@ function TypingDots() {
       <span className="w-1.5 h-1.5 rounded-full bg-ink-400 animate-bounce" style={{ animationDelay: '150ms' }} />
       <span className="w-1.5 h-1.5 rounded-full bg-ink-400 animate-bounce" style={{ animationDelay: '300ms' }} />
     </span>
-  )
-}
-
-function FormField({
-  label,
-  value,
-  onChange,
-  placeholder,
-}: {
-  label: string
-  value: string
-  onChange: (v: string) => void
-  placeholder?: string
-}) {
-  return (
-    <label className="block">
-      <span className="block text-[11px] font-semibold text-ink-600 uppercase tracking-wide mb-1">
-        {label}
-      </span>
-      <input
-        type="text"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        className="w-full px-3 py-2 rounded-lg border border-ink-200 text-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-200"
-      />
-    </label>
   )
 }
