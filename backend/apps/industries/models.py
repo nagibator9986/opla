@@ -3,6 +3,62 @@ from django.db import models, transaction
 from apps.core.models import TimestampedModel
 
 
+class AuditParameter(TimestampedModel):
+    """Один из 12 параметров системного аудита.
+
+    Идея заказчика: после прохождения анкеты ответы агрегируются по
+    параметрам, и для каждого параметра запускается отдельный
+    специализированный AI-ассистент со своим system_prompt. Каждый
+    ассистент собирает раздел итогового отчёта по своему направлению.
+
+    Это даёт изоляцию контекста (один ассистент не путается между
+    темами) и позволяет масштабироваться: разные параметры могут
+    использовать разные модели OpenAI, разную температуру, и
+    обрабатываться параллельно.
+    """
+
+    code = models.SlugField(
+        max_length=60, unique=True,
+        help_text="Машинный идентификатор параметра, например 'finance' или 'team-quality'.",
+    )
+    name = models.CharField(
+        max_length=120,
+        help_text="Человекочитаемое название: «Финансы», «Команда», «Маркетинг» и т.д.",
+    )
+    description = models.TextField(
+        blank=True,
+        help_text="Что именно анализирует этот параметр. Видит только админ.",
+    )
+    system_prompt = models.TextField(
+        help_text=(
+            "System-prompt для AI-ассистента, который анализирует ответы по "
+            "этому параметру. Описывает роль ассистента, фокус анализа, тон "
+            "и структуру вывода. Доступны плейсхолдеры: {{name}}, "
+            "{{company}}, {{industry}}, {{answers}} — последний "
+            "автоматически подставляется списком ответов клиента."
+        ),
+    )
+    model = models.CharField(
+        max_length=60, default="gpt-4o-mini",
+        help_text="Модель OpenAI для этого параметра.",
+    )
+    temperature = models.FloatField(default=0.4)
+    max_tokens = models.PositiveIntegerField(default=1200)
+    order = models.PositiveIntegerField(
+        default=0,
+        help_text="Порядок параметра в финальном отчёте (меньше — раньше).",
+    )
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        verbose_name = "Параметр аудита"
+        verbose_name_plural = "Параметры аудита"
+        ordering = ("order", "name")
+
+    def __str__(self):
+        return self.name
+
+
 class Industry(TimestampedModel):
     name = models.CharField(max_length=100)
     code = models.SlugField(max_length=50, unique=True)
@@ -168,6 +224,17 @@ class Question(TimestampedModel):
     required = models.BooleanField(default=True)
     block = models.CharField(
         max_length=1, choices=Block.choices, default=Block.A
+    )
+    parameter = models.ForeignKey(
+        AuditParameter,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="questions",
+        help_text=(
+            "К какому параметру аудита относится вопрос. Используется при "
+            "формировании раздела отчёта соответствующим AI-ассистентом."
+        ),
     )
 
     # ── Conditional logic ────────────────────────────────────────────────

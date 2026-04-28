@@ -1,31 +1,26 @@
 import { useTariffs } from '../../hooks/useTariffs'
 import { Container, Section } from '../ui/Container'
 import { Badge } from '../ui/Badge'
+import { ChatLauncher } from '../chat/ChatLauncher'
+import { useAuthStore } from '../../store/authStore'
 import { cn } from '../../lib/cn'
 
 interface PackagesSectionProps {
   content: Record<string, string>
 }
 
-const PACKAGE_FEATURES: Record<string, { tagline: string; bullets: string[] }> = {
+const PACKAGE_META: Record<
+  string,
+  { participants: string; usd?: string; tagline: string }
+> = {
   ashide_1: {
-    tagline: 'Базовая диагностика — для индивидуальной работы',
-    bullets: [
-      'Анализ 7–9 ключевых параметров системы',
-      'Отраслевая анкета — 25–38 вопросов',
-      'Именной PDF-отчёт в фирменном стиле',
-      'Доставка в WhatsApp · 3–5 рабочих дней',
-    ],
+    participants: '1 сотрудник',
+    tagline: 'Личная диагностика — для индивидуальной работы',
   },
   ashide_2: {
-    tagline: 'Глубокий командный аудит — для собственников и топ-команд',
-    bullets: [
-      'Полный анализ по 18–24 параметрам',
-      'Группа из 3–7 сотрудников проходит анкету',
-      'AI собирает консолидированную картину системы',
-      'Подарочная книга «Вечный Иль» в составе пакета',
-      'Приоритетная подготовка отчёта · 3 дня',
-    ],
+    participants: '3–7 сотрудников',
+    usd: '$729',
+    tagline: 'Командный аудит — собственники и топ-команды',
   },
 }
 
@@ -34,6 +29,7 @@ function formatPrice(price: string): string {
 }
 
 export function PackagesSection({ content }: PackagesSectionProps) {
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
   const { data: tariffs, isLoading } = useTariffs()
   const packages = (tariffs ?? []).filter((t) => t.code !== 'upsell')
 
@@ -45,40 +41,67 @@ export function PackagesSection({ content }: PackagesSectionProps) {
             Пакеты
           </Badge>
           <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-ink-900 tracking-tight">
-            {content.tariff_section_title ?? 'Два уровня глубины'}
+            {content.tariff_section_title ?? 'Два формата аудита'}
           </h2>
           <p className="mt-4 text-base md:text-lg text-ink-600 leading-relaxed">
-            Базовая личная диагностика или полный командный аудит с групповой
-            точкой сборки. Оплата и сама работа происходят внутри{' '}
-            <span className="font-semibold text-ink-900">Baqsy AI</span>.
+            Доступ к пакетам открывается{' '}
+            <span className="font-semibold text-ink-900">после регистрации</span>{' '}
+            в Baqsy AI.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 max-w-4xl mx-auto">
-          {isLoading ? (
-            <>
-              <PackageSkeleton />
-              <PackageSkeleton featured />
-            </>
-          ) : (
-            packages.map((tariff) => (
-              <PackageCard
-                key={tariff.id}
-                code={tariff.code}
-                title={tariff.title}
-                price={formatPrice(tariff.price_kzt)}
-                description={tariff.description}
-                featured={tariff.code === 'ashide_2'}
-              />
-            ))
+        <div className="relative">
+          <div
+            className={cn(
+              'grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 max-w-4xl mx-auto transition-all duration-300',
+              !isAuthenticated && 'pointer-events-none select-none',
+            )}
+            aria-hidden={!isAuthenticated}
+          >
+            {isLoading ? (
+              <>
+                <PackageSkeleton />
+                <PackageSkeleton featured />
+              </>
+            ) : (
+              packages.map((tariff) => (
+                <PackageCard
+                  key={tariff.id}
+                  code={tariff.code}
+                  title={tariff.title}
+                  priceKzt={formatPrice(tariff.price_kzt)}
+                  featured={tariff.code === 'ashide_2'}
+                  blurred={!isAuthenticated}
+                />
+              ))
+            )}
+          </div>
+
+          {/* Lock overlay when not authenticated */}
+          {!isAuthenticated && (
+            <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-b from-ink-50/40 via-ink-50/85 to-ink-50 backdrop-blur-[2px] rounded-2xl">
+              <div className="bg-white rounded-2xl shadow-xl border border-ink-200 p-7 md:p-8 max-w-md text-center mx-4">
+                <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-brand-100 text-brand-700 mb-4">
+                  <svg className="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <rect x="3" y="11" width="18" height="11" rx="2" strokeLinecap="round" strokeLinejoin="round" />
+                    <path d="M7 11V7a5 5 0 0110 0v4" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </div>
+                <h3 className="text-xl font-bold text-ink-900 mb-2">
+                  Пакеты открываются после регистрации
+                </h3>
+                <p className="text-sm text-ink-600 mb-6 leading-relaxed">
+                  Откройте Baqsy AI и заполните паспорт компании — это блок 1
+                  анкеты, занимает 2 минуты. После этого вы увидите детали обоих
+                  пакетов и сможете оформить аудит.
+                </p>
+                <ChatLauncher variant="primary" size="lg">
+                  Открыть Baqsy AI
+                </ChatLauncher>
+              </div>
+            </div>
           )}
         </div>
-
-        <p className="mt-10 text-center text-sm text-ink-500">
-          Чтобы оформить пакет, откройте чат{' '}
-          <span className="font-semibold text-ink-700">Baqsy AI</span>{' '}
-          справа внизу — он проведёт регистрацию и оплату.
-        </p>
       </Container>
     </Section>
   )
@@ -87,17 +110,17 @@ export function PackagesSection({ content }: PackagesSectionProps) {
 function PackageCard({
   code,
   title,
-  price,
-  description,
+  priceKzt,
   featured,
+  blurred,
 }: {
   code: string
   title: string
-  price: string
-  description?: string
+  priceKzt: string
   featured?: boolean
+  blurred?: boolean
 }) {
-  const meta = PACKAGE_FEATURES[code] ?? { tagline: description ?? '', bullets: [] }
+  const meta = PACKAGE_META[code] ?? { participants: '', tagline: '' }
   return (
     <div
       className={cn(
@@ -124,7 +147,7 @@ function PackageCard({
         />
       )}
 
-      <div className="relative flex flex-col flex-1">
+      <div className={cn('relative flex flex-col flex-1', blurred && 'blur-[2px]')}>
         <h3
           className={cn(
             'text-xl md:text-2xl font-bold tracking-tight',
@@ -133,67 +156,77 @@ function PackageCard({
         >
           {title}
         </h3>
-        <p className={cn('text-sm mb-6 leading-relaxed', featured ? 'text-ink-300' : 'text-ink-500')}>
+        <p
+          className={cn(
+            'text-sm leading-relaxed',
+            featured ? 'text-ink-300' : 'text-ink-500',
+          )}
+        >
           {meta.tagline}
         </p>
 
-        <div className="mb-6">
-          <div className="flex items-baseline gap-2 flex-wrap">
-            <span
-              className={cn(
-                'text-4xl md:text-5xl font-bold tracking-tight tabular-nums',
-                featured ? 'text-white' : 'text-ink-900',
-              )}
-            >
-              {price}
-            </span>
-            <span
-              className={cn(
-                'text-lg font-semibold',
-                featured ? 'text-brand-300' : 'text-ink-500',
-              )}
-            >
-              ₸
-            </span>
-          </div>
-          <p
-            className={cn(
-              'text-xs mt-1.5',
-              featured ? 'text-ink-400' : 'text-ink-500',
-            )}
-          >
-            Единоразовый платёж · оплата через Baqsy AI
-          </p>
-        </div>
-
-        <ul
+        <p
           className={cn(
-            'space-y-3 mb-2 flex-1',
-            featured ? 'text-ink-100' : 'text-ink-700',
+            'mt-5 text-base font-semibold',
+            featured ? 'text-brand-300' : 'text-ink-700',
           )}
         >
-          {meta.bullets.map((b) => (
-            <li key={b} className="flex items-start gap-3 text-sm">
-              <span
+          {meta.participants}
+        </p>
+
+        <div className="mt-6">
+          {meta.usd ? (
+            <>
+              <div className="flex items-baseline gap-2 flex-wrap">
+                <span
+                  className={cn(
+                    'text-4xl md:text-5xl font-bold tracking-tight tabular-nums',
+                    featured ? 'text-white' : 'text-ink-900',
+                  )}
+                >
+                  {meta.usd}
+                </span>
+              </div>
+              <p
                 className={cn(
-                  'flex-shrink-0 inline-flex items-center justify-center w-5 h-5 rounded-full mt-0.5',
-                  featured
-                    ? 'bg-brand-400/20 text-brand-300'
-                    : 'bg-emerald-100 text-emerald-600',
+                  'text-xs mt-1.5',
+                  featured ? 'text-ink-400' : 'text-ink-500',
                 )}
               >
-                <svg className="w-3 h-3" viewBox="0 0 20 20" fill="currentColor">
-                  <path
-                    fillRule="evenodd"
-                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              </span>
-              <span className="leading-relaxed">{b}</span>
-            </li>
-          ))}
-        </ul>
+                ≈ {priceKzt} ₸ к оплате · единоразовый платёж
+              </p>
+            </>
+          ) : (
+            <>
+              <div className="flex items-baseline gap-2 flex-wrap">
+                <span
+                  className={cn(
+                    'text-4xl md:text-5xl font-bold tracking-tight tabular-nums',
+                    featured ? 'text-white' : 'text-ink-900',
+                  )}
+                >
+                  {priceKzt}
+                </span>
+                <span
+                  className={cn(
+                    'text-lg font-semibold',
+                    featured ? 'text-brand-300' : 'text-ink-500',
+                  )}
+                >
+                  ₸
+                </span>
+              </div>
+              <p
+                className={cn(
+                  'text-xs mt-1.5',
+                  featured ? 'text-ink-400' : 'text-ink-500',
+                )}
+              >
+                Единоразовый платёж
+              </p>
+            </>
+          )}
+        </div>
       </div>
     </div>
   )
@@ -209,12 +242,8 @@ function PackageSkeleton({ featured = false }: { featured?: boolean }) {
     >
       <div className={cn('h-6 rounded w-3/4 mb-4', featured ? 'bg-ink-700' : 'bg-ink-200')} />
       <div className={cn('h-4 rounded w-2/3 mb-8', featured ? 'bg-ink-700' : 'bg-ink-200')} />
-      <div className={cn('h-12 rounded w-1/2 mb-8', featured ? 'bg-ink-700' : 'bg-ink-200')} />
-      <div className="space-y-3">
-        {[1, 2, 3, 4].map((i) => (
-          <div key={i} className={cn('h-4 rounded w-full', featured ? 'bg-ink-700' : 'bg-ink-200')} />
-        ))}
-      </div>
+      <div className={cn('h-5 rounded w-1/3 mb-6', featured ? 'bg-ink-700' : 'bg-ink-200')} />
+      <div className={cn('h-12 rounded w-1/2', featured ? 'bg-ink-700' : 'bg-ink-200')} />
     </div>
   )
 }

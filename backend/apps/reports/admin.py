@@ -27,7 +27,7 @@ class AuditReportAdmin(ModelAdmin):
     search_fields = ("submission__client__name", "submission__client__company")
     readonly_fields = ("submission", "pdf_url", "status", "approved_at", "created_at", "updated_at")
     fields = ("submission", "admin_text", "status", "pdf_url", "approved_at", "created_at", "updated_at")
-    actions_detail = ["approve_and_send", "mark_delivered"]
+    actions_detail = ["generate_ai_draft", "approve_and_send", "mark_delivered"]
 
     @admin.display(description="Клиент")
     def client_name(self, obj):
@@ -80,6 +80,38 @@ class AuditReportAdmin(ModelAdmin):
             'background:#25D366;color:#fff;font-size:12px;font-weight:600;'
             'text-decoration:none;">💬 Отправить клиенту</a>',
             wa_url,
+        )
+
+    @action(
+        description=_("Сгенерировать черновик отчёта (12 ИИ-ассистентов)"),
+        url_path="generate-ai-draft",
+    )
+    def generate_ai_draft(self, request, object_id):
+        """Запустить 12 параметров через OpenAI и собрать markdown-черновик
+        в поле admin_text. Оператор потом редактирует и отправляет PDF."""
+        from apps.ai.parameter_analyzer import assemble_full_report
+
+        report = AuditReport.objects.select_related("submission", "submission__client").get(pk=object_id)
+        try:
+            text = assemble_full_report(report.submission)
+        except Exception as exc:
+            messages.error(request, f"Ошибка генерации: {exc}")
+            return HttpResponseRedirect(
+                reverse("admin:reports_auditreport_change", args=(object_id,))
+            )
+
+        # Если в admin_text уже что-то есть — НЕ затираем, а добавляем вниз
+        existing = (report.admin_text or "").strip()
+        report.admin_text = (
+            f"{existing}\n\n---\n\n{text}" if existing else text
+        )
+        report.save(update_fields=["admin_text", "updated_at"])
+        messages.success(
+            request,
+            _("Черновик отчёта сгенерирован 12 ассистентами. Проверьте и отредактируйте текст ниже."),
+        )
+        return HttpResponseRedirect(
+            reverse("admin:reports_auditreport_change", args=(object_id,))
         )
 
     @action(description=_("Отметить доставленным"), url_path="mark-delivered")

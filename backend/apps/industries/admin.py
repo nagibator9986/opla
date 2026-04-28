@@ -8,7 +8,90 @@ from django.utils.translation import gettext_lazy as _
 
 from unfold.admin import ModelAdmin, TabularInline
 
-from apps.industries.models import Industry, Question, QuestionnaireTemplate
+from apps.industries.models import (
+    AuditParameter,
+    Industry,
+    Question,
+    QuestionnaireTemplate,
+)
+
+
+@admin.register(AuditParameter)
+class AuditParameterAdmin(ModelAdmin):
+    """12 ИИ-ассистентов: каждый отвечает за свой параметр аудита.
+
+    После прохождения анкеты для каждого активного параметра запускается
+    отдельный вызов OpenAI с собственным system_prompt — собирает раздел
+    отчёта по своему направлению.
+    """
+
+    list_display = ("order", "name_badge", "code", "model", "is_active", "questions_count")
+    list_display_links = ("name_badge",)
+    list_filter = ("is_active", "model")
+    list_editable = ("is_active",)
+    search_fields = ("name", "code", "system_prompt")
+    prepopulated_fields = {"code": ("name",)}
+    ordering = ("order", "name")
+    save_on_top = True
+
+    fieldsets = (
+        ("Основное", {
+            "fields": ("name", "code", "description", "order", "is_active"),
+        }),
+        ("OpenAI настройки", {
+            "fields": ("model", "temperature", "max_tokens"),
+            "description": (
+                "<code>gpt-4o-mini</code> для скорости + цены, "
+                "<code>gpt-4o</code> для глубины. Температура 0.3–0.5 — "
+                "консервативный анализ; 0.7+ — креативные интерпретации. "
+                "<code>max_tokens</code> 1200–2000 для параметра обычно достаточно."
+            ),
+        }),
+        ("Системный промпт", {
+            "fields": ("system_prompt",),
+            "description": (
+                "Описывает роль ассистента, фокус анализа, тон и структуру вывода. "
+                "Доступны плейсхолдеры:<br>"
+                "<code>{{name}}</code> — имя клиента,<br>"
+                "<code>{{company}}</code> — компания,<br>"
+                "<code>{{industry}}</code> — отрасль,<br>"
+                "<code>{{answers}}</code> — список ответов клиента по этому "
+                "параметру (если плейсхолдер не использован, ответы добавятся "
+                "автоматически в конец)."
+            ),
+        }),
+    )
+
+    formfield_overrides = {
+        models.TextField: {
+            "widget": forms.Textarea(
+                attrs={"rows": 12, "style": "width:100%; font-family: ui-monospace, monospace; padding: 10px;"}
+            ),
+        },
+    }
+
+    @admin.display(description="Параметр", ordering="order")
+    def name_badge(self, obj):
+        return format_html(
+            '<span style="font-weight:600;">{}</span>'
+            '<br><span style="color:#64748b;font-size:11px;">{}</span>',
+            obj.name,
+            (obj.description or "")[:80],
+        )
+
+    @admin.display(description="Вопросов")
+    def questions_count(self, obj):
+        n = obj.questions.count()
+        return format_html(
+            '<span style="display:inline-block;padding:2px 10px;border-radius:999px;'
+            'background:{};color:{};font-size:11px;font-weight:600;">{}</span>',
+            "#dbeafe" if n else "#fee2e2",
+            "#1e40af" if n else "#991b1b",
+            n,
+        )
+
+
+_AUDIT_PARAMETER_REGISTERED = True  # marker that AuditParameter section sits above
 
 
 class QuestionInline(SortableInlineAdminMixin, TabularInline):
