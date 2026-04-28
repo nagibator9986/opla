@@ -1,6 +1,5 @@
 import { Container } from '../ui/Container'
 import { Badge } from '../ui/Badge'
-import { ChatLauncher } from '../chat/ChatLauncher'
 
 interface HeroSectionProps {
   content: Record<string, string>
@@ -45,26 +44,33 @@ export function HeroSection({ content }: HeroSectionProps) {
               + 'именной PDF в WhatsApp за 3–5 рабочих дней.'}
           </p>
 
-          <div className="mt-8 md:mt-10 flex flex-col sm:flex-row gap-3 justify-center lg:justify-start">
-            <ChatLauncher variant="secondary" size="xl">
-              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-              {content.hero_cta ?? 'Открыть Baqsy AI'}
-            </ChatLauncher>
-            <a
-              href="#packages"
-              className="inline-flex items-center justify-center gap-2 px-7 py-4 rounded-xl border border-white/15 bg-white/5 text-white font-semibold hover:bg-white/10 transition-colors backdrop-blur"
-            >
-              Что входит в пакеты
-              <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
-                <path
-                  fillRule="evenodd"
-                  d="M10 3a.75.75 0 01.75.75v10.69l3.22-3.22a.75.75 0 111.06 1.06l-4.5 4.5a.75.75 0 01-1.06 0l-4.5-4.5a.75.75 0 111.06-1.06l3.22 3.22V3.75A.75.75 0 0110 3z"
-                  clipRule="evenodd"
-                />
-              </svg>
-            </a>
+          <div
+            className="mt-8 md:mt-10 grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-2xl mx-auto lg:mx-0"
+            role="presentation"
+            aria-label="Доступные пакеты аудита"
+          >
+            <div className="rounded-xl px-6 py-4 bg-gradient-to-br from-brand-500 to-brand-600 text-ink-950 shadow-[0_10px_30px_rgb(245_158_11_/_0.25)] ring-1 ring-brand-300/40">
+              <div className="text-[11px] font-semibold uppercase tracking-wider text-ink-900/70">
+                Пакет 1
+              </div>
+              <div className="mt-1 text-base md:text-lg font-bold leading-tight">
+                Ashide 1 (1 сотрудник)
+              </div>
+              <div className="mt-1 text-2xl md:text-3xl font-extrabold tracking-tight tabular-nums">
+                199$
+              </div>
+            </div>
+            <div className="rounded-xl px-6 py-4 border border-white/15 bg-white/5 text-white backdrop-blur">
+              <div className="text-[11px] font-semibold uppercase tracking-wider text-brand-300">
+                Пакет 2
+              </div>
+              <div className="mt-1 text-base md:text-lg font-bold leading-tight">
+                Ashino + Ashide (3–7 сотрудников)
+              </div>
+              <div className="mt-1 text-2xl md:text-3xl font-extrabold tracking-tight tabular-nums">
+                799$
+              </div>
+            </div>
           </div>
 
           <dl className="mt-10 md:mt-12 grid grid-cols-3 gap-4 sm:gap-6 max-w-lg mx-auto lg:mx-0">

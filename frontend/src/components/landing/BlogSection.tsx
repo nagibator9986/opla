@@ -27,14 +27,14 @@ export function BlogSection() {
         <div className="flex items-end justify-between flex-wrap gap-4 mb-10 md:mb-12">
           <div className="max-w-xl">
             <Badge variant="neutral" className="mb-4">
-              Блог · Глоссарий
+              Информационный блок
             </Badge>
             <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-ink-900 tracking-tight">
-              Разбираем философию Кода Вечного Иля
+              Статьи
             </h2>
             <p className="mt-3 text-base md:text-lg text-ink-600 leading-relaxed">
-              Статьи и термины — для тех, кто хочет понять метод глубже,
-              прежде чем заходить в аудит.
+              Материалы о методе Baqsy и Коде Вечного Иля — для тех, кто хочет
+              понять подход глубже перед аудитом.
             </p>
           </div>
           {visible.length > 0 && (
