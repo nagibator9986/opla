@@ -17,7 +17,7 @@ export function LandingPage() {
       <main className="flex-1">
         <HeroSection content={c} />
         <BlogSection />
-        <CasesSection content={c} />
+        <CasesSection />
         <FaqSection content={c} />
       </main>
       <Footer />

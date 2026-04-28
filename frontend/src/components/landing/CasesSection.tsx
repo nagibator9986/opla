@@ -1,11 +1,6 @@
 import { Link } from 'react-router-dom'
 
 import { Container, Section } from '../ui/Container'
-import { Badge } from '../ui/Badge'
-
-interface CasesSectionProps {
-  content: Record<string, string>
-}
 
 const TEASER_BRANDS: { slug: string; label: string }[] = [
   { slug: 'cocacola', label: 'Coca-Cola' },
@@ -13,30 +8,40 @@ const TEASER_BRANDS: { slug: string; label: string }[] = [
   { slug: 'toyota', label: 'Toyota' },
   { slug: 'lvmh', label: 'LVMH' },
   { slug: 'netflix', label: 'Netflix' },
+  { slug: 'tesla', label: 'Tesla' },
+  { slug: 'samsung', label: 'Samsung' },
+  { slug: 'amazon', label: 'Amazon' },
+  { slug: 'google', label: 'Google' },
+  { slug: 'meta', label: 'Meta' },
+  { slug: 'microsoft', label: 'Microsoft' },
+  { slug: 'sony', label: 'Sony' },
+  { slug: 'nike', label: 'Nike' },
+  { slug: 'adidas', label: 'Adidas' },
+  { slug: 'mercedes', label: 'Mercedes' },
+  { slug: 'spotify', label: 'Spotify' },
+  { slug: 'ikea', label: 'IKEA' },
+  { slug: 'ibm', label: 'IBM' },
+  { slug: 'starbucks', label: 'Starbucks' },
+  { slug: 'mcdonalds', label: 'McDonald’s' },
 ]
 
-export function CasesSection({ content: _content }: CasesSectionProps) {
+export function CasesSection() {
   return (
     <Section id="cases" background="ink-50">
       <Container>
-        <div className="max-w-2xl mx-auto text-center mb-8 md:mb-10">
-          <Badge variant="neutral" className="mb-4">
-            Кейсы мировых компаний
-          </Badge>
-        </div>
-
         <TeaserLogoStrip />
 
-        <div className="mt-10 md:mt-12 flex justify-center">
+        <div className="mt-12 md:mt-14 flex justify-center">
           <Link
             to="/cases"
-            className="inline-flex items-center gap-2 px-7 py-4 rounded-xl bg-ink-900 text-white font-semibold hover:bg-ink-800 transition-colors shadow-lg"
+            className="group inline-flex items-center gap-3 px-8 py-4 md:py-5 rounded-2xl bg-ink-900 text-white text-base md:text-lg font-semibold tracking-tight hover:bg-ink-800 transition-all shadow-[0_10px_30px_rgb(15_23_42_/_0.18)] hover:shadow-[0_14px_40px_rgb(15_23_42_/_0.28)] hover:-translate-y-0.5"
           >
-            Смотреть кейсы
+            Смотреть кейсы мировых компаний
             <svg
-              className="w-4 h-4"
+              className="w-5 h-5 transition-transform group-hover:translate-x-1"
               viewBox="0 0 20 20"
               fill="currentColor"
+              aria-hidden
             >
               <path
                 fillRule="evenodd"
@@ -52,34 +57,50 @@ export function CasesSection({ content: _content }: CasesSectionProps) {
 }
 
 function TeaserLogoStrip() {
+  const doubled = [...TEASER_BRANDS, ...TEASER_BRANDS]
   return (
     <div
-      aria-label="Примеры компаний, по которым доступны разборы"
-      className="max-w-3xl mx-auto"
+      aria-label="Среди разборов — мировые компании"
+      className="relative max-w-6xl mx-auto"
+      style={{
+        WebkitMaskImage:
+          'linear-gradient(to right, transparent, black 8%, black 92%, transparent)',
+        maskImage:
+          'linear-gradient(to right, transparent, black 8%, black 92%, transparent)',
+      }}
     >
-      <p className="text-center text-[11px] uppercase tracking-[0.18em] text-ink-400 mb-5">
+      <p className="text-center text-[11px] uppercase tracking-[0.22em] text-ink-400 mb-7 md:mb-8">
         Среди разборов
       </p>
-      <ul className="flex flex-wrap items-center justify-center gap-x-8 gap-y-5 md:gap-x-12 grayscale opacity-60">
-        {TEASER_BRANDS.map((b) => (
-          <li key={b.slug} className="flex items-center justify-center">
-            <img
-              src={`https://cdn.simpleicons.org/${b.slug}/0f172a`}
-              alt={b.label}
-              loading="lazy"
-              className="h-6 md:h-7 w-auto select-none pointer-events-none"
-              onError={(e) => {
-                const t = e.currentTarget
-                const fallback = document.createElement('span')
-                fallback.className =
-                  'text-ink-700 font-bold tracking-wider text-sm md:text-base'
-                fallback.textContent = b.label.toUpperCase()
-                t.replaceWith(fallback)
-              }}
-            />
-          </li>
-        ))}
-      </ul>
+      <div className="overflow-hidden">
+        <ul
+          className="animate-marquee flex items-center gap-12 md:gap-20 grayscale opacity-70 hover:opacity-100 transition-opacity"
+          style={{ width: 'max-content' }}
+        >
+          {doubled.map((b, i) => (
+            <li
+              key={`${b.slug}-${i}`}
+              className="flex items-center justify-center shrink-0"
+              aria-hidden={i >= TEASER_BRANDS.length}
+            >
+              <img
+                src={`https://cdn.simpleicons.org/${b.slug}/0f172a`}
+                alt={b.label}
+                loading="lazy"
+                className="h-9 md:h-12 w-auto select-none pointer-events-none"
+                onError={(e) => {
+                  const t = e.currentTarget
+                  const fallback = document.createElement('span')
+                  fallback.className =
+                    'text-ink-700 font-bold tracking-wider text-base md:text-lg whitespace-nowrap'
+                  fallback.textContent = b.label.toUpperCase()
+                  t.replaceWith(fallback)
+                }}
+              />
+            </li>
+          ))}
+        </ul>
+      </div>
     </div>
   )
 }

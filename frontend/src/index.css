@@ -112,6 +112,20 @@ body {
   50% { transform: translateY(-6px); }
 }
 
+@keyframes marquee {
+  from { transform: translate3d(0, 0, 0); }
+  to   { transform: translate3d(-50%, 0, 0); }
+}
+
+.animate-marquee {
+  animation: marquee 38s linear infinite;
+  will-change: transform;
+}
+
+.animate-marquee:hover {
+  animation-play-state: paused;
+}
+
 .animate-fade-in {
   animation: fade-in 0.4s ease-out both;
 }
