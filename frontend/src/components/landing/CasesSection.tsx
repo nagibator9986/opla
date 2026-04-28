@@ -32,12 +32,15 @@ export function CasesSection({ content: _content }: CasesSectionProps) {
     return (
       <Section id="cases" background="ink-50">
         <Container>
-          <div className="max-w-2xl mx-auto text-center mb-10 md:mb-12">
+          <div className="max-w-2xl mx-auto text-center mb-8 md:mb-10">
             <Badge variant="neutral" className="mb-4">
               Кейсы мировых компаний
             </Badge>
           </div>
-          <div className="max-w-md mx-auto bg-white rounded-2xl shadow-xl border border-ink-200 p-7 md:p-8 text-center">
+
+          <TeaserLogoStrip />
+
+          <div className="max-w-md mx-auto mt-10 bg-white rounded-2xl shadow-xl border border-ink-200 p-7 md:p-8 text-center">
             <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-brand-100 text-brand-700 mb-4">
               <svg
                 className="w-7 h-7"
@@ -169,6 +172,47 @@ export function CasesSection({ content: _content }: CasesSectionProps) {
         )}
       </Container>
     </Section>
+  )
+}
+
+const TEASER_BRANDS: { slug: string; label: string }[] = [
+  { slug: 'cocacola', label: 'Coca-Cola' },
+  { slug: 'apple', label: 'Apple' },
+  { slug: 'toyota', label: 'Toyota' },
+  { slug: 'lvmh', label: 'LVMH' },
+  { slug: 'netflix', label: 'Netflix' },
+]
+
+function TeaserLogoStrip() {
+  return (
+    <div
+      aria-label="Примеры компаний, по которым доступны разборы"
+      className="max-w-3xl mx-auto"
+    >
+      <p className="text-center text-[11px] uppercase tracking-[0.18em] text-ink-400 mb-5">
+        Среди разборов
+      </p>
+      <ul className="flex flex-wrap items-center justify-center gap-x-8 gap-y-5 md:gap-x-12 grayscale opacity-60">
+        {TEASER_BRANDS.map((b) => (
+          <li key={b.slug} className="flex items-center justify-center">
+            <img
+              src={`https://cdn.simpleicons.org/${b.slug}/0f172a`}
+              alt={b.label}
+              loading="lazy"
+              className="h-6 md:h-7 w-auto select-none pointer-events-none"
+              onError={(e) => {
+                const t = e.currentTarget
+                const fallback = document.createElement('span')
+                fallback.className =
+                  'text-ink-700 font-bold tracking-wider text-sm md:text-base'
+                fallback.textContent = b.label.toUpperCase()
+                t.replaceWith(fallback)
+              }}
+            />
+          </li>
+        ))}
+      </ul>
+    </div>
   )
 }
 
