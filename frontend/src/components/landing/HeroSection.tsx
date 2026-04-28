@@ -49,8 +49,8 @@ export function HeroSection({ content }: HeroSectionProps) {
             role="presentation"
             aria-label="Доступные пакеты аудита"
           >
-            <div className="rounded-xl px-6 py-4 bg-gradient-to-br from-brand-500 to-brand-600 text-ink-950 shadow-[0_10px_30px_rgb(245_158_11_/_0.25)] ring-1 ring-brand-300/40">
-              <div className="text-[11px] font-semibold uppercase tracking-wider text-ink-900/70">
+            <div className="rounded-xl px-6 py-4 border border-white/15 bg-white/5 text-white backdrop-blur">
+              <div className="text-[11px] font-semibold uppercase tracking-wider text-brand-300">
                 Пакет 1
               </div>
               <div className="mt-1 text-base md:text-lg font-bold leading-tight">
