@@ -22,7 +22,7 @@ export function BlogSection() {
   const visible = (posts ?? []).slice(0, 3)
 
   return (
-    <Section id="blog" background="white">
+    <Section id="blog" background="white" decor>
       <Container>
         <div className="flex items-end justify-between flex-wrap gap-4 mb-10 md:mb-12">
           <div className="max-w-xl">
