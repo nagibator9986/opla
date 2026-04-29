@@ -15,6 +15,7 @@ import {
 } from '../../api/chat'
 import { cn } from '../../lib/cn'
 import { apiErrorMessage } from '../../lib/apiError'
+import { renderMessage } from '../../lib/renderMessage'
 import { useAuthStore } from '../../store/authStore'
 import { useToast } from '../ui/toast-context'
 
@@ -448,7 +449,7 @@ export function ChatWidget({ open, onClose, autoStartQuestionnaireFor }: ChatWid
         <div ref={listRef} className="flex-1 overflow-y-auto px-4 py-5 space-y-3 bg-ink-50/40">
           {messages.map((m) => (
             <MessageBubble key={m.id} role={m.role}>
-              {m.content}
+              {m.role === 'assistant' ? renderMessage(m.content) : m.content}
             </MessageBubble>
           ))}
           {loading && (
