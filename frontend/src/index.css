@@ -170,23 +170,6 @@ body {
   background-image: radial-gradient(circle at 50% 0%, rgb(245 158 11 / 0.12), transparent 50%);
 }
 
-/* Светлая руническо-circuit плитка для белых секций — повторяет тематику
-   шапки (Digital Baqsylyq · Код Вечного Иля), но в едва заметной
-   ink-900 трактовке. Применяется через декоративный absolute-слой
-   (см. Section component, prop `decor`). */
-.bg-runes-light {
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 160 160'><g fill='none' stroke='%230f172a' stroke-opacity='0.07' stroke-width='0.8' stroke-linecap='square'><path d='M80 38 V108 M62 56 L80 38 L98 56'/><path d='M30 20 V36 M22 28 L30 20 L38 28'/><path d='M130 124 V140 M122 132 L130 124 L138 132'/><path d='M0 80 H40'/><path d='M120 80 H160'/><path d='M40 60 V40 H60'/><path d='M120 60 V40 H100'/><path d='M40 100 V120 H60'/><path d='M120 100 V120 H100'/><circle cx='40' cy='80' r='2' fill='%230f172a' fill-opacity='0.06'/><circle cx='120' cy='80' r='2' fill='%230f172a' fill-opacity='0.06'/></g></svg>");
-  background-size: 160px 160px;
-  background-repeat: repeat;
-}
-
-/* Soft top → bottom fade для декор-слоя — чтобы паттерн не упирался
-   в границы секций жёсткой линией. */
-.bg-runes-fade-mask {
-  -webkit-mask-image: linear-gradient(to bottom, transparent, black 12%, black 88%, transparent);
-  mask-image: linear-gradient(to bottom, transparent, black 12%, black 88%, transparent);
-}
-
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

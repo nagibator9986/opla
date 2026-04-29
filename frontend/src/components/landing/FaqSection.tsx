@@ -30,7 +30,7 @@ export function FaqSection({ content }: FaqSectionProps) {
   if (items.length === 0) return null
 
   return (
-    <Section id="faq" background="white" decor>
+    <Section id="faq" background="white">
       <Container size="sm">
         <div className="text-center mb-12 md:mb-16">
           <Badge variant="neutral" className="mb-4">Вопросы и ответы</Badge>

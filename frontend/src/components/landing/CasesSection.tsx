@@ -27,7 +27,7 @@ const TEASER_BRANDS: { slug: string; label: string }[] = [
 
 export function CasesSection() {
   return (
-    <Section id="cases" background="ink-50" decor>
+    <Section id="cases" background="ink-50">
       <Container>
         <TeaserLogoStrip />
 
