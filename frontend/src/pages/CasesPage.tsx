@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 
@@ -27,6 +28,11 @@ export function CasesPage() {
     enabled: isAuthenticated,
   })
 
+  // Scroll to top on navigate to /cases (browser-router doesn't do this by default)
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+  }, [])
+
   return (
     <div className="flex flex-col min-h-screen bg-white">
       <Header />
@@ -44,7 +50,7 @@ export function CasesPage() {
               </h1>
               {isAuthenticated && (
                 <p className="mt-4 text-base md:text-lg text-ink-600 leading-relaxed">
-                  Примеры применения метода Baqsy на известных компаниях.
+                  Выберите компанию — откроется детальный разбор по методу Baqsy.
                 </p>
               )}
             </div>
@@ -59,20 +65,8 @@ export function CasesPage() {
                     stroke="currentColor"
                     strokeWidth="2"
                   >
-                    <rect
-                      x="3"
-                      y="11"
-                      width="18"
-                      height="11"
-                      rx="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                    <path
-                      d="M7 11V7a5 5 0 0110 0v4"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
+                    <rect x="3" y="11" width="18" height="11" rx="2" strokeLinecap="round" strokeLinejoin="round" />
+                    <path d="M7 11V7a5 5 0 0110 0v4" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                 </div>
                 <p className="text-sm text-ink-600 mb-6 leading-relaxed">
@@ -85,77 +79,13 @@ export function CasesPage() {
                 </ChatLauncher>
               </div>
             ) : isLoading ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
-                <CaseSkeleton />
-                <CaseSkeleton />
-              </div>
+              <LogoGridSkeleton />
             ) : (cases ?? []).length === 0 ? (
               <p className="text-center text-ink-500">
                 Кейсы появятся совсем скоро — мы готовим первые публикации.
               </p>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
-                {cases!.map((c) => (
-                  <article
-                    key={c.slug}
-                    className="group relative overflow-hidden bg-white rounded-2xl p-7 md:p-8 border border-ink-200/70 shadow-[0_1px_2px_rgb(15_23_42_/_0.04)] hover:shadow-[0_10px_30px_rgb(15_23_42_/_0.08)] transition-shadow"
-                  >
-                    <div
-                      aria-hidden
-                      className={`absolute -top-24 -right-24 w-48 h-48 rounded-full bg-gradient-to-br ${ACCENT_GRADIENT[c.accent]} opacity-10 blur-2xl`}
-                    />
-                    <div className="relative">
-                      <div className="flex items-center justify-between mb-5">
-                        {c.logo_url ? (
-                          <img
-                            src={c.logo_url}
-                            alt={c.company_name || c.title}
-                            className="max-h-9 max-w-[120px] object-contain"
-                          />
-                        ) : (
-                          <Badge variant="neutral" size="sm">
-                            {c.industry || '—'}
-                          </Badge>
-                        )}
-                        <svg
-                          className="w-8 h-8 text-ink-200"
-                          viewBox="0 0 24 24"
-                          fill="currentColor"
-                        >
-                          <path d="M3 21c3 0 7-1 7-8V5c0-1.25-.76-2.02-2-2H4c-1.25 0-2 .75-2 2v4c0 1.25.75 2 2 2h2s.73 2.66-2.66 4c-.48.15-.35.85.66.85zm14 0c3 0 7-1 7-8V5c0-1.25-.76-2.02-2-2h-4c-1.25 0-2 .75-2 2v4c0 1.25.75 2 2 2h2s.73 2.66-2.66 4c-.48.15-.35.85.66.85z" />
-                        </svg>
-                      </div>
-                      <h3 className="text-xl md:text-2xl font-bold text-ink-900 mb-3">
-                        {c.title}
-                      </h3>
-                      <p className="text-ink-600 leading-relaxed mb-6">
-                        {c.short_text || c.subtitle}
-                      </p>
-                      {(c.metric || c.metric_label) && (
-                        <div className="flex items-end gap-3 pt-5 border-t border-ink-100">
-                          {c.metric && (
-                            <span
-                              className={`text-4xl md:text-5xl font-bold bg-gradient-to-br ${ACCENT_GRADIENT[c.accent]} bg-clip-text text-transparent leading-none`}
-                            >
-                              {c.metric}
-                            </span>
-                          )}
-                          {c.metric_label && (
-                            <span className="text-sm text-ink-500 mb-1">
-                              {c.metric_label}
-                            </span>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                    <Link
-                      to={`/cases/${c.slug}`}
-                      className="absolute inset-0"
-                      aria-label={`Открыть кейс ${c.title}`}
-                    />
-                  </article>
-                ))}
-              </div>
+              <LogoGrid cases={cases!} />
             )}
           </Container>
         </Section>
@@ -166,19 +96,59 @@ export function CasesPage() {
   )
 }
 
-function CaseSkeleton() {
+function LogoGrid({ cases }: { cases: CaseSummary[] }) {
   return (
-    <div className="rounded-2xl bg-white border border-ink-200 p-7 md:p-8 animate-pulse">
-      <div className="flex items-center justify-between mb-5">
-        <div className="h-8 w-24 bg-ink-100 rounded" />
-        <div className="h-8 w-8 bg-ink-100 rounded" />
-      </div>
-      <div className="h-6 bg-ink-100 rounded w-3/4 mb-3" />
-      <div className="space-y-2 mb-6">
-        <div className="h-4 bg-ink-100 rounded" />
-        <div className="h-4 bg-ink-100 rounded w-5/6" />
-      </div>
-      <div className="h-10 bg-ink-100 rounded w-1/2" />
-    </div>
+    <ul className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6 max-w-5xl mx-auto">
+      {cases.map((c) => (
+        <li key={c.slug}>
+          <Link
+            to={`/cases/${c.slug}`}
+            className="group relative block aspect-square rounded-2xl bg-white border border-ink-200/70 hover:border-brand-300 shadow-[0_1px_2px_rgb(15_23_42_/_0.04)] hover:shadow-[0_14px_40px_rgb(15_23_42_/_0.12)] transition-all duration-300 overflow-hidden hover:-translate-y-1"
+            aria-label={`Открыть кейс ${c.title}`}
+          >
+            <div
+              aria-hidden
+              className={`absolute -top-16 -right-16 w-40 h-40 rounded-full bg-gradient-to-br ${ACCENT_GRADIENT[c.accent]} opacity-10 blur-2xl group-hover:opacity-20 transition-opacity`}
+            />
+            <div className="relative h-full flex flex-col items-center justify-center p-6 text-center">
+              {c.logo_url ? (
+                <img
+                  src={c.logo_url}
+                  alt={c.company_name || c.title}
+                  className="max-h-14 md:max-h-16 max-w-[70%] object-contain grayscale group-hover:grayscale-0 transition-all duration-300"
+                />
+              ) : (
+                <span className="text-2xl md:text-3xl font-bold text-ink-700 group-hover:text-ink-900 tracking-tight">
+                  {(c.company_name || c.title).slice(0, 2).toUpperCase()}
+                </span>
+              )}
+              <span className="mt-3 text-xs md:text-sm font-semibold text-ink-700 line-clamp-1">
+                {c.company_name || c.title}
+              </span>
+              {c.metric && (
+                <span
+                  className={`mt-1 text-xs font-bold bg-gradient-to-br ${ACCENT_GRADIENT[c.accent]} bg-clip-text text-transparent`}
+                >
+                  {c.metric}
+                </span>
+              )}
+            </div>
+          </Link>
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+function LogoGridSkeleton() {
+  return (
+    <ul className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6 max-w-5xl mx-auto">
+      {[0, 1, 2, 3, 4, 5, 6, 7].map((i) => (
+        <li
+          key={i}
+          className="aspect-square rounded-2xl bg-white border border-ink-200 animate-pulse"
+        />
+      ))}
+    </ul>
   )
 }

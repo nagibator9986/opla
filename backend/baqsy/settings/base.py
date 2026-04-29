@@ -261,7 +261,7 @@ UNFOLD = {
                         "link": reverse_lazy("admin:cases_case_changelist"),
                     },
                     {
-                        "title": _("Блог · Глоссарий"),
+                        "title": _("Статьи"),
                         "icon": "article",
                         "link": reverse_lazy("admin:blog_blogpost_changelist"),
                     },

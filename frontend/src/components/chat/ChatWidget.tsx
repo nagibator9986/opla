@@ -186,6 +186,26 @@ export function ChatWidget({ open, onClose, autoStartQuestionnaireFor }: ChatWid
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, sessionId])
 
+  // Авто-запуск регистрации для гостя.
+  // Открыли чат, sessionId есть, юзер НЕ авторизован, рег-флоу ещё не стартовал
+  // и не идёт questionnaire — стартуем регистрацию автоматически (после greeting).
+  useEffect(() => {
+    if (!open || !sessionId || isAuthenticated) return
+    if (regStep !== -1 || currentQuestion) return
+    if (autoStartQuestionnaireFor) return
+    const t = setTimeout(() => {
+      // Проверим, что состояние всё ещё актуально к моменту таймаута
+      setRegStep((prev) => {
+        if (prev !== -1) return prev
+        return 0
+      })
+      pushAssistant(REG_STEPS[0].prompt)
+      setQuickReplies([])
+    }, 600)
+    return () => clearTimeout(t)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, sessionId, isAuthenticated, autoStartQuestionnaireFor])
+
   // Auto-start questionnaire
   useEffect(() => {
     if (!open || !autoStartQuestionnaireFor || !sessionId) return
