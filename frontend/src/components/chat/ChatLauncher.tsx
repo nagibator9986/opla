@@ -70,7 +70,8 @@ export function FloatingChatButton() {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-[999] flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-gradient-to-br from-brand-400 to-brand-600 text-white shadow-2xl ring-4 ring-white hover:scale-110 transition-transform animate-pulse-ring"
+        className="fixed right-4 sm:right-6 z-[999] flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-gradient-to-br from-brand-400 to-brand-600 text-white shadow-2xl ring-4 ring-white hover:scale-110 transition-transform animate-pulse-ring"
+        style={{ bottom: 'max(1rem, calc(env(safe-area-inset-bottom, 0px) + 0.5rem))' }}
         aria-label="Открыть чат с Baqsy AI"
       >
         <svg className="w-6 h-6 sm:w-7 sm:h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -141,7 +142,8 @@ export function DockedChatPanel() {
       {/* Мобайл — плавающая круглая кнопка */}
       <button
         onClick={() => setOpen(true)}
-        className="lg:hidden fixed bottom-4 right-4 z-[999] flex items-center justify-center w-14 h-14 rounded-full bg-gradient-to-br from-brand-400 to-brand-600 text-white shadow-2xl ring-4 ring-white hover:scale-110 transition-transform animate-pulse-ring"
+        className="lg:hidden fixed right-4 z-[999] flex items-center justify-center w-14 h-14 rounded-full bg-gradient-to-br from-brand-400 to-brand-600 text-white shadow-2xl ring-4 ring-white hover:scale-110 transition-transform animate-pulse-ring"
+        style={{ bottom: 'max(1rem, calc(env(safe-area-inset-bottom, 0px) + 0.5rem))' }}
         aria-label="Открыть чат с Baqsy AI"
       >
         <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

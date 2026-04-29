@@ -5,9 +5,9 @@ const sections = [
   {
     title: 'Продукт',
     links: [
-      { label: 'Метод', href: '/#method' },
-      { label: 'Тарифы', href: '/#tariffs' },
-      { label: 'Кейсы', href: '/#cases' },
+      { label: 'Тарифы', href: '/tariffs' },
+      { label: 'Кейсы', href: '/cases' },
+      { label: 'Статьи', href: '/#blog' },
       { label: 'FAQ', href: '/#faq' },
     ],
   },

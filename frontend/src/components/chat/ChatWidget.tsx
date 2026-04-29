@@ -516,7 +516,7 @@ export function ChatWidget({ open, onClose, autoStartQuestionnaireFor }: ChatWid
               onChange={(e) => setInput(e.target.value)}
               placeholder="Напишите сообщение…"
               disabled={loading}
-              className="flex-1 px-4 py-2.5 rounded-xl border border-ink-200 text-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-200 disabled:bg-ink-50"
+              className="flex-1 px-4 py-2.5 rounded-xl border border-ink-200 text-base focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-200 disabled:bg-ink-50"
             />
             <button
               type="submit"
@@ -530,6 +530,13 @@ export function ChatWidget({ open, onClose, autoStartQuestionnaireFor }: ChatWid
             </button>
           </form>
         )}
+
+        {/* iPhone home-indicator safe-area spacer (full-screen mobile only). */}
+        <div
+          className="flex-shrink-0 sm:hidden bg-white"
+          style={{ height: 'env(safe-area-inset-bottom, 0px)' }}
+          aria-hidden
+        />
       </div>
     </div>
   )
@@ -581,7 +588,7 @@ function RegistrationInput({
         value={input}
         onChange={(e) => setInput(e.target.value)}
         placeholder={step.placeholder || 'Ваш ответ…'}
-        className="flex-1 px-4 py-2.5 rounded-xl border border-ink-200 text-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-200"
+        className="flex-1 px-4 py-2.5 rounded-xl border border-ink-200 text-base focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-200"
       />
       <button
         type="submit"
@@ -697,7 +704,7 @@ function QuestionnaireInput({
           onChange={(e) => setText(e.target.value)}
           placeholder={question.placeholder || 'Ваш ответ…'}
           rows={3}
-          className="flex-1 px-4 py-2.5 rounded-xl border border-ink-200 text-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-200 resize-none"
+          className="flex-1 px-4 py-2.5 rounded-xl border border-ink-200 text-base focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-200 resize-none"
         />
       ) : (
         <input
@@ -705,7 +712,7 @@ function QuestionnaireInput({
           value={text}
           onChange={(e) => setText(e.target.value)}
           placeholder={question.placeholder || 'Ваш ответ…'}
-          className="flex-1 px-4 py-2.5 rounded-xl border border-ink-200 text-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-200"
+          className="flex-1 px-4 py-2.5 rounded-xl border border-ink-200 text-base focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-200"
         />
       )}
       <button

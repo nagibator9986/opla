@@ -5,9 +5,8 @@ import { useAuthStore } from '../../store/authStore'
 import { cn } from '../../lib/cn'
 
 const navLinks = [
-  { label: 'Метод', href: '#method' },
-  { label: 'Тарифы', href: '#tariffs' },
   { label: 'Кейсы', href: '#cases' },
+  { label: 'Статьи', href: '#blog' },
   { label: 'FAQ', href: '#faq' },
 ]
 
@@ -102,10 +101,6 @@ export function Header({ variant = 'solid' }: HeaderProps) {
                 </svg>
                 Кабинет
               </Link>
-            ) : isLanding ? (
-              <a href="#tariffs" className={ctaStyle}>
-                Выбрать тариф
-              </a>
             ) : (
               <Link to="/tariffs" className={ctaStyle}>
                 Выбрать тариф
@@ -159,14 +154,6 @@ export function Header({ variant = 'solid' }: HeaderProps) {
               >
                 Перейти в кабинет
               </Link>
-            ) : isLanding ? (
-              <a
-                href="#tariffs"
-                className="block px-4 py-3 rounded-xl bg-ink-900 text-white text-base font-semibold text-center hover:bg-ink-800 transition-colors"
-                onClick={() => setMobileOpen(false)}
-              >
-                Выбрать тариф
-              </a>
             ) : (
               <Link
                 to="/tariffs"
