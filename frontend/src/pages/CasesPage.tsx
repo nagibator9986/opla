@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 
 import { Header } from '../components/layout/Header'
@@ -7,6 +7,7 @@ import { Footer } from '../components/layout/Footer'
 import { Container, Section } from '../components/ui/Container'
 import { Badge } from '../components/ui/Badge'
 import { ChatLauncher, DockedChatPanel } from '../components/chat/ChatLauncher'
+import { CaseModal } from '../components/cases/CaseModal'
 import { listCases, type CaseSummary } from '../api/cases'
 import { useAuthStore } from '../store/authStore'
 
@@ -21,6 +22,9 @@ const ACCENT_GRADIENT: Record<CaseSummary['accent'], string> = {
 
 export function CasesPage() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
+  const [searchParams, setSearchParams] = useSearchParams()
+  const openSlug = searchParams.get('case')
+
   const { data: cases, isLoading } = useQuery({
     queryKey: ['cases'],
     queryFn: listCases,
@@ -32,6 +36,15 @@ export function CasesPage() {
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
   }, [])
+
+  const openCase = (slug: string) => {
+    setSearchParams({ case: slug }, { replace: false })
+  }
+  const closeCase = () => {
+    const next = new URLSearchParams(searchParams)
+    next.delete('case')
+    setSearchParams(next, { replace: false })
+  }
 
   return (
     <div className="flex flex-col min-h-screen bg-white">
@@ -85,25 +98,27 @@ export function CasesPage() {
                 Кейсы появятся совсем скоро — мы готовим первые публикации.
               </p>
             ) : (
-              <LogoGrid cases={cases!} />
+              <LogoGrid cases={cases!} onOpen={openCase} />
             )}
           </Container>
         </Section>
       </main>
       <Footer />
       <DockedChatPanel />
+      {openSlug && <CaseModal slug={openSlug} onClose={closeCase} />}
     </div>
   )
 }
 
-function LogoGrid({ cases }: { cases: CaseSummary[] }) {
+function LogoGrid({ cases, onOpen }: { cases: CaseSummary[]; onOpen: (slug: string) => void }) {
   return (
     <ul className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6 max-w-5xl mx-auto">
       {cases.map((c) => (
         <li key={c.slug}>
-          <Link
-            to={`/cases/${c.slug}`}
-            className="group relative block aspect-square rounded-2xl bg-white border border-ink-200/70 hover:border-brand-300 shadow-[0_1px_2px_rgb(15_23_42_/_0.04)] hover:shadow-[0_14px_40px_rgb(15_23_42_/_0.12)] transition-all duration-300 overflow-hidden hover:-translate-y-1"
+          <button
+            type="button"
+            onClick={() => onOpen(c.slug)}
+            className="group relative block w-full aspect-square rounded-2xl bg-white border border-ink-200/70 hover:border-brand-300 shadow-[0_1px_2px_rgb(15_23_42_/_0.04)] hover:shadow-[0_14px_40px_rgb(15_23_42_/_0.12)] transition-all duration-300 overflow-hidden hover:-translate-y-1 text-left cursor-pointer"
             aria-label={`Открыть кейс ${c.title}`}
           >
             <div
@@ -133,7 +148,7 @@ function LogoGrid({ cases }: { cases: CaseSummary[] }) {
                 </span>
               )}
             </div>
-          </Link>
+          </button>
         </li>
       ))}
     </ul>
