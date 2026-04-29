@@ -76,13 +76,29 @@ class ChatStartView(APIView):
         serializer.is_valid(raise_exception=True)
 
         cfg = AIAssistantConfig.get_active()
-        greeting = (cfg.greeting if cfg else "Здравствуйте!").strip()
-        quick_replies = cfg.quick_replies if cfg else []
+        client_profile = _resolve_authenticated_client(request)
+
+        if client_profile is not None:
+            greeting, quick_replies = _build_authed_chat_intro(client_profile)
+        else:
+            greeting = (cfg.greeting if cfg else "Здравствуйте!").strip()
+            quick_replies = cfg.quick_replies if cfg else []
 
         session = ChatSession.objects.create(
+            client=client_profile,
             last_user_agent=(request.META.get("HTTP_USER_AGENT") or "")[:255],
             last_ip=_get_client_ip(request),
         )
+        if client_profile is not None:
+            session.collected_data = {
+                "name": client_profile.name or "",
+                "company": client_profile.company or "",
+                "phone_wa": client_profile.phone_wa or "",
+                "city": client_profile.city or "",
+            }
+            session.status = ChatSession.Status.QUALIFIED
+            session.save(update_fields=["collected_data", "status", "updated_at"])
+
         ChatMessage.objects.create(
             session=session,
             role=ChatMessage.Role.ASSISTANT,
@@ -94,6 +110,7 @@ class ChatStartView(APIView):
                 "greeting": greeting,
                 "quick_replies": quick_replies,
                 "mode": session.mode,
+                "is_authenticated": client_profile is not None,
             },
             status=status.HTTP_201_CREATED,
         )
@@ -331,6 +348,51 @@ def _freeform_chat(session: ChatSession, user_content: str):
         collected.update(extracted)
 
     system_prompt = render_system_prompt(cfg.system_prompt, collected)
+
+    # Расширенный контекст для зарегистрированного клиента: мы знаем имя,
+    # компанию, роль — значит GPT не должен повторно собирать первичные
+    # данные. Должен вести экспертный диалог и направлять к оплате.
+    is_registered = session.client_id is not None or bool(collected.get("role"))
+    if is_registered:
+        client_name = (
+            (collected.get("name") or "")
+            or (session.client.name if session.client else "")
+        ).strip()
+        first_name = client_name.split()[0] if client_name else ""
+        client_company = (
+            (collected.get("company") or "")
+            or (session.client.company if session.client else "")
+        ).strip()
+        client_role = (collected.get("role") or "").strip()
+        client_industry = (collected.get("industry_field") or "").strip()
+        system_prompt += (
+            "\n\n[РЕЖИМ: ЗАРЕГИСТРИРОВАННЫЙ КЛИЕНТ — экспертный диалог]\n"
+            f"Клиент уже прошёл регистрацию: имя — {client_name or '—'}, "
+            f"компания — «{client_company or '—'}», роль — {client_role or '—'}, "
+            f"сфера — {client_industry or '—'}.\n"
+            "ВАЖНЫЕ ПРАВИЛА:\n"
+            "1. НЕ собирай первичные данные заново (имя, компанию, роль, сферу — "
+            "ты их уже знаешь). НЕ говори «давайте познакомимся» или «как вас зовут».\n"
+            f"2. Обращайся к клиенту по имени ({first_name or 'коллега'}).\n"
+            "3. Веди экспертный диалог по методу Baqsy / Коду Вечного Иля. "
+            "Отвечай развёрнуто на любые вопросы про:\n"
+            "   — суть метода (12 параметров аудита, Bün — скрытые сбои, ТҢРІ — равновесие);\n"
+            "   — что входит в финальный PDF-отчёт (анализ по 27 параметрам, риски, рекомендации);\n"
+            "   — сроки (3–5 рабочих дней от оплаты до получения отчёта в WhatsApp);\n"
+            "   — отрасли (метод адаптируется под ритейл, IT, производство, услуги, F&B);\n"
+            "   — формат анкеты (бот задаёт ~100 вопросов по одному, можно прерывать).\n"
+            "4. Когда клиент готов оплатить или спрашивает про цены — мягко "
+            "направляй к покупке: «Перейдите на страницу /tariffs — там обе опции "
+            "доступны» или «нажмите кнопку \"Заказать аудит\" в верхней части чата».\n"
+            "5. Доступные пакеты:\n"
+            "   • Ashide 1 — 199$ — для одного руководителя, 7–9 ключевых параметров;\n"
+            "   • Ashino + Ashide — 799$ — для команды 3–7 человек, 18–24 параметра, "
+            "групповая динамика и сравнение мнений.\n"
+            "6. Если клиент задаёт нетипичный вопрос — отвечай профессионально, "
+            "опирайся на философию метода, но без фантазий: если не уверен — "
+            "предложи связаться с экспертом через кнопку «Личный кабинет».\n"
+            "7. Тон — деловой, тёплый, без воды. Не более 4–5 абзацев на ответ."
+        )
     history = [
         {"role": msg.role, "content": msg.content}
         for msg in session.messages.all().order_by("created_at")
@@ -505,3 +567,66 @@ def _get_client_ip(request) -> str | None:
     if xff:
         return xff.split(",")[0].strip()
     return request.META.get("REMOTE_ADDR")
+
+
+def _resolve_authenticated_client(request):
+    """Try to identify ClientProfile from JWT in Authorization header.
+
+    Endpoint is `permission_classes=[AllowAny]`, so DRF won't authenticate
+    automatically — but if a Bearer token is present and valid, we can resolve
+    it manually. Returns ClientProfile or None.
+    """
+    try:
+        from rest_framework_simplejwt.authentication import JWTAuthentication
+    except ImportError:
+        return None
+    auth = JWTAuthentication()
+    try:
+        result = auth.authenticate(request)
+    except Exception:  # invalid / expired token
+        return None
+    if result is None:
+        return None
+    user, _token = result
+    if not user or not getattr(user, "is_authenticated", False):
+        return None
+    return ClientProfile.objects.filter(user=user).first()
+
+
+def _build_authed_chat_intro(client) -> tuple[str, list[dict]]:
+    """Build personalized greeting + quick-replies for a registered client.
+
+    Greeting is editable in admin via ContentBlock `chat_greeting_authed`
+    with placeholders {{name}}, {{company}}.
+    """
+    from apps.content.models import ContentBlock
+
+    block = ContentBlock.objects.filter(
+        key="chat_greeting_authed", is_active=True
+    ).first()
+    template = (
+        block.content
+        if block and block.content
+        else (
+            "Здравствуйте, {{name}}! Я Baqsy AI — ваш персональный помощник по "
+            "Коду Вечного Иля. Профиль уже настроен, я знаю всё про «{{company}}». "
+            "Чем могу помочь — подробнее рассказать про метод, ответить на вопрос "
+            "или сразу перейти к заказу аудита?"
+        )
+    )
+    name = (client.name or "").strip()
+    first_name = name.split()[0] if name else ""
+    company = (client.company or "—").strip()
+    greeting = (
+        template.replace("{{name}}", first_name or name or "коллега")
+        .replace("{{company}}", company)
+    )
+
+    quick_replies = [
+        {"label": "Заказать аудит", "payload": "/tariffs", "action": "navigate"},
+        {"label": "Что входит в отчёт?", "payload": "Расскажи подробно, что входит в итоговый PDF-отчёт по аудиту.", "action": "message"},
+        {"label": "Сколько по времени?", "payload": "Сколько времени занимает подготовка аудита от оплаты до получения отчёта?", "action": "message"},
+        {"label": "Чем Ashide 1 отличается от Ashino + Ashide?", "payload": "Чем Ashide 1 отличается от пакета Ashino + Ashide и кому что подходит?", "action": "message"},
+        {"label": "Личный кабинет", "payload": "/cabinet", "action": "navigate"},
+    ]
+    return greeting, quick_replies

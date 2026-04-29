@@ -3,6 +3,11 @@ import api from './axios'
 export interface QuickReply {
   label: string
   payload: string
+  /**
+   * 'message' (default) — отправить payload как сообщение в чат.
+   * 'navigate' — payload это путь, открыть его через router (закрыв чат).
+   */
+  action?: 'message' | 'navigate'
 }
 
 export interface ChatConfig {
@@ -29,6 +34,7 @@ export interface ChatStartResponse {
   greeting: string
   quick_replies: QuickReply[]
   mode: ChatMode
+  is_authenticated?: boolean
 }
 
 export interface AssistantReply {

@@ -268,7 +268,9 @@ export function ChatWidget({ open, onClose, autoStartQuestionnaireFor }: ChatWid
     if (!display.trim()) return
     pushUser(display)
     setInput('')
-    setQuickReplies([])
+    // Для зарегистрированных оставляем quick-replies «липкими» — клиент
+    // может вернуться к стандартным быстрым вопросам в любой момент.
+    if (!isAuthenticated) setQuickReplies([])
     setMultichoicePicked([])
     setLoading(true)
     try {
@@ -287,6 +289,11 @@ export function ChatWidget({ open, onClose, autoStartQuestionnaireFor }: ChatWid
   }
 
   const handleQuickReply = (qr: QuickReply) => {
+    if (qr.action === 'navigate') {
+      onClose()
+      navigate(qr.payload)
+      return
+    }
     sendContent(qr.payload)
   }
 
