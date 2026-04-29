@@ -1,3 +1,5 @@
+import { useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '../store/authStore'
 import { useTariffs } from '../hooks/useTariffs'
@@ -13,6 +15,18 @@ import type { Submission } from '../types/api'
 export function TariffsPage() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
   const { data: tariffs, isLoading: tariffsLoading } = useTariffs()
+  const [searchParams] = useSearchParams()
+  const focus = searchParams.get('focus')
+
+  // Скролл к нужному тарифу после загрузки
+  useEffect(() => {
+    if (!focus || tariffsLoading) return
+    const t = setTimeout(() => {
+      const el = document.getElementById(`tariff-${focus}`)
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }, 100)
+    return () => clearTimeout(t)
+  }, [focus, tariffsLoading])
 
   const { data: submission } = useQuery<Submission | null>({
     queryKey: ['my-submission'],
@@ -67,12 +81,21 @@ export function TariffsPage() {
               </>
             ) : (
               visibleTariffs.map((tariff) => (
-                <TariffCard
+                <div
                   key={tariff.id}
-                  tariff={tariff}
-                  featured={tariff.code === 'ashide_2'}
-                  submission={submission}
-                />
+                  id={`tariff-${tariff.code}`}
+                  className={
+                    focus === tariff.code
+                      ? 'ring-4 ring-brand-300 rounded-3xl scroll-mt-24 transition-shadow'
+                      : 'scroll-mt-24'
+                  }
+                >
+                  <TariffCard
+                    tariff={tariff}
+                    featured={tariff.code === 'ashide_2'}
+                    submission={submission}
+                  />
+                </div>
               ))
             )}
           </div>

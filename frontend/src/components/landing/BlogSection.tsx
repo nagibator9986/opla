@@ -11,7 +11,12 @@ const CATEGORY_BADGE: Record<BlogCategory, string> = {
   philosophy: 'bg-violet-100 text-violet-800 ring-violet-200',
 }
 
-export function BlogSection() {
+interface BlogSectionProps {
+  content?: Record<string, string>
+}
+
+export function BlogSection({ content }: BlogSectionProps = {}) {
+  const c = content ?? {}
   const { data: posts, isLoading } = useQuery({
     queryKey: ['blog'],
     queryFn: listBlogPosts,
@@ -27,14 +32,13 @@ export function BlogSection() {
         <div className="flex items-end justify-between flex-wrap gap-4 mb-10 md:mb-12">
           <div className="max-w-xl">
             <Badge variant="neutral" className="mb-4">
-              Информационный блок
+              {c.blog_badge ?? 'Информационный блок'}
             </Badge>
             <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-ink-900 tracking-tight">
-              Статьи
+              {c.blog_title ?? 'Статьи'}
             </h2>
             <p className="mt-3 text-base md:text-lg text-ink-600 leading-relaxed">
-              Материалы о методе Baqsy и Коде Вечного Иля — для тех, кто хочет
-              понять подход глубже перед аудитом.
+              {c.blog_subtitle ?? 'Материалы о методе Baqsy и Коде Вечного Иля — для тех, кто хочет понять подход глубже перед аудитом.'}
             </p>
           </div>
           {visible.length > 0 && (
@@ -42,7 +46,7 @@ export function BlogSection() {
               to="/blog"
               className="inline-flex items-center gap-1 text-sm font-semibold text-brand-700 hover:text-brand-600"
             >
-              Все материалы
+              {c.blog_link_all ?? 'Все материалы'}
               <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
                 <path
                   fillRule="evenodd"

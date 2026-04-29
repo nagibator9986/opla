@@ -25,18 +25,23 @@ const TEASER_BRANDS: { slug: string; label: string }[] = [
   { slug: 'mcdonalds', label: 'McDonald’s' },
 ]
 
-export function CasesSection() {
+interface CasesSectionProps {
+  content?: Record<string, string>
+}
+
+export function CasesSection({ content }: CasesSectionProps = {}) {
+  const c = content ?? {}
   return (
     <Section id="cases" background="ink-50">
       <Container>
-        <TeaserLogoStrip />
+        <TeaserLogoStrip caption={c.cases_landing_caption ?? 'Среди разборов'} />
 
         <div className="mt-12 md:mt-14 flex justify-center">
           <Link
             to="/cases"
             className="group inline-flex items-center gap-3 px-8 py-4 md:py-5 rounded-2xl bg-ink-900 text-white text-base md:text-lg font-semibold tracking-tight hover:bg-ink-800 transition-all shadow-[0_10px_30px_rgb(15_23_42_/_0.18)] hover:shadow-[0_14px_40px_rgb(15_23_42_/_0.28)] hover:-translate-y-0.5"
           >
-            Смотреть кейсы мировых компаний
+            {c.cases_landing_button ?? 'Смотреть кейсы мировых компаний'}
             <svg
               className="w-5 h-5 transition-transform group-hover:translate-x-1"
               viewBox="0 0 20 20"
@@ -56,7 +61,7 @@ export function CasesSection() {
   )
 }
 
-function TeaserLogoStrip() {
+function TeaserLogoStrip({ caption }: { caption: string }) {
   const doubled = [...TEASER_BRANDS, ...TEASER_BRANDS]
   return (
     <div
@@ -70,7 +75,7 @@ function TeaserLogoStrip() {
       }}
     >
       <p className="text-center text-[11px] uppercase tracking-[0.22em] text-ink-400 mb-7 md:mb-8">
-        Среди разборов
+        {caption}
       </p>
       <div className="overflow-hidden">
         <ul
