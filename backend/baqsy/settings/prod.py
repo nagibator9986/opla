@@ -97,12 +97,19 @@ try:
                 "class": "logging.StreamHandler",
                 "formatter": "json",
             },
+            "null": {"class": "logging.NullHandler"},
         },
         "root": {"handlers": ["console"], "level": "INFO"},
         "loggers": {
             "django": {"handlers": ["console"], "level": "INFO", "propagate": False},
             "celery": {"handlers": ["console"], "level": "INFO", "propagate": False},
             "apps": {"handlers": ["console"], "level": "INFO", "propagate": False},
+            # Чужие боты бьют в наш IP с произвольными HTTP_HOST — Django их
+            # отклоняет, но засирает логи трейсбэками. Глушим именно этот логгер.
+            "django.security.DisallowedHost": {
+                "handlers": ["null"],
+                "propagate": False,
+            },
         },
     }
 
@@ -130,7 +137,14 @@ except ImportError:
             "json": {"format": "%(asctime)s %(name)s %(levelname)s %(message)s"}
         },
         "handlers": {
-            "console": {"class": "logging.StreamHandler", "formatter": "json"}
+            "console": {"class": "logging.StreamHandler", "formatter": "json"},
+            "null": {"class": "logging.NullHandler"},
         },
         "root": {"handlers": ["console"], "level": "INFO"},
+        "loggers": {
+            "django.security.DisallowedHost": {
+                "handlers": ["null"],
+                "propagate": False,
+            },
+        },
     }
