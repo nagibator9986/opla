@@ -56,6 +56,7 @@ export function HeroSection({ content }: HeroSectionProps) {
               label={content.hero_pkg1_label ?? 'Пакет 1'}
               title={content.hero_pkg1_title ?? 'Ashide 1 (1 сотрудник)'}
               price={content.hero_pkg1_price ?? '199$'}
+              priceKzt={content.hero_pkg1_price_kzt ?? '≈ 100 000 ₸'}
               isAuthenticated={isAuthenticated}
               ctaText={ctaText}
               focus="ashide_1"
@@ -64,6 +65,7 @@ export function HeroSection({ content }: HeroSectionProps) {
               label={content.hero_pkg2_label ?? 'Пакет 2'}
               title={content.hero_pkg2_title ?? 'Ashino + Ashide (3–7 сотрудников)'}
               price={content.hero_pkg2_price ?? '799$'}
+              priceKzt={content.hero_pkg2_price_kzt ?? '≈ 415 000 ₸'}
               isAuthenticated={isAuthenticated}
               ctaText={ctaText}
               focus="ashide_2"
@@ -94,6 +96,7 @@ function PackageCard({
   label,
   title,
   price,
+  priceKzt,
   isAuthenticated,
   ctaText,
   focus,
@@ -101,6 +104,7 @@ function PackageCard({
   label: string
   title: string
   price: string
+  priceKzt: string
   isAuthenticated: boolean
   ctaText: string
   focus: string
@@ -121,6 +125,9 @@ function PackageCard({
       <div className="mt-1 text-2xl md:text-3xl font-extrabold tracking-tight tabular-nums">
         {price}
       </div>
+      {priceKzt && (
+        <div className="text-xs text-ink-300 mt-0.5 tabular-nums">{priceKzt}</div>
+      )}
       {isAuthenticated && (
         <div className="mt-2 text-xs font-semibold text-brand-300 group-hover:text-brand-200 transition-colors">
           {ctaText}

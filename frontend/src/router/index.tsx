@@ -6,6 +6,9 @@ import { CasesPage } from '../pages/CasesPage'
 import { CaseDetailPage } from '../pages/CaseDetailPage'
 import { BlogPostPage } from '../pages/BlogPostPage'
 import { InvitePage } from '../pages/InvitePage'
+import { OfferPage } from '../pages/OfferPage'
+import { PrivacyPage } from '../pages/PrivacyPage'
+import { RefundPage } from '../pages/RefundPage'
 import { ProtectedRoute } from './ProtectedRoute'
 
 export const router = createBrowserRouter([
@@ -15,5 +18,8 @@ export const router = createBrowserRouter([
   { path: '/cases/:slug', element: <CaseDetailPage /> },
   { path: '/blog/:slug', element: <BlogPostPage /> },
   { path: '/invite/:token', element: <InvitePage /> },
+  { path: '/offer', element: <OfferPage /> },
+  { path: '/privacy', element: <PrivacyPage /> },
+  { path: '/refund', element: <RefundPage /> },
   { path: '/cabinet', element: <ProtectedRoute><CabinetPage /></ProtectedRoute> },
 ])

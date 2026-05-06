@@ -15,6 +15,8 @@ const FALLBACK: Record<string, string> = {
   hero_pkg2_label: 'Пакет 2',
   hero_pkg2_title: 'Ashino + Ashide (3–7 сотрудников)',
   hero_pkg2_price: '799$',
+  hero_pkg1_price_kzt: '≈ 100 000 ₸',
+  hero_pkg2_price_kzt: '≈ 415 000 ₸',
   hero_pkg_cta_authed: 'Заказать аудит →',
   hero_stat1_value: '27',
   hero_stat1_label: 'параметров',
@@ -50,6 +52,15 @@ const FALLBACK: Record<string, string> = {
     'Вы заполняете анкету из 27 вопросов в Telegram-боте. Дополнительных документов не требуется.',
   faq_3_q: 'Можно ли обновить тариф?',
   faq_3_a: 'Да, вы можете перейти с Ashide 1 на Ashide 2 в личном кабинете с доплатой.',
+  // Реквизиты + правовые
+  legal_company_name: 'ИП «Baqsy»',
+  legal_company_bin: '',
+  legal_company_address: 'Республика Казахстан, г. Алматы',
+  footer_description:
+    'Персональный бизнес-аудит для компаний Казахстана. Живой эксперт, именной PDF-отчёт, доставка в WhatsApp за 3–5 рабочих дней.',
+  legal_offer_updated: '29 апреля 2026 г.',
+  legal_privacy_updated: '29 апреля 2026 г.',
+  legal_refund_updated: '29 апреля 2026 г.',
 }
 
 export function useContentBlocks() {
