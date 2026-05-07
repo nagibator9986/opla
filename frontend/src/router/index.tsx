@@ -15,7 +15,6 @@ const InvitePage = lazy(() => import('../pages/InvitePage').then((m) => ({ defau
 const OfferPage = lazy(() => import('../pages/OfferPage').then((m) => ({ default: m.OfferPage })))
 const PrivacyPage = lazy(() => import('../pages/PrivacyPage').then((m) => ({ default: m.PrivacyPage })))
 const RefundPage = lazy(() => import('../pages/RefundPage').then((m) => ({ default: m.RefundPage })))
-const MagicLinkPage = lazy(() => import('../pages/MagicLinkPage').then((m) => ({ default: m.MagicLinkPage })))
 
 export const router = createBrowserRouter([
   { path: '/', element: <LandingPage /> },
@@ -44,10 +43,6 @@ export const router = createBrowserRouter([
   {
     path: '/refund',
     element: <Suspense fallback={<PageFallback />}><RefundPage /></Suspense>,
-  },
-  {
-    path: '/auth/magic/:token',
-    element: <Suspense fallback={<PageFallback />}><MagicLinkPage /></Suspense>,
   },
   {
     path: '/cabinet',

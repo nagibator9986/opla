@@ -17,6 +17,9 @@ log = logging.getLogger(__name__)
 
 _client: "OpenAI | None" = None
 
+ALLOWED_MODELS = {"gpt-4o-mini", "gpt-4o", "gpt-4.1-mini", "gpt-4.1-nano"}
+SAFE_FALLBACK_MODEL = "gpt-4o-mini"
+
 
 def _get_client() -> "OpenAI | None":
     """Singleton OpenAI client. Returns None if SDK missing or key unset."""
@@ -71,6 +74,13 @@ def chat_completion(
             "AI-ассистент временно недоступен: платформа не настроена. "
             "Напишите нам на info@baqsy.kz — мы ответим лично."
         )
+    if model not in ALLOWED_MODELS:
+        log.warning(
+            "AIAssistantConfig.model=%r is not in ALLOWED_MODELS — "
+            "falling back to %s to prevent runaway spend",
+            model, SAFE_FALLBACK_MODEL,
+        )
+        model = SAFE_FALLBACK_MODEL
     try:
         resp = client.chat.completions.create(
             model=model,

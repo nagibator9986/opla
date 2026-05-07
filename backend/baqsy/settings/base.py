@@ -287,11 +287,6 @@ UNFOLD = {
                         "icon": "chat",
                         "link": reverse_lazy("admin:ai_chatsession_changelist"),
                     },
-                    {
-                        "title": _("Magic-ссылки"),
-                        "icon": "link",
-                        "link": reverse_lazy("admin:accounts_magiclink_changelist"),
-                    },
                 ],
             },
             {

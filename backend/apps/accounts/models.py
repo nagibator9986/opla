@@ -58,60 +58,14 @@ class ClientProfile(TimestampedModel):
         return f"{self.name} ({self.company})"
 
 
-def _gen_magic_token() -> str:
+# Эти helpers нужны только для обратной совместимости с миграцией 0004_magiclink:
+# Django при загрузке миграции 0004 ищет `apps.accounts.models._gen_magic_token`
+# и `_default_magic_expires` как default-callables для CharField/DateTimeField.
+# Удаление модели MagicLink сделано миграцией 0005, но 0004 остаётся в истории
+# и должна быть импортируемой. После squash миграций можно убрать.
+def _gen_magic_token() -> str:  # pragma: no cover
     return secrets.token_urlsafe(32)
 
 
-def _default_magic_expires():
+def _default_magic_expires():  # pragma: no cover
     return timezone.now() + timedelta(minutes=15)
-
-
-class MagicLink(TimestampedModel):
-    """Одноразовая ссылка для входа клиента по WhatsApp-номеру.
-
-    Поток: клиент в модалке «Войти» вводит свой WhatsApp → backend ищет
-    ClientProfile по `phone_wa`, создаёт MagicLink с TTL 15 мин и шлёт
-    ссылку через WhatsApp-провайдера. По клику ссылка валидируется
-    (токен не использован, не истёк) и выдаётся JWT-пара.
-    """
-
-    token = models.CharField(
-        max_length=64, unique=True, default=_gen_magic_token, editable=False
-    )
-    client = models.ForeignKey(
-        ClientProfile,
-        on_delete=models.CASCADE,
-        related_name="magic_links",
-    )
-    expires_at = models.DateTimeField(default=_default_magic_expires)
-    used_at = models.DateTimeField(null=True, blank=True)
-    requested_ip = models.GenericIPAddressField(null=True, blank=True)
-    delivered_via = models.CharField(
-        max_length=20,
-        blank=True,
-        help_text="whatsapp / fallback / manual",
-    )
-
-    class Meta:
-        verbose_name = "Magic-ссылка"
-        verbose_name_plural = "Magic-ссылки"
-        ordering = ["-created_at"]
-        indexes = [
-            models.Index(fields=["token"]),
-            models.Index(fields=["client", "-created_at"]),
-        ]
-
-    def __str__(self):
-        return f"MagicLink {self.token[:10]}… → {self.client_id}"
-
-    @property
-    def is_expired(self) -> bool:
-        return timezone.now() >= self.expires_at
-
-    @property
-    def is_used(self) -> bool:
-        return self.used_at is not None
-
-    @property
-    def is_valid(self) -> bool:
-        return not self.is_used and not self.is_expired
