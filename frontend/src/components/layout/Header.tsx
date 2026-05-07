@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { Logo } from '../ui/Logo'
+import { LoginModal } from '../auth/LoginModal'
 import { useAuthStore } from '../../store/authStore'
 import { cn } from '../../lib/cn'
 
@@ -17,6 +18,7 @@ interface HeaderProps {
 export function Header({ variant = 'solid' }: HeaderProps) {
   const [mobileOpen, setMobileOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
+  const [loginOpen, setLoginOpen] = useState(false)
   const location = useLocation()
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
   const isLanding = location.pathname === '/'
@@ -68,6 +70,13 @@ export function Header({ variant = 'solid' }: HeaderProps) {
       : 'bg-ink-900 text-white hover:bg-ink-800',
   )
 
+  const loginBtnStyle = cn(
+    'hidden sm:inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-semibold transition-colors',
+    isOverDark
+      ? 'text-white/90 hover:text-white hover:bg-white/10 ring-1 ring-white/20'
+      : 'text-ink-700 hover:text-ink-900 hover:bg-ink-100/70 ring-1 ring-ink-200/70',
+  )
+
   const mobileBtnStyle = cn(
     'md:hidden inline-flex items-center justify-center w-10 h-10 rounded-lg transition-colors',
     isOverDark
@@ -102,9 +111,19 @@ export function Header({ variant = 'solid' }: HeaderProps) {
                 Кабинет
               </Link>
             ) : (
-              <Link to="/tariffs" className={ctaStyle}>
-                Выбрать тариф
-              </Link>
+              <>
+                <button
+                  type="button"
+                  onClick={() => setLoginOpen(true)}
+                  className={loginBtnStyle}
+                  aria-label="Войти в кабинет по ссылке в WhatsApp"
+                >
+                  Войти
+                </button>
+                <Link to="/tariffs" className={ctaStyle}>
+                  Выбрать тариф
+                </Link>
+              </>
             )}
 
             <button
@@ -155,19 +174,33 @@ export function Header({ variant = 'solid' }: HeaderProps) {
                 Перейти в кабинет
               </Link>
             ) : (
-              <Link
-                to="/tariffs"
-                className="block px-4 py-3 rounded-xl bg-ink-900 text-white text-base font-semibold text-center hover:bg-ink-800 transition-colors"
-                onClick={() => setMobileOpen(false)}
-              >
-                Выбрать тариф
-              </Link>
+              <>
+                <Link
+                  to="/tariffs"
+                  className="block px-4 py-3 rounded-xl bg-ink-900 text-white text-base font-semibold text-center hover:bg-ink-800 transition-colors"
+                  onClick={() => setMobileOpen(false)}
+                >
+                  Выбрать тариф
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMobileOpen(false)
+                    setLoginOpen(true)
+                  }}
+                  className="block w-full px-4 py-3 rounded-xl text-base font-semibold text-ink-800 ring-1 ring-ink-200 hover:bg-ink-50 transition-colors text-center"
+                >
+                  Войти
+                </button>
+              </>
             )}
             {/* Chat launcher is globally available via FloatingChatButton,
                 we intentionally don't duplicate it in the mobile menu. */}
           </div>
         </div>
       </div>
+
+      <LoginModal open={loginOpen} onClose={() => setLoginOpen(false)} />
     </header>
   )
 }

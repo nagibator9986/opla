@@ -29,7 +29,7 @@ export function HeroSection({ content }: HeroSectionProps) {
         className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-ink-950 to-transparent"
       />
 
-      <Container className="relative min-h-[640px] lg:min-h-[720px] flex items-center pt-28 pb-20 md:pt-32 md:pb-28">
+      <Container className="relative min-h-[560px] lg:min-h-[640px] flex items-center pt-28 pb-20 md:pt-32 md:pb-24">
         <div className="w-full max-w-3xl mx-auto lg:mx-0 text-center lg:text-left animate-fade-in">
           <Badge
             variant="brand"
@@ -55,8 +55,7 @@ export function HeroSection({ content }: HeroSectionProps) {
             <PackageCard
               label={content.hero_pkg1_label ?? 'Пакет 1'}
               title={content.hero_pkg1_title ?? 'Ashide 1 (1 сотрудник)'}
-              price={content.hero_pkg1_price ?? '199$'}
-              priceKzt={content.hero_pkg1_price_kzt ?? '≈ 100 000 ₸'}
+              price={content.hero_pkg1_price ?? '95 000 ₸'}
               isAuthenticated={isAuthenticated}
               ctaText={ctaText}
               focus="ashide_1"
@@ -64,28 +63,12 @@ export function HeroSection({ content }: HeroSectionProps) {
             <PackageCard
               label={content.hero_pkg2_label ?? 'Пакет 2'}
               title={content.hero_pkg2_title ?? 'Ashino + Ashide (3–7 сотрудников)'}
-              price={content.hero_pkg2_price ?? '799$'}
-              priceKzt={content.hero_pkg2_price_kzt ?? '≈ 415 000 ₸'}
+              price={content.hero_pkg2_price ?? '395 000 ₸'}
               isAuthenticated={isAuthenticated}
               ctaText={ctaText}
               focus="ashide_2"
             />
           </div>
-
-          <dl className="mt-10 md:mt-12 grid grid-cols-3 gap-4 sm:gap-6 max-w-lg mx-auto lg:mx-0">
-            {[
-              { k: content.hero_stat1_value ?? '27', v: content.hero_stat1_label ?? 'параметров' },
-              { k: content.hero_stat2_value ?? '3–5', v: content.hero_stat2_label ?? 'рабочих дней' },
-              { k: content.hero_stat3_value ?? 'до 7', v: content.hero_stat3_label ?? 'участников в группе' },
-            ].map((s) => (
-              <div key={s.v} className="text-center lg:text-left">
-                <dt className="text-3xl md:text-4xl font-bold text-white tracking-tight">{s.k}</dt>
-                <dd className="mt-1 text-[11px] md:text-xs text-ink-300 uppercase tracking-wide">
-                  {s.v}
-                </dd>
-              </div>
-            ))}
-          </dl>
         </div>
       </Container>
     </section>
@@ -96,7 +79,6 @@ function PackageCard({
   label,
   title,
   price,
-  priceKzt,
   isAuthenticated,
   ctaText,
   focus,
@@ -104,7 +86,6 @@ function PackageCard({
   label: string
   title: string
   price: string
-  priceKzt: string
   isAuthenticated: boolean
   ctaText: string
   focus: string
@@ -125,9 +106,6 @@ function PackageCard({
       <div className="mt-1 text-2xl md:text-3xl font-extrabold tracking-tight tabular-nums">
         {price}
       </div>
-      {priceKzt && (
-        <div className="text-xs text-ink-300 mt-0.5 tabular-nums">{priceKzt}</div>
-      )}
       {isAuthenticated && (
         <div className="mt-2 text-xs font-semibold text-brand-300 group-hover:text-brand-200 transition-colors">
           {ctaText}

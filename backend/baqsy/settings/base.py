@@ -158,6 +158,13 @@ BOT_API_SECRET = env("BOT_API_SECRET", default="dev-bot-secret")
 CLOUDPAYMENTS_PUBLIC_ID = env("CLOUDPAYMENTS_PUBLIC_ID", default="")
 CLOUDPAYMENTS_API_SECRET = env("CLOUDPAYMENTS_API_SECRET", default="")
 
+# Wazzup24 — WhatsApp delivery (magic-link, audit reports)
+WAZZUP_API_KEY = env("WAZZUP_API_KEY", default="")
+WAZZUP_CHANNEL_ID = env("WAZZUP_CHANNEL_ID", default="")
+
+# Public site URL — used to build absolute links sent to clients (magic-link, etc.)
+PUBLIC_SITE_URL = env("PUBLIC_SITE_URL", default="https://baqsy.tnriazun.com")
+
 # Django REST Framework
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
@@ -279,6 +286,11 @@ UNFOLD = {
                         "title": _("Чат-сессии"),
                         "icon": "chat",
                         "link": reverse_lazy("admin:ai_chatsession_changelist"),
+                    },
+                    {
+                        "title": _("Magic-ссылки"),
+                        "icon": "link",
+                        "link": reverse_lazy("admin:accounts_magiclink_changelist"),
                     },
                 ],
             },

@@ -9,6 +9,7 @@ from apps.submissions.group_views import (
 )
 
 urlpatterns = [
+    path("auth/", include("apps.accounts.urls")),
     path("chat/", include("apps.ai.urls")),
     path("cases/", include("apps.cases.urls")),
     path("blog/", include("apps.blog.urls")),
