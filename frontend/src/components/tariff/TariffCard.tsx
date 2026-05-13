@@ -1,10 +1,16 @@
+import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+
 import type { Tariff, Submission } from '../../types/api'
 import { useAuthStore } from '../../store/authStore'
+import { useSiteSettings } from '../../hooks/useSiteSettings'
 import { openPaymentWidget } from '../payment/openPaymentWidget'
 import { useToast } from '../ui/toast-context'
 import { Button } from '../ui/Button'
 import { Badge } from '../ui/Badge'
 import { cn } from '../../lib/cn'
+import { apiErrorMessage } from '../../lib/apiError'
+import api from '../../api/axios'
 
 interface TariffCardProps {
   tariff: Tariff
@@ -57,8 +63,44 @@ export function TariffCard({ tariff, featured = false, submission, features, onS
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
   const clientProfile = useAuthStore((s) => s.clientProfile)
   const toast = useToast()
+  const navigate = useNavigate()
+  const { data: site } = useSiteSettings()
+  const paymentsEnabled = site?.payments_enabled ?? false
+  const [submittingFree, setSubmittingFree] = useState(false)
 
   const items = features ?? DEFAULT_FEATURES[tariff.code] ?? []
+
+  // Свободный режим — создаём Submission без оплаты и сразу в кабинет.
+  const handleFreeStart = async () => {
+    if (!isAuthenticated) {
+      toast.show({
+        kind: 'info',
+        title: 'Сначала пройдите регистрацию',
+        description: 'Нажмите на чат справа внизу — ассистент Baqsy AI задаст несколько вопросов и оформит профиль.',
+      })
+      return
+    }
+    if (submittingFree) return
+    setSubmittingFree(true)
+    try {
+      await api.post('/submissions/start-free/', { tariff_code: tariff.code })
+      toast.show({
+        kind: 'success',
+        title: 'Аудит создан',
+        description: 'Перейдите в личный кабинет, чтобы начать анкету в чате.',
+      })
+      onSuccess?.()
+      navigate('/cabinet')
+    } catch (err) {
+      toast.show({
+        kind: 'error',
+        title: 'Не удалось создать заказ',
+        description: apiErrorMessage(err, 'Попробуйте ещё раз или напишите info@baqsy.kz.'),
+      })
+    } finally {
+      setSubmittingFree(false)
+    }
+  }
 
   const handlePay = () => {
     if (!isAuthenticated) {
@@ -167,19 +209,45 @@ export function TariffCard({ tariff, featured = false, submission, features, onS
           ))}
         </ul>
 
-        <Button variant={featured ? 'secondary' : 'primary'} size="lg" fullWidth onClick={handlePay}>
-          Оплатить
-          <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
-            <path
-              fillRule="evenodd"
-              d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z"
-              clipRule="evenodd"
-            />
-          </svg>
-        </Button>
-        <p className={cn('mt-3 text-center text-[11px]', featured ? 'text-ink-400' : 'text-ink-500')}>
-          3-D Secure • CloudPayments KZ
-        </p>
+        {paymentsEnabled ? (
+          <>
+            <Button variant={featured ? 'secondary' : 'primary'} size="lg" fullWidth onClick={handlePay}>
+              Оплатить
+              <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
+                <path
+                  fillRule="evenodd"
+                  d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            </Button>
+            <p className={cn('mt-3 text-center text-[11px]', featured ? 'text-ink-400' : 'text-ink-500')}>
+              3-D Secure • CloudPayments KZ
+            </p>
+          </>
+        ) : (
+          <>
+            <Button
+              variant={featured ? 'secondary' : 'primary'}
+              size="lg"
+              fullWidth
+              onClick={handleFreeStart}
+              disabled={submittingFree}
+            >
+              {submittingFree ? 'Создаём…' : 'Начать аудит бесплатно'}
+              <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
+                <path
+                  fillRule="evenodd"
+                  d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            </Button>
+            <p className={cn('mt-3 text-center text-[11px]', featured ? 'text-ink-400' : 'text-ink-500')}>
+              Период открытого доступа · оплата не требуется
+            </p>
+          </>
+        )}
       </div>
     </div>
   )

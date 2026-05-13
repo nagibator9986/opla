@@ -8,10 +8,12 @@ from apps.submissions.views import (
     NextQuestionView,
     AnswerCreateView,
     SubmissionCompleteView,
+    StartFreeSubmissionView,
 )
 
 urlpatterns = [
     path("", SubmissionCreateView.as_view(), name="submission-create"),
+    path("start-free/", StartFreeSubmissionView.as_view(), name="submission-start-free"),
     path("my/", MySubmissionView.as_view(), name="submission-my"),
     path("<uuid:pk>/", SubmissionDetailView.as_view(), name="submission-detail"),
     path("<uuid:pk>/next-question/", NextQuestionView.as_view(), name="submission-next-question"),

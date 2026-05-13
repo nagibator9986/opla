@@ -5,6 +5,9 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.accounts.models import ClientProfile
+from apps.core.models import SiteSettings
+from apps.industries.models import Industry, QuestionnaireTemplate
+from apps.payments.models import Tariff
 from apps.submissions.models import Submission, Answer
 from apps.submissions.serializers import (
     SubmissionCreateSerializer,
@@ -55,6 +58,93 @@ class SubmissionCreateView(APIView):
         )
         serializer.is_valid(raise_exception=True)
         submission = serializer.save()
+        return Response(
+            SubmissionDetailSerializer(submission).data,
+            status=status.HTTP_201_CREATED,
+        )
+
+
+class StartFreeSubmissionView(APIView):
+    """POST /api/v1/submissions/start-free/ — старт аудита БЕЗ оплаты.
+
+    Доступен только когда админ выключил платёжную систему в Настройках
+    платформы (SiteSettings.payments_enabled = False). Создаёт Submission
+    сразу в статусе `paid` и переводит в `in_progress_full` — клиент
+    может приступать к анкете.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        settings_ = SiteSettings.get_solo()
+        if settings_.payments_enabled:
+            return Response(
+                {
+                    "detail": (
+                        "Свободный режим выключен. Оформите оплату через "
+                        "стандартный флоу /tariffs."
+                    )
+                },
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        client = _get_client_profile(request.user)
+        if not client:
+            return Response(
+                {"detail": "Профиль клиента не найден."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        tariff_code = (request.data.get("tariff_code") or "").strip()
+        if not tariff_code:
+            return Response(
+                {"detail": "Не указан tariff_code."}, status=400,
+            )
+        try:
+            tariff = Tariff.objects.get(code=tariff_code, is_active=True)
+        except Tariff.DoesNotExist:
+            return Response({"detail": "Тариф не найден."}, status=404)
+
+        # Если у клиента уже есть активный заказ — возвращаем его, новый не создаём.
+        existing = (
+            Submission.objects.filter(client=client)
+            .exclude(status__in=[Submission.Status.DELIVERED])
+            .order_by("-created_at")
+            .first()
+        )
+        if existing is not None:
+            return Response(SubmissionDetailSerializer(existing).data)
+
+        # Выбор шаблона анкеты: индустрия клиента → активный template.
+        # Если индустрия не задана, берём первый активный шаблон.
+        industry = client.industry
+        template = None
+        if industry:
+            template = QuestionnaireTemplate.objects.filter(
+                industry=industry, is_active=True
+            ).first()
+        if not template:
+            template = QuestionnaireTemplate.objects.filter(is_active=True).first()
+        if not template:
+            return Response(
+                {"detail": "В системе нет активной анкеты. Обратитесь в поддержку."},
+                status=503,
+            )
+
+        submission = Submission.objects.create(
+            client=client,
+            template=template,
+            tariff=tariff,
+        )
+        # Двигаем FSM: created → in_progress_basic → paid → in_progress_full
+        try:
+            submission.start_onboarding()
+            submission.mark_paid()
+            submission.start_questionnaire()
+            submission.save()
+        except Exception:
+            # Если FSM-переход не удался — оставляем как есть, клиент сам стартанёт через чат
+            pass
+
         return Response(
             SubmissionDetailSerializer(submission).data,
             status=status.HTTP_201_CREATED,

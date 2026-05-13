@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '../store/authStore'
 import { useTariffs } from '../hooks/useTariffs'
+import { useSiteSettings } from '../hooks/useSiteSettings'
 import { Header } from '../components/layout/Header'
 import { Footer } from '../components/layout/Footer'
 import { Container } from '../components/ui/Container'
@@ -15,6 +16,9 @@ import type { Submission } from '../types/api'
 export function TariffsPage() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
   const { data: tariffs, isLoading: tariffsLoading } = useTariffs()
+  const { data: site } = useSiteSettings()
+  const paymentsEnabled = site?.payments_enabled ?? false
+  const freeBanner = site?.free_mode_banner ?? 'Период открытого доступа · аудит бесплатно'
   const [searchParams] = useSearchParams()
   const focus = searchParams.get('focus')
 
@@ -56,6 +60,17 @@ export function TariffsPage() {
             <p className="mt-4 text-ink-600 text-base md:text-lg max-w-2xl mx-auto leading-relaxed">
               Базовый формат для быстрого старта или полный разбор для глубокого понимания бизнеса.
             </p>
+
+            {!paymentsEnabled && (
+              <div className="mt-8 inline-flex items-center gap-3 px-5 py-3 rounded-full bg-emerald-50 border border-emerald-200 max-w-xl mx-auto">
+                <span className="flex-shrink-0 inline-flex items-center justify-center w-8 h-8 rounded-full bg-emerald-100 text-emerald-700">
+                  <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                </span>
+                <p className="text-sm font-semibold text-emerald-900">{freeBanner}</p>
+              </div>
+            )}
 
             {!isAuthenticated && (
               <div className="mt-8 inline-flex flex-col sm:flex-row items-start sm:items-center gap-3 px-5 py-4 rounded-2xl bg-white border border-amber-200 shadow-[0_1px_2px_rgb(15_23_42_/_0.04)] max-w-xl mx-auto">

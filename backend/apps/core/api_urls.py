@@ -1,6 +1,7 @@
 """Central API v1 URL router."""
 from django.urls import include, path
 
+from apps.core.views import SiteSettingsView
 from apps.submissions.group_views import (
     CreateGroupView,
     GroupStatusView,
@@ -9,6 +10,7 @@ from apps.submissions.group_views import (
 )
 
 urlpatterns = [
+    path("site/", SiteSettingsView.as_view(), name="site-settings"),
     path("chat/", include("apps.ai.urls")),
     path("cases/", include("apps.cases.urls")),
     path("blog/", include("apps.blog.urls")),

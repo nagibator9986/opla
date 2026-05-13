@@ -319,6 +319,16 @@ UNFOLD = {
                     },
                 ],
             },
+            {
+                "title": _("Платформа"),
+                "items": [
+                    {
+                        "title": _("Настройки платформы"),
+                        "icon": "tune",
+                        "link": reverse_lazy("admin:core_sitesettings_changelist"),
+                    },
+                ],
+            },
         ],
     },
 }
