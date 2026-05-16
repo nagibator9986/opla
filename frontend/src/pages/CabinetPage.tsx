@@ -8,6 +8,7 @@ import { Badge } from '../components/ui/Badge'
 import { StatusProgress } from '../components/cabinet/StatusProgress'
 import { PdfDownloadButton } from '../components/cabinet/PdfDownloadButton'
 import { UpsellCard } from '../components/cabinet/UpsellCard'
+import { ContinueQuestionnaireButton } from '../components/cabinet/ContinueQuestionnaireButton'
 import { FloatingChatButton } from '../components/chat/ChatLauncher'
 import { useSubmission } from '../hooks/useSubmission'
 import { useAuthStore } from '../store/authStore'
@@ -93,26 +94,34 @@ export function CabinetPage() {
                 <StatusProgress status={submission.status} />
               </Card>
 
-              {submission.status === 'in_progress_full' && total > 0 && (
-                <Card>
-                  <div className="flex items-center justify-between gap-3 mb-3">
+              {submission.status === 'in_progress_full' && (
+                <Card className="border-brand-300 ring-2 ring-brand-200/60 bg-gradient-to-br from-white to-brand-50/40">
+                  <div className="flex items-start justify-between gap-3 mb-4">
                     <div className="min-w-0">
-                      <h3 className="text-base font-bold text-ink-900">Прогресс анкеты</h3>
-                      <p className="text-sm text-ink-500">Заполняется в диалоге с ассистентом</p>
+                      <h3 className="text-lg font-bold text-ink-900">
+                        {answered > 0 ? 'Продолжить анкету' : 'Начать анкету'}
+                      </h3>
+                      <p className="text-sm text-ink-600 mt-1">
+                        {answered > 0
+                          ? 'Можно прерывать и возвращаться — прогресс сохраняется.'
+                          : 'Эксперт начнёт готовить отчёт сразу после завершения анкеты.'}
+                      </p>
                     </div>
-                    <span className="text-2xl font-bold text-brand-600 tabular-nums flex-shrink-0">
-                      {answered}<span className="text-ink-300">/</span>{total}
-                    </span>
+                    {total > 0 && (
+                      <span className="text-2xl font-bold text-brand-600 tabular-nums flex-shrink-0">
+                        {answered}<span className="text-ink-300">/</span>{total}
+                      </span>
+                    )}
                   </div>
-                  <div className="h-2 rounded-full bg-ink-100 overflow-hidden">
-                    <div
-                      className="h-full bg-gradient-to-r from-brand-400 to-brand-500 rounded-full transition-all duration-500"
-                      style={{ width: `${pct}%` }}
-                    />
-                  </div>
-                  <p className="mt-5 text-sm text-ink-500">
-                    Откройте плавающий чат в правом нижнем углу и продолжите диалог — ассистент всё сохранит.
-                  </p>
+                  {total > 0 && (
+                    <div className="h-2 rounded-full bg-ink-100 overflow-hidden mb-5">
+                      <div
+                        className="h-full bg-gradient-to-r from-brand-400 to-brand-500 rounded-full transition-all duration-500"
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                  )}
+                  <ContinueQuestionnaireButton submissionId={submission.id} />
                 </Card>
               )}
 

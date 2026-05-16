@@ -11,6 +11,7 @@ from apps.submissions.group_views import (
 
 urlpatterns = [
     path("site/", SiteSettingsView.as_view(), name="site-settings"),
+    path("auth/", include("apps.accounts.urls")),
     path("chat/", include("apps.ai.urls")),
     path("cases/", include("apps.cases.urls")),
     path("blog/", include("apps.blog.urls")),

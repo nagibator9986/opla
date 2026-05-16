@@ -13,6 +13,7 @@ import {
   type QuestionPayload,
   type QuickReply,
 } from '../../api/chat'
+import { quickLogin } from '../../api/auth'
 import { cn } from '../../lib/cn'
 import { apiErrorMessage } from '../../lib/apiError'
 import { renderMessage } from '../../lib/renderMessage'
@@ -140,6 +141,11 @@ export function ChatWidget({ open, onClose, autoStartQuestionnaireFor }: ChatWid
   // Регистрация: -1 = не начата, 0..N = текущий шаг, N+1 = завершена
   const [regStep, setRegStep] = useState<number>(-1)
   const [regAnswers, setRegAnswers] = useState<Partial<CollectedData>>({})
+  // Quick-login для вернувшихся клиентов (без верификации, MVP)
+  const [loginMode, setLoginMode] = useState(false)
+  const [loginPhone, setLoginPhone] = useState('')
+  const [loginSubmitting, setLoginSubmitting] = useState(false)
+  const [loginError, setLoginError] = useState<string | null>(null)
   const listRef = useRef<HTMLDivElement>(null)
   const nextIdRef = useRef(0)
   const nextId = (prefix: string) => {
@@ -194,6 +200,7 @@ export function ChatWidget({ open, onClose, autoStartQuestionnaireFor }: ChatWid
     if (!open || !sessionId || isAuthenticated) return
     if (regStep !== -1 || currentQuestion) return
     if (autoStartQuestionnaireFor) return
+    if (loginMode) return  // юзер выбрал «Войти» — не запускаем регистрацию
     const t = setTimeout(() => {
       // Проверим, что состояние всё ещё актуально к моменту таймаута
       setRegStep((prev) => {
@@ -202,10 +209,40 @@ export function ChatWidget({ open, onClose, autoStartQuestionnaireFor }: ChatWid
       })
       pushAssistant(REG_STEPS[0].prompt)
       setQuickReplies([])
-    }, 600)
+    }, 1200)  // увеличил с 600 до 1200 мс — чтобы юзер успел нажать «Войти»
     return () => clearTimeout(t)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, sessionId, isAuthenticated, autoStartQuestionnaireFor])
+  }, [open, sessionId, isAuthenticated, autoStartQuestionnaireFor, loginMode])
+
+  const handleQuickLogin = async () => {
+    if (loginSubmitting) return
+    setLoginError(null)
+    if (!loginPhone.trim()) {
+      setLoginError('Введите номер WhatsApp.')
+      return
+    }
+    setLoginSubmitting(true)
+    try {
+      const resp = await quickLogin(loginPhone)
+      setAuth(
+        { id: resp.client_profile_id, name: resp.name },
+        resp.access,
+        resp.refresh,
+      )
+      toast.show({
+        kind: 'success',
+        title: `С возвращением, ${resp.name.split(' ')[0] || resp.name}!`,
+        description: 'Перенаправляем в личный кабинет…',
+      })
+      setLoginMode(false)
+      navigate('/cabinet')
+      onClose()
+    } catch (err) {
+      setLoginError(apiErrorMessage(err, 'Не нашли профиль с таким номером.'))
+    } finally {
+      setLoginSubmitting(false)
+    }
+  }
 
   // Auto-start questionnaire
   useEffect(() => {
@@ -494,9 +531,9 @@ export function ChatWidget({ open, onClose, autoStartQuestionnaireFor }: ChatWid
           />
         )}
 
-        {/* CTA «Зарегистрироваться» — для гостей до старта рег-флоу */}
-        {!isQuestionnaireMode && !isRegistering && !isAuthenticated && (
-          <div className="flex-shrink-0 px-4 pt-3 pb-1 bg-white border-t border-ink-100">
+        {/* CTA — для гостей до старта флоу: Пройти регистрацию ИЛИ Войти */}
+        {!isQuestionnaireMode && !isRegistering && !isAuthenticated && !loginMode && (
+          <div className="flex-shrink-0 px-4 pt-3 pb-1 bg-white border-t border-ink-100 flex items-center justify-between gap-3">
             <button
               onClick={startRegistration}
               className="text-xs font-semibold text-brand-700 hover:text-brand-600 flex items-center gap-1"
@@ -506,11 +543,71 @@ export function ChatWidget({ open, onClose, autoStartQuestionnaireFor }: ChatWid
               </svg>
               Пройти регистрацию
             </button>
+            <button
+              onClick={() => {
+                setLoginMode(true)
+                setLoginError(null)
+              }}
+              className="text-xs font-semibold text-ink-700 hover:text-ink-900 underline underline-offset-2"
+            >
+              Уже регистрировались? Войти
+            </button>
+          </div>
+        )}
+
+        {/* Мини-форма входа по WhatsApp (quick-login, без верификации) */}
+        {loginMode && !isAuthenticated && (
+          <div className="flex-shrink-0 px-4 py-3 bg-white border-t border-ink-100 space-y-2">
+            <div className="flex items-center justify-between gap-2 mb-1">
+              <p className="text-xs font-semibold text-ink-700">
+                Введите номер WhatsApp, который указывали при регистрации
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  setLoginMode(false)
+                  setLoginError(null)
+                  setLoginPhone('')
+                }}
+                className="text-[11px] text-ink-500 hover:text-ink-900 underline underline-offset-2"
+              >
+                ← Назад
+              </button>
+            </div>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault()
+                handleQuickLogin()
+              }}
+              className="flex gap-2"
+            >
+              <input
+                type="tel"
+                inputMode="tel"
+                autoFocus
+                value={loginPhone}
+                onChange={(e) => setLoginPhone(e.target.value)}
+                placeholder="+7 700 123 45 67"
+                className="flex-1 px-4 py-2.5 rounded-xl border border-ink-200 text-base focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-200"
+              />
+              <button
+                type="submit"
+                disabled={loginSubmitting || !loginPhone.trim()}
+                className="inline-flex items-center justify-center px-4 h-11 rounded-xl bg-ink-900 text-white text-sm font-semibold hover:bg-ink-800 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                {loginSubmitting ? '…' : 'Войти'}
+              </button>
+            </form>
+            {loginError && (
+              <p className="text-[12px] text-rose-700 bg-rose-50 border border-rose-200 rounded-lg px-3 py-1.5">
+                {loginError}
+              </p>
+            )}
           </div>
         )}
 
         {/* Свободный чат — текстовый инпут */}
-        {!isQuestionnaireMode && !isRegistering && (
+        {!isQuestionnaireMode && !isRegistering && !loginMode && (
           <form
             onSubmit={(e) => {
               e.preventDefault()
@@ -554,6 +651,40 @@ function prefixStage(q: QuestionPayload): string {
   return q.stage ? `[${q.stage}] ${q.text}` : q.text
 }
 
+// Базовая клиентская валидация шага регистрации.
+// Backend всё равно проверяет всё повторно — это просто чтобы юзер
+// получил мгновенный фидбек, не отправляя мусор.
+function validateRegStep(step: RegStep, raw: string): string | null {
+  const v = raw.trim()
+  if (!v) return 'Введите ответ.'
+  if (v.length < 2) return 'Слишком короткий ответ. Минимум 2 символа.'
+  // Защита от вроде «ааа», «....», «11111»
+  const unique = new Set(v.toLowerCase().replace(/\s/g, ''))
+  if (unique.size <= 1) return 'Похоже на случайный набор. Введите корректно.'
+
+  if (step.key === 'name') {
+    if (v.length < 4) return 'Укажите имя и фамилию полностью.'
+    if (!/^[A-Za-zА-Яа-яЁёҚқҢңӨөҮүҰұІіҺһҒғӘә][A-Za-zА-Яа-яЁёҚқҢңӨөҮүҰұІіҺһҒғӘә\s\-.']+$/.test(v)) {
+      return 'Имя: только буквы, пробелы, дефисы (без цифр).'
+    }
+    const words = v.split(/[\s\-]+/).filter(Boolean)
+    if (words.length < 2) return 'Укажите имя и фамилию через пробел.'
+    if (words.some((w) => w.length < 2)) return 'Слишком короткие слова. Минимум 2 буквы.'
+    if (words.some((w) => new Set(w.toLowerCase()).size <= 1)) {
+      return 'Похоже на случайный набор символов. Введите настоящее имя.'
+    }
+  }
+  if (step.key === 'employees_count') {
+    if (!/\d/.test(v)) return 'Укажите число (например 5, 25, 200).'
+  }
+  if (step.key === 'company' || step.key === 'industry_field' || step.key === 'city' || step.key === 'parent_company') {
+    if (!/[A-Za-zА-Яа-яЁёҚқҢңӨөҮүҰұІіҺһҒғӘә]/.test(v)) {
+      return 'Должно содержать буквы.'
+    }
+  }
+  return null
+}
+
 function RegistrationInput({
   step,
   onSubmit,
@@ -565,6 +696,24 @@ function RegistrationInput({
   input: string
   setInput: (v: string) => void
 }) {
+  const [err, setErr] = useState<string | null>(null)
+  // Сбрасываем ошибку при смене шага
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setErr(null)
+  }, [step.key])
+
+  const tryAnswer = (raw: string) => {
+    const v = raw.trim()
+    const validationErr = validateRegStep(step, v)
+    if (validationErr) {
+      setErr(validationErr)
+      return
+    }
+    setErr(null)
+    onSubmit(v)
+  }
+
   if (step.type === 'choice') {
     return (
       <div className="flex-shrink-0 p-3 bg-white border-t border-ink-100 flex flex-wrap gap-2">
@@ -572,7 +721,7 @@ function RegistrationInput({
           <button
             key={c}
             type="button"
-            onClick={() => onSubmit(c)}
+            onClick={() => tryAnswer(c)}
             className="px-4 py-2.5 rounded-xl text-sm font-semibold bg-gradient-to-b from-brand-400 to-brand-500 text-ink-950 shadow-sm hover:from-brand-300 hover:to-brand-400 transition-colors"
           >
             {c}
@@ -585,29 +734,39 @@ function RegistrationInput({
     <form
       onSubmit={(e) => {
         e.preventDefault()
-        const v = input.trim()
-        if (v) onSubmit(v)
+        tryAnswer(input)
       }}
-      className="flex-shrink-0 flex gap-2 p-3 bg-white border-t border-ink-100"
+      className="flex-shrink-0 p-3 bg-white border-t border-ink-100"
     >
-      <input
-        type="text"
-        autoFocus
-        value={input}
-        onChange={(e) => setInput(e.target.value)}
-        placeholder={step.placeholder || 'Ваш ответ…'}
-        className="flex-1 px-4 py-2.5 rounded-xl border border-ink-200 text-base focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-200"
-      />
-      <button
-        type="submit"
-        disabled={!input.trim()}
-        className="inline-flex items-center justify-center w-11 h-11 rounded-xl bg-ink-900 text-white hover:bg-ink-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-        aria-label="Ответить"
-      >
-        <svg className="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
-          <path d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" />
-        </svg>
-      </button>
+      <div className="flex gap-2">
+        <input
+          type="text"
+          autoFocus
+          value={input}
+          onChange={(e) => {
+            setInput(e.target.value)
+            if (err) setErr(null)
+          }}
+          placeholder={step.placeholder || 'Ваш ответ…'}
+          className="flex-1 px-4 py-2.5 rounded-xl border border-ink-200 text-base focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-200"
+          aria-invalid={!!err}
+        />
+        <button
+          type="submit"
+          disabled={!input.trim()}
+          className="inline-flex items-center justify-center w-11 h-11 rounded-xl bg-ink-900 text-white hover:bg-ink-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          aria-label="Ответить"
+        >
+          <svg className="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
+            <path d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" />
+          </svg>
+        </button>
+      </div>
+      {err && (
+        <p className="mt-2 text-[12px] text-rose-700 bg-rose-50 border border-rose-200 rounded-lg px-3 py-1.5">
+          {err}
+        </p>
+      )}
     </form>
   )
 }
