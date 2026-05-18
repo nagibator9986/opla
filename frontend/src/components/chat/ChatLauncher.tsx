@@ -1,6 +1,27 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { ChatWidget } from './ChatWidget'
 import { cn } from '../../lib/cn'
+
+// Глобальное событие — открыть чат в режиме «Войти» из любого места UI
+// (например, из Header). Любой залогиненный лаунчер слушает и открывает чат.
+export const CHAT_OPEN_LOGIN_EVENT = 'baqsy:open-chat-login'
+
+export function openChatLogin() {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent(CHAT_OPEN_LOGIN_EVENT))
+  }
+}
+
+function useExternalLoginTrigger(setOpen: (v: boolean) => void, setLoginMode: (v: boolean) => void) {
+  useEffect(() => {
+    const handler = () => {
+      setLoginMode(true)
+      setOpen(true)
+    }
+    window.addEventListener(CHAT_OPEN_LOGIN_EVENT, handler)
+    return () => window.removeEventListener(CHAT_OPEN_LOGIN_EVENT, handler)
+  }, [setOpen, setLoginMode])
+}
 
 interface ChatLauncherProps {
   label?: string
@@ -39,10 +60,15 @@ export function ChatLauncher({
   children,
 }: ChatLauncherProps) {
   const [open, setOpen] = useState(false)
+  const [loginRequested, setLoginRequested] = useState(false)
+  useExternalLoginTrigger(setOpen, setLoginRequested)
   return (
     <>
       <button
-        onClick={() => setOpen(true)}
+        onClick={() => {
+          setLoginRequested(false)
+          setOpen(true)
+        }}
         className={cn(base, variants[variant], sizes[size], className)}
       >
         {children ?? (
@@ -58,7 +84,14 @@ export function ChatLauncher({
           </>
         )}
       </button>
-      <ChatWidget open={open} onClose={() => setOpen(false)} />
+      <ChatWidget
+        open={open}
+        onClose={() => {
+          setOpen(false)
+          setLoginRequested(false)
+        }}
+        startInLoginMode={loginRequested}
+      />
     </>
   )
 }
@@ -66,10 +99,15 @@ export function ChatLauncher({
 /** Большая плавающая кнопка чата в правом нижнем углу. */
 export function FloatingChatButton() {
   const [open, setOpen] = useState(false)
+  const [loginRequested, setLoginRequested] = useState(false)
+  useExternalLoginTrigger(setOpen, setLoginRequested)
   return (
     <>
       <button
-        onClick={() => setOpen(true)}
+        onClick={() => {
+          setLoginRequested(false)
+          setOpen(true)
+        }}
         className="fixed right-4 sm:right-6 z-[999] flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-gradient-to-br from-brand-400 to-brand-600 text-white shadow-2xl ring-4 ring-white hover:scale-110 transition-transform animate-pulse-ring"
         style={{ bottom: 'max(1rem, calc(env(safe-area-inset-bottom, 0px) + 0.5rem))' }}
         aria-label="Открыть чат с Baqsy AI"
@@ -82,7 +120,14 @@ export function FloatingChatButton() {
           />
         </svg>
       </button>
-      <ChatWidget open={open} onClose={() => setOpen(false)} />
+      <ChatWidget
+        open={open}
+        onClose={() => {
+          setOpen(false)
+          setLoginRequested(false)
+        }}
+        startInLoginMode={loginRequested}
+      />
     </>
   )
 }
@@ -99,12 +144,17 @@ export function FloatingChatButton() {
  */
 export function DockedChatPanel() {
   const [open, setOpen] = useState(false)
+  const [loginRequested, setLoginRequested] = useState(false)
+  useExternalLoginTrigger(setOpen, setLoginRequested)
   return (
     <>
       {/* Свёрнутая карточка-привет — десктоп */}
       <div className="hidden lg:block fixed bottom-6 right-6 z-[998] w-72">
         <button
-          onClick={() => setOpen(true)}
+          onClick={() => {
+            setLoginRequested(false)
+            setOpen(true)
+          }}
           className="group w-full rounded-2xl bg-white border border-ink-200/80 shadow-2xl hover:shadow-[0_20px_40px_rgb(15_23_42_/_0.18)] transition-shadow text-left overflow-hidden"
           aria-label="Открыть чат с Baqsy AI"
         >
@@ -141,7 +191,10 @@ export function DockedChatPanel() {
 
       {/* Мобайл — плавающая круглая кнопка */}
       <button
-        onClick={() => setOpen(true)}
+        onClick={() => {
+          setLoginRequested(false)
+          setOpen(true)
+        }}
         className="lg:hidden fixed right-4 z-[999] flex items-center justify-center w-14 h-14 rounded-full bg-gradient-to-br from-brand-400 to-brand-600 text-white shadow-2xl ring-4 ring-white hover:scale-110 transition-transform animate-pulse-ring"
         style={{ bottom: 'max(1rem, calc(env(safe-area-inset-bottom, 0px) + 0.5rem))' }}
         aria-label="Открыть чат с Baqsy AI"
@@ -154,7 +207,14 @@ export function DockedChatPanel() {
           />
         </svg>
       </button>
-      <ChatWidget open={open} onClose={() => setOpen(false)} />
+      <ChatWidget
+        open={open}
+        onClose={() => {
+          setOpen(false)
+          setLoginRequested(false)
+        }}
+        startInLoginMode={loginRequested}
+      />
     </>
   )
 }

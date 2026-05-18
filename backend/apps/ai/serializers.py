@@ -185,3 +185,16 @@ class ChatCollectDataSerializer(serializers.Serializer):
                 "Уровень ответственности: выберите один из предложенных вариантов."
             )
         return v
+
+    def validate_phone_wa(self, value):
+        if not value:
+            return value
+        digits = re.sub(r"\D", "", value)
+        if len(digits) < 10:
+            raise serializers.ValidationError(
+                "WhatsApp: укажите корректный номер (минимум 10 цифр)."
+            )
+        # Нормализуем КЗ-форматы к 7XXXXXXXXXX, оставляем как +7XXXXXXXXXX
+        if digits.startswith("8") and len(digits) == 11:
+            digits = "7" + digits[1:]
+        return "+" + digits

@@ -160,10 +160,11 @@ class ChatCollectView(APIView):
                 collected[k] = v
         session.collected_data = collected
 
-        # Регистрация = Этап I (паспорт компании) + Этап II (роль)
+        # Регистрация = Этап I (паспорт компании) + Этап II (роль).
         # JWT выдаём только когда клиент прошёл оба этапа целиком.
+        # phone_wa обязателен — без него возврат через quick-login невозможен.
         required = (
-            "name", "company", "industry_field", "city",
+            "name", "phone_wa", "company", "industry_field", "city",
             "employees_count", "company_age", "role",
         )
         if all(collected.get(r) for r in required) and session.client_id is None:
@@ -171,19 +172,32 @@ class ChatCollectView(APIView):
             code = collected.get("industry_code")
             if code:
                 industry = Industry.objects.filter(code=code, is_active=True).first()
-            client = ClientProfile.objects.create(
-                name=collected["name"],
-                company=collected["company"],
-                phone_wa=collected.get("phone_wa", "") or "",
-                city=collected.get("city", "") or "",
-                industry=industry,
-            )
-            email = f"chat_{session.id}@baqsy.internal"
-            user, _ = BaseUser.objects.get_or_create(
-                email=email, defaults={"is_active": True}
-            )
-            client.user = user
-            client.save(update_fields=["user"])
+            phone = (collected.get("phone_wa") or "").strip()
+            # Дедуп: если по номеру уже есть профиль с привязанным user —
+            # переиспользуем (повторная регистрация = тот же клиент, восстанавливаем доступ).
+            existing = None
+            if phone:
+                existing = (
+                    ClientProfile.objects.filter(phone_wa=phone, user__isnull=False)
+                    .order_by("-id")
+                    .first()
+                )
+            if existing is not None:
+                client = existing
+            else:
+                client = ClientProfile.objects.create(
+                    name=collected["name"],
+                    company=collected["company"],
+                    phone_wa=phone,
+                    city=collected.get("city", "") or "",
+                    industry=industry,
+                )
+                email = f"chat_{session.id}@baqsy.internal"
+                user, _ = BaseUser.objects.get_or_create(
+                    email=email, defaults={"is_active": True}
+                )
+                client.user = user
+                client.save(update_fields=["user"])
             session.client = client
             session.status = ChatSession.Status.QUALIFIED
 

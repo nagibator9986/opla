@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom'
 import { Logo } from '../ui/Logo'
 import { useAuthStore } from '../../store/authStore'
 import { cn } from '../../lib/cn'
+import { openChatLogin } from '../chat/ChatLauncher'
 
 const navLinks = [
   { label: 'Кейсы', href: '#cases' },
@@ -102,9 +103,23 @@ export function Header({ variant = 'solid' }: HeaderProps) {
                 Кабинет
               </Link>
             ) : (
-              <Link to="/tariffs" className={ctaStyle}>
-                Выбрать тариф
-              </Link>
+              <>
+                <button
+                  type="button"
+                  onClick={openChatLogin}
+                  className={cn(
+                    'hidden sm:inline-flex items-center gap-1 px-3 py-2 rounded-xl text-sm font-semibold transition-colors',
+                    isOverDark
+                      ? 'text-white/90 hover:text-white hover:bg-white/10'
+                      : 'text-ink-700 hover:text-ink-900 hover:bg-ink-100/70',
+                  )}
+                >
+                  Войти
+                </button>
+                <Link to="/tariffs" className={ctaStyle}>
+                  Выбрать тариф
+                </Link>
+              </>
             )}
 
             <button
@@ -155,13 +170,25 @@ export function Header({ variant = 'solid' }: HeaderProps) {
                 Перейти в кабинет
               </Link>
             ) : (
-              <Link
-                to="/tariffs"
-                className="block px-4 py-3 rounded-xl bg-ink-900 text-white text-base font-semibold text-center hover:bg-ink-800 transition-colors"
-                onClick={() => setMobileOpen(false)}
-              >
-                Выбрать тариф
-              </Link>
+              <>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMobileOpen(false)
+                    openChatLogin()
+                  }}
+                  className="block w-full px-4 py-3 rounded-xl bg-white border border-ink-200 text-ink-900 text-base font-semibold text-center hover:bg-ink-50 transition-colors"
+                >
+                  Войти в аккаунт
+                </button>
+                <Link
+                  to="/tariffs"
+                  className="block px-4 py-3 rounded-xl bg-ink-900 text-white text-base font-semibold text-center hover:bg-ink-800 transition-colors"
+                  onClick={() => setMobileOpen(false)}
+                >
+                  Выбрать тариф
+                </Link>
+              </>
             )}
           </div>
         </div>

@@ -27,6 +27,8 @@ interface ChatWidgetProps {
   onClose: () => void
   /** If set, widget auto-starts the questionnaire for this submission. */
   autoStartQuestionnaireFor?: { sessionId: string; submissionId: string } | null
+  /** If true, чат открывается сразу с формой «Войти» (для возвращающихся клиентов). */
+  startInLoginMode?: boolean
 }
 
 const STORAGE_KEY = 'baqsy_chat_session_id'
@@ -66,6 +68,14 @@ const REG_STEPS: RegStep[] = [
     prompt: 'Здравствуйте! Давайте познакомимся. Как Вас зовут? (имя и фамилия)',
     type: 'text',
     placeholder: 'Например, Айдар Жунусов',
+  },
+  {
+    key: 'phone_wa',
+    label: 'WhatsApp',
+    prompt:
+      'Ваш номер WhatsApp? На него мы пришлём готовый отчёт и по нему же Вы сможете войти в личный кабинет в следующий раз.',
+    type: 'text',
+    placeholder: '+7 700 123 45 67',
   },
   {
     key: 'company',
@@ -110,14 +120,6 @@ const REG_STEPS: RegStep[] = [
     placeholder: '5 лет / с 2019',
   },
   {
-    key: 'parent_company',
-    label: 'Головная компания',
-    prompt:
-      'Название головной компании? Если организация входит в холдинг — название холдинга. Если нет — просто повторите название компании.',
-    type: 'text',
-    placeholder: 'Название холдинга или той же компании',
-  },
-  {
     key: 'role',
     label: 'Уровень ответственности',
     prompt: 'Ваш уровень ответственности в системе?',
@@ -126,7 +128,12 @@ const REG_STEPS: RegStep[] = [
   },
 ]
 
-export function ChatWidget({ open, onClose, autoStartQuestionnaireFor }: ChatWidgetProps) {
+export function ChatWidget({
+  open,
+  onClose,
+  autoStartQuestionnaireFor,
+  startInLoginMode = false,
+}: ChatWidgetProps) {
   const navigate = useNavigate()
   const setAuth = useAuthStore((s) => s.setAuth)
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
@@ -142,10 +149,18 @@ export function ChatWidget({ open, onClose, autoStartQuestionnaireFor }: ChatWid
   const [regStep, setRegStep] = useState<number>(-1)
   const [regAnswers, setRegAnswers] = useState<Partial<CollectedData>>({})
   // Quick-login для вернувшихся клиентов (без верификации, MVP)
-  const [loginMode, setLoginMode] = useState(false)
+  const [loginMode, setLoginMode] = useState(startInLoginMode)
   const [loginPhone, setLoginPhone] = useState('')
   const [loginSubmitting, setLoginSubmitting] = useState(false)
   const [loginError, setLoginError] = useState<string | null>(null)
+
+  // Внешнее открытие чата в режиме «Войти» (через prop) — синхронизируем.
+  useEffect(() => {
+    if (open && startInLoginMode && !isAuthenticated) {
+      setLoginMode(true)
+      setLoginError(null)
+    }
+  }, [open, startInLoginMode, isAuthenticated])
   const listRef = useRef<HTMLDivElement>(null)
   const nextIdRef = useRef(0)
   const nextId = (prefix: string) => {
@@ -193,26 +208,11 @@ export function ChatWidget({ open, onClose, autoStartQuestionnaireFor }: ChatWid
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, sessionId])
 
-  // Авто-запуск регистрации для гостя.
-  // Открыли чат, sessionId есть, юзер НЕ авторизован, рег-флоу ещё не стартовал
-  // и не идёт questionnaire — стартуем регистрацию автоматически (после greeting).
-  useEffect(() => {
-    if (!open || !sessionId || isAuthenticated) return
-    if (regStep !== -1 || currentQuestion) return
-    if (autoStartQuestionnaireFor) return
-    if (loginMode) return  // юзер выбрал «Войти» — не запускаем регистрацию
-    const t = setTimeout(() => {
-      // Проверим, что состояние всё ещё актуально к моменту таймаута
-      setRegStep((prev) => {
-        if (prev !== -1) return prev
-        return 0
-      })
-      pushAssistant(REG_STEPS[0].prompt)
-      setQuickReplies([])
-    }, 1200)  // увеличил с 600 до 1200 мс — чтобы юзер успел нажать «Войти»
-    return () => clearTimeout(t)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, sessionId, isAuthenticated, autoStartQuestionnaireFor, loginMode])
+  // Авто-старт регистрации УБРАН намеренно.
+  // Раньше через 1.2с автоматически стартовал rег-флоу — это убивало
+  // экран выбора «Зарегистрироваться | Войти» (пользователь видел кнопки
+  // долю секунды и они исчезали). Теперь регистрация запускается ТОЛЬКО
+  // когда юзер нажмёт «Пройти регистрацию» или явный CTA.
 
   const handleQuickLogin = async () => {
     if (loginSubmitting) return
@@ -531,26 +531,39 @@ export function ChatWidget({ open, onClose, autoStartQuestionnaireFor }: ChatWid
           />
         )}
 
-        {/* CTA — для гостей до старта флоу: Пройти регистрацию ИЛИ Войти */}
+        {/* CTA — для гостей до старта флоу: Пройти регистрацию ИЛИ Войти.
+            Две явные большие кнопки — экран выбора не должен мелькать. */}
         {!isQuestionnaireMode && !isRegistering && !isAuthenticated && !loginMode && (
-          <div className="flex-shrink-0 px-4 pt-3 pb-1 bg-white border-t border-ink-100 flex items-center justify-between gap-3">
+          <div className="flex-shrink-0 px-4 py-3 bg-white border-t border-ink-100 grid grid-cols-2 gap-2">
             <button
               onClick={startRegistration}
-              className="text-xs font-semibold text-brand-700 hover:text-brand-600 flex items-center gap-1"
+              className="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-gradient-to-b from-brand-400 to-brand-500 text-ink-950 text-sm font-semibold shadow-sm hover:from-brand-300 hover:to-brand-400 transition-colors"
             >
-              <svg className="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor">
+              <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
                 <path d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" />
               </svg>
-              Пройти регистрацию
+              Зарегистрироваться
             </button>
             <button
               onClick={() => {
                 setLoginMode(true)
                 setLoginError(null)
               }}
-              className="text-xs font-semibold text-ink-700 hover:text-ink-900 underline underline-offset-2"
+              className="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-ink-900 text-white text-sm font-semibold hover:bg-ink-800 transition-colors"
             >
-              Уже регистрировались? Войти
+              <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
+                <path
+                  fillRule="evenodd"
+                  d="M3 4.25A2.25 2.25 0 015.25 2h5.5A2.25 2.25 0 0113 4.25v2a.75.75 0 01-1.5 0v-2a.75.75 0 00-.75-.75h-5.5a.75.75 0 00-.75.75v11.5c0 .414.336.75.75.75h5.5a.75.75 0 00.75-.75v-2a.75.75 0 011.5 0v2A2.25 2.25 0 0110.75 18h-5.5A2.25 2.25 0 013 15.75V4.25z"
+                  clipRule="evenodd"
+                />
+                <path
+                  fillRule="evenodd"
+                  d="M19 10a.75.75 0 00-.22-.53l-3-3a.75.75 0 10-1.06 1.06l1.72 1.72H8.75a.75.75 0 000 1.5h7.69l-1.72 1.72a.75.75 0 101.06 1.06l3-3A.75.75 0 0019 10z"
+                  clipRule="evenodd"
+                />
+              </svg>
+              Уже есть аккаунт — Войти
             </button>
           </div>
         )}
@@ -658,11 +671,14 @@ function validateRegStep(step: RegStep, raw: string): string | null {
   const v = raw.trim()
   if (!v) return 'Введите ответ.'
 
-  // Числовые поля — короткие ответы валидны (5, 25, «1 год»).
-  // Для них не применяем min-length и unique-chars проверки.
-  const isNumericField = step.key === 'employees_count' || step.key === 'company_age'
+  // Поля, где валидно короткое значение (1–2 символа / цифры): телефон,
+  // числовые ответы, срок. Для них min-length и unique-chars НЕ применяем.
+  const isShortAllowed =
+    step.key === 'employees_count' ||
+    step.key === 'company_age' ||
+    step.key === 'phone_wa'
 
-  if (!isNumericField) {
+  if (!isShortAllowed) {
     if (v.length < 2) return 'Слишком короткий ответ. Минимум 2 символа.'
     // Защита от «ааа», «....», повторяющихся символов
     const unique = new Set(v.toLowerCase().replace(/\s/g, ''))
@@ -681,10 +697,14 @@ function validateRegStep(step: RegStep, raw: string): string | null {
       return 'Похоже на случайный набор символов. Введите настоящее имя.'
     }
   }
+  if (step.key === 'phone_wa') {
+    const digits = v.replace(/\D/g, '')
+    if (digits.length < 10) return 'Укажите корректный номер WhatsApp (минимум 10 цифр).'
+  }
   if (step.key === 'employees_count') {
     if (!/\d/.test(v)) return 'Укажите число (например 5, 25, 200).'
   }
-  if (step.key === 'company' || step.key === 'industry_field' || step.key === 'city' || step.key === 'parent_company') {
+  if (step.key === 'company' || step.key === 'industry_field' || step.key === 'city') {
     if (!/[A-Za-zА-Яа-яЁёҚқҢңӨөҮүҰұІіҺһҒғӘә]/.test(v)) {
       return 'Должно содержать буквы.'
     }
@@ -742,6 +762,15 @@ function RegistrationInput({
       </div>
     )
   }
+  const isPhone = step.key === 'phone_wa'
+  const isNumeric = step.key === 'employees_count'
+  const inputType = isPhone ? 'tel' : 'text'
+  const inputMode: 'tel' | 'numeric' | 'text' | undefined = isPhone
+    ? 'tel'
+    : isNumeric
+      ? 'numeric'
+      : undefined
+
   return (
     <form
       onSubmit={(e) => {
@@ -752,7 +781,8 @@ function RegistrationInput({
     >
       <div className="flex gap-2">
         <input
-          type="text"
+          type={inputType}
+          inputMode={inputMode}
           autoFocus
           value={input}
           onChange={(e) => {
