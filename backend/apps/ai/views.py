@@ -160,11 +160,14 @@ class ChatCollectView(APIView):
                 collected[k] = v
         session.collected_data = collected
 
-        # Регистрация = Этап I (паспорт компании) + Этап II (роль).
-        # JWT выдаём только когда клиент прошёл оба этапа целиком.
-        # phone_wa обязателен — без него возврат через quick-login невозможен.
+        # Регистрация = Этап I (паспорт компании) + Этап II (роль) + email.
+        # email + phone_wa оба обязательны:
+        #   • phone_wa — для quick-login возврата
+        #   • email    — для 2FA подтверждения через 6-значный код (Resend)
+        # ClientProfile создаётся СРАЗУ, но JWT выдаётся ТОЛЬКО после
+        # подтверждения email через /chat/verify-email-code/.
         required = (
-            "name", "phone_wa", "company", "industry_field", "city",
+            "name", "phone_wa", "email", "company", "industry_field", "city",
             "employees_count", "company_age", "role",
         )
         if all(collected.get(r) for r in required) and session.client_id is None:
@@ -173,18 +176,34 @@ class ChatCollectView(APIView):
             if code:
                 industry = Industry.objects.filter(code=code, is_active=True).first()
             phone = (collected.get("phone_wa") or "").strip()
-            # Дедуп: если по номеру уже есть профиль с привязанным user —
-            # переиспользуем (повторная регистрация = тот же клиент, восстанавливаем доступ).
-            existing = None
-            if phone:
-                existing = (
+            real_email = (collected.get("email") or "").strip().lower()
+            # Дедуп 3 уровня:
+            #   1) есть профиль по этому email → переиспользуем (full reuse)
+            #   2) есть профиль по phone_wa → переиспользуем
+            #   3) новый: создаём ClientProfile + BaseUser
+            client = None
+            if real_email:
+                user_existing = BaseUser.objects.filter(email=real_email).first()
+                if user_existing is not None:
+                    client = getattr(user_existing, "client_profile", None)
+                    if client is None:
+                        # юзер есть, но без профиля — создаём профиль и привязываем
+                        client = ClientProfile.objects.create(
+                            user=user_existing,
+                            name=collected["name"],
+                            company=collected["company"],
+                            phone_wa=phone,
+                            city=collected.get("city", "") or "",
+                            industry=industry,
+                        )
+            if client is None and phone:
+                client = (
                     ClientProfile.objects.filter(phone_wa=phone, user__isnull=False)
                     .order_by("-id")
                     .first()
                 )
-            if existing is not None:
-                client = existing
-            else:
+            if client is None:
+                # Совсем новый клиент
                 client = ClientProfile.objects.create(
                     name=collected["name"],
                     company=collected["company"],
@@ -192,10 +211,10 @@ class ChatCollectView(APIView):
                     city=collected.get("city", "") or "",
                     industry=industry,
                 )
-                email = f"chat_{session.id}@baqsy.internal"
-                user, _ = BaseUser.objects.get_or_create(
-                    email=email, defaults={"is_active": True}
-                )
+                user_email = real_email or f"chat_{session.id}@baqsy.internal"
+                user = BaseUser.objects.filter(email=user_email).first()
+                if user is None:
+                    user = BaseUser.objects.create(email=user_email, is_active=True)
                 client.user = user
                 client.save(update_fields=["user"])
             session.client = client
@@ -222,11 +241,135 @@ class ChatAuthTokenView(APIView):
                 {"detail": "Профиль ещё не создан — заполните данные"},
                 status=400,
             )
+        # Email-верификация обязательна перед выдачей JWT для НОВОГО клиента.
+        # Если email верифицирован — токен можно выдать.
+        # Сценарий обратного входа (quick-login по WhatsApp) не идёт через
+        # этот endpoint вообще, так что повторно код не запрашивается.
+        collected = session.collected_data or {}
+        if not collected.get("email_verified"):
+            return Response(
+                {
+                    "detail": "Подтвердите email — введите 6-значный код из письма.",
+                    "code": "email_verification_required",
+                },
+                status=403,
+            )
         from rest_framework_simplejwt.tokens import RefreshToken
 
         refresh = RefreshToken.for_user(session.client.user)
         return Response(
             {
+                "access": str(refresh.access_token),
+                "refresh": str(refresh),
+                "client_profile_id": session.client.id,
+                "name": session.client.name,
+            }
+        )
+
+
+class _EmailCodeRequestThrottle(AnonRateThrottle):
+    """6 запросов в минуту с IP — защита от рассылки спама через нашу инфраструктуру."""
+    rate = "6/min"
+
+
+class _EmailCodeVerifyThrottle(AnonRateThrottle):
+    """10 попыток в минуту с IP — защита от перебора кода."""
+    rate = "10/min"
+
+
+class RequestEmailCodeView(APIView):
+    """POST /api/v1/chat/request-email-code/  body: { session_id }
+
+    Берёт email из ChatSession.collected_data, генерит 6-значный код,
+    сохраняет в collected_data, отправляет письмо через Resend.
+    Если RESEND_API_KEY не настроен — пишет код в логи (dev fallback).
+    """
+
+    permission_classes = [AllowAny]
+    throttle_classes = [_EmailCodeRequestThrottle]
+
+    def post(self, request):
+        from apps.accounts.email_service import (
+            gen_code, make_email_state, send_verification_code,
+        )
+
+        session_id = request.data.get("session_id")
+        if not session_id:
+            return Response({"detail": "session_id обязателен."}, status=400)
+        try:
+            session = ChatSession.objects.get(pk=session_id)
+        except (ChatSession.DoesNotExist, ValueError):
+            return Response({"detail": "Сессия не найдена."}, status=404)
+
+        collected = dict(session.collected_data or {})
+        email = (collected.get("email") or "").strip().lower()
+        if not email or "@" not in email:
+            return Response(
+                {"detail": "Сначала укажите корректный email в регистрации."},
+                status=400,
+            )
+        if collected.get("email_verified"):
+            return Response({"detail": "Email уже подтверждён.", "already_verified": True})
+
+        code = gen_code()
+        state = make_email_state(code)
+        collected.update(state)
+        # Сохраним сразу — даже если письмо не уйдёт, в логах увидим код.
+        session.collected_data = collected
+        session.save(update_fields=["collected_data", "updated_at"])
+
+        name = (collected.get("name") or "").split()[0] if collected.get("name") else ""
+        ok, err = send_verification_code(email, code, name=name)
+        if not ok:
+            return Response(
+                {"detail": err or "Не удалось отправить письмо."}, status=503,
+            )
+        return Response({"sent": True, "email": email, "ttl_minutes": 15})
+
+
+class VerifyEmailCodeView(APIView):
+    """POST /api/v1/chat/verify-email-code/  body: { session_id, code }
+
+    Сверяет код. При успехе помечает email_verified=True в collected_data
+    и сразу выдаёт JWT (так фронту не нужен второй запрос на auth-token).
+    """
+
+    permission_classes = [AllowAny]
+    throttle_classes = [_EmailCodeVerifyThrottle]
+
+    def post(self, request):
+        from apps.accounts.email_service import verify_code
+
+        session_id = request.data.get("session_id")
+        provided = (request.data.get("code") or "").strip()
+        if not session_id:
+            return Response({"detail": "session_id обязателен."}, status=400)
+        if not provided.isdigit() or len(provided) != 6:
+            return Response({"detail": "Код должен состоять из 6 цифр."}, status=400)
+
+        try:
+            session = ChatSession.objects.select_related("client").get(pk=session_id)
+        except (ChatSession.DoesNotExist, ValueError):
+            return Response({"detail": "Сессия не найдена."}, status=404)
+
+        collected = dict(session.collected_data or {})
+        ok, message = verify_code(collected, provided)
+        session.collected_data = collected
+        session.save(update_fields=["collected_data", "updated_at"])
+        if not ok:
+            return Response({"detail": message, "verified": False}, status=400)
+
+        if session.client_id is None or session.client.user_id is None:
+            return Response(
+                {"detail": "Профиль ещё не создан. Завершите регистрацию."},
+                status=400,
+            )
+
+        from rest_framework_simplejwt.tokens import RefreshToken
+        refresh = RefreshToken.for_user(session.client.user)
+        return Response(
+            {
+                "verified": True,
                 "access": str(refresh.access_token),
                 "refresh": str(refresh),
                 "client_profile_id": session.client.id,

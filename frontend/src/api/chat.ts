@@ -56,6 +56,7 @@ export interface ChatMessageResponse {
 export interface CollectedData {
   name?: string
   phone_wa?: string
+  email?: string
   // Stage I — company passport
   company?: string
   company_website?: string
@@ -138,6 +139,41 @@ export async function startQuestionnaire(
   const { data } = await api.post<StartQuestionnaireResponse>('/chat/start-questionnaire/', {
     session_id: sessionId,
     submission_id: submissionId,
+  })
+  return data
+}
+
+export interface RequestEmailCodeResponse {
+  sent?: boolean
+  email?: string
+  ttl_minutes?: number
+  already_verified?: boolean
+  detail?: string
+}
+
+export async function requestEmailCode(sessionId: string): Promise<RequestEmailCodeResponse> {
+  const { data } = await api.post<RequestEmailCodeResponse>('/chat/request-email-code/', {
+    session_id: sessionId,
+  })
+  return data
+}
+
+export interface VerifyEmailCodeResponse {
+  verified: boolean
+  access?: string
+  refresh?: string
+  client_profile_id?: number
+  name?: string
+  detail?: string
+}
+
+export async function verifyEmailCode(
+  sessionId: string,
+  code: string,
+): Promise<VerifyEmailCodeResponse> {
+  const { data } = await api.post<VerifyEmailCodeResponse>('/chat/verify-email-code/', {
+    session_id: sessionId,
+    code,
   })
   return data
 }

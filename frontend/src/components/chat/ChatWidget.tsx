@@ -6,9 +6,11 @@ import {
   collectProfile,
   exchangeForTokens,
   getChatConfig,
+  requestEmailCode,
   sendMessage,
   startChat,
   startQuestionnaire,
+  verifyEmailCode,
   type CollectedData,
   type QuestionPayload,
   type QuickReply,
@@ -76,6 +78,14 @@ const REG_STEPS: RegStep[] = [
       'Ваш номер WhatsApp? На него мы пришлём готовый отчёт и по нему же Вы сможете войти в личный кабинет в следующий раз.',
     type: 'text',
     placeholder: '+7 700 123 45 67',
+  },
+  {
+    key: 'email',
+    label: 'Email',
+    prompt:
+      'Ваш email? На него мы пришлём 6-значный код подтверждения — это нужно для безопасной регистрации.',
+    type: 'text',
+    placeholder: 'name@company.kz',
   },
   {
     key: 'company',
@@ -153,6 +163,22 @@ export function ChatWidget({
   const [loginPhone, setLoginPhone] = useState('')
   const [loginSubmitting, setLoginSubmitting] = useState(false)
   const [loginError, setLoginError] = useState<string | null>(null)
+  // 2FA email verification: после регистрации показываем форму ввода кода
+  const [emailVerifyMode, setEmailVerifyMode] = useState(false)
+  const [emailVerifyTarget, setEmailVerifyTarget] = useState<string>('')
+  const [emailCode, setEmailCode] = useState('')
+  const [emailVerifyError, setEmailVerifyError] = useState<string | null>(null)
+  const [emailVerifyBusy, setEmailVerifyBusy] = useState(false)
+  const [emailResendCooldown, setEmailResendCooldown] = useState(0)
+
+  // Cooldown таймер для «выслать код ещё раз» (60 сек).
+  useEffect(() => {
+    if (emailResendCooldown <= 0) return
+    const t = setInterval(() => {
+      setEmailResendCooldown((v) => Math.max(0, v - 1))
+    }, 1000)
+    return () => clearInterval(t)
+  }, [emailResendCooldown])
 
   // Внешнее открытие чата в режиме «Войти» (через prop) — синхронизируем.
   useEffect(() => {
@@ -351,35 +377,34 @@ export function ChatWidget({
       return
     }
 
-    // Все шаги пройдены — отправляем профиль и выдаём JWT
+    // Все шаги пройдены — отправляем профиль, запрашиваем 2FA код на email
     setRegStep(REG_STEPS.length)
     setLoading(true)
     try {
       const session = await collectProfile(sessionId, merged as CollectedData)
-      pushAssistant(
-        `Спасибо, ${session.collected_data?.name || answer}! Профиль создан, регистрация завершена.`,
-      )
+      const firstName = (session.collected_data?.name || answer).split(' ')[0]
+      pushAssistant(`Спасибо, ${firstName}! Профиль сохранён.`)
+      const emailAddr = merged.email || session.collected_data?.email || ''
       try {
-        const tokens = await exchangeForTokens(sessionId)
-        setAuth(
-          { id: tokens.client_profile_id, name: tokens.name },
-          tokens.access,
-          tokens.refresh,
+        const r = await requestEmailCode(sessionId)
+        if (r.already_verified) {
+          // Edge: email уже подтверждён ранее (повторная регистрация) — сразу токены
+          await exchangeAndEnter(sessionId)
+          return
+        }
+        pushAssistant(
+          `Мы отправили 6-значный код на ${emailAddr}. Проверьте почту (в т.ч. папку «Спам») и введите код ниже.`,
         )
-        toast.show({
-          kind: 'success',
-          title: 'Регистрация успешна',
-          description: 'Открываем тарифы…',
-        })
-        navigate('/tariffs')
-        onClose()
+        setEmailVerifyTarget(emailAddr)
+        setEmailVerifyMode(true)
+        setEmailResendCooldown(60)
       } catch (err) {
-        console.warn('auth-token failed', err)
         toast.show({
           kind: 'error',
-          title: 'Не удалось завершить вход',
-          description: apiErrorMessage(err, 'Попробуйте ещё раз позже.'),
+          title: 'Не удалось отправить код',
+          description: apiErrorMessage(err, 'Попробуйте ещё раз.'),
         })
+        setRegStep(REG_STEPS.length - 1)
       }
     } catch (err) {
       toast.show({
@@ -391,6 +416,85 @@ export function ChatWidget({
       setRegStep(REG_STEPS.length - 1)
     } finally {
       setLoading(false)
+    }
+  }
+
+  // Хелпер: выдать токены и перейти в /tariffs (после успешной верификации).
+  const exchangeAndEnter = async (sid: string) => {
+    try {
+      const tokens = await exchangeForTokens(sid)
+      setAuth(
+        { id: tokens.client_profile_id, name: tokens.name },
+        tokens.access,
+        tokens.refresh,
+      )
+      toast.show({
+        kind: 'success',
+        title: 'Регистрация успешна',
+        description: 'Открываем тарифы…',
+      })
+      navigate('/tariffs')
+      onClose()
+    } catch (err) {
+      toast.show({
+        kind: 'error',
+        title: 'Не удалось завершить вход',
+        description: apiErrorMessage(err, 'Попробуйте ещё раз позже.'),
+      })
+    }
+  }
+
+  // Подтвердить email-код: backend сам выдаёт токены при успехе
+  const handleVerifyEmailCode = async () => {
+    if (emailVerifyBusy) return
+    setEmailVerifyError(null)
+    const code = emailCode.trim()
+    if (!/^\d{6}$/.test(code)) {
+      setEmailVerifyError('Код состоит из 6 цифр.')
+      return
+    }
+    if (!sessionId) return
+    setEmailVerifyBusy(true)
+    try {
+      const r = await verifyEmailCode(sessionId, code)
+      if (!r.verified || !r.access || !r.refresh || !r.client_profile_id || !r.name) {
+        setEmailVerifyError(r.detail || 'Неверный код.')
+        return
+      }
+      setAuth(
+        { id: r.client_profile_id, name: r.name },
+        r.access,
+        r.refresh,
+      )
+      toast.show({
+        kind: 'success',
+        title: 'Email подтверждён',
+        description: 'Открываем тарифы…',
+      })
+      setEmailVerifyMode(false)
+      navigate('/tariffs')
+      onClose()
+    } catch (err) {
+      setEmailVerifyError(apiErrorMessage(err, 'Ошибка проверки кода.'))
+    } finally {
+      setEmailVerifyBusy(false)
+    }
+  }
+
+  // Перезаказать код (с защитой 60 сек кулдауна)
+  const handleResendEmailCode = async () => {
+    if (emailResendCooldown > 0 || !sessionId) return
+    setEmailVerifyError(null)
+    setEmailVerifyBusy(true)
+    try {
+      await requestEmailCode(sessionId)
+      pushAssistant(`Отправили код повторно на ${emailVerifyTarget}.`)
+      setEmailResendCooldown(60)
+      setEmailCode('')
+    } catch (err) {
+      setEmailVerifyError(apiErrorMessage(err, 'Не удалось отправить код.'))
+    } finally {
+      setEmailVerifyBusy(false)
     }
   }
 
@@ -432,6 +536,8 @@ export function ChatWidget({
               <p className="text-xs text-ink-300">
                 {isQuestionnaireMode
                   ? 'Анкета Digital Baqsylyq'
+                  : emailVerifyMode
+                  ? 'Подтверждение email'
                   : isRegistering
                   ? 'Регистрация'
                   : 'Онлайн • отвечает мгновенно'}
@@ -497,7 +603,7 @@ export function ChatWidget({
         </div>
 
         {/* Quick replies — только в свободном чате до регистрации */}
-        {!isQuestionnaireMode && !isRegistering && quickReplies.length > 0 && (
+        {!isQuestionnaireMode && !isRegistering && !emailVerifyMode && quickReplies.length > 0 && (
           <div className="flex-shrink-0 px-4 py-2 flex flex-wrap gap-2 bg-white border-t border-ink-100">
             {quickReplies.map((qr) => (
               <button
@@ -531,9 +637,79 @@ export function ChatWidget({
           />
         )}
 
+        {/* Режим 2FA email — ввод 6-значного кода */}
+        {emailVerifyMode && !isAuthenticated && (
+          <div className="flex-shrink-0 px-4 py-3 bg-white border-t border-ink-100 space-y-2">
+            <p className="text-xs text-ink-600">
+              Код отправлен на <span className="font-semibold text-ink-900">{emailVerifyTarget}</span>.
+              Письмо в спаме? Проверьте папку «Спам».
+            </p>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault()
+                handleVerifyEmailCode()
+              }}
+              className="flex gap-2"
+            >
+              <input
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]{6}"
+                maxLength={6}
+                autoFocus
+                value={emailCode}
+                onChange={(e) => {
+                  const v = e.target.value.replace(/\D/g, '').slice(0, 6)
+                  setEmailCode(v)
+                  if (emailVerifyError) setEmailVerifyError(null)
+                }}
+                placeholder="6-значный код"
+                disabled={emailVerifyBusy}
+                className="flex-1 px-4 py-2.5 rounded-xl border border-ink-200 text-base tracking-[0.4em] text-center font-mono focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-200 disabled:bg-ink-50"
+              />
+              <button
+                type="submit"
+                disabled={emailVerifyBusy || emailCode.length !== 6}
+                className="inline-flex items-center justify-center px-4 h-11 rounded-xl bg-ink-900 text-white text-sm font-semibold hover:bg-ink-800 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                {emailVerifyBusy ? '…' : 'Подтвердить'}
+              </button>
+            </form>
+            <div className="flex items-center justify-between text-[12px]">
+              <button
+                type="button"
+                onClick={handleResendEmailCode}
+                disabled={emailResendCooldown > 0 || emailVerifyBusy}
+                className="text-brand-700 hover:text-brand-600 disabled:text-ink-400 disabled:cursor-not-allowed font-semibold"
+              >
+                {emailResendCooldown > 0
+                  ? `Выслать ещё раз через ${emailResendCooldown} сек`
+                  : 'Выслать код ещё раз'}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setEmailVerifyMode(false)
+                  setEmailVerifyError(null)
+                  setEmailCode('')
+                  setRegStep(REG_STEPS.length - 1)
+                }}
+                className="text-ink-500 hover:text-ink-700 underline underline-offset-2"
+              >
+                ← Изменить email
+              </button>
+            </div>
+            {emailVerifyError && (
+              <p className="text-[12px] text-rose-700 bg-rose-50 border border-rose-200 rounded-lg px-3 py-1.5">
+                {emailVerifyError}
+              </p>
+            )}
+          </div>
+        )}
+
         {/* CTA — для гостей до старта флоу: Пройти регистрацию ИЛИ Войти.
             Две явные большие кнопки — экран выбора не должен мелькать. */}
-        {!isQuestionnaireMode && !isRegistering && !isAuthenticated && !loginMode && (
+        {!isQuestionnaireMode && !isRegistering && !emailVerifyMode && !isAuthenticated && !loginMode && (
           <div className="flex-shrink-0 px-4 py-3 bg-white border-t border-ink-100 grid grid-cols-2 gap-2">
             <button
               onClick={startRegistration}
@@ -620,7 +796,7 @@ export function ChatWidget({
         )}
 
         {/* Свободный чат — текстовый инпут */}
-        {!isQuestionnaireMode && !isRegistering && !loginMode && (
+        {!isQuestionnaireMode && !isRegistering && !loginMode && !emailVerifyMode && (
           <form
             onSubmit={(e) => {
               e.preventDefault()
@@ -701,6 +877,12 @@ function validateRegStep(step: RegStep, raw: string): string | null {
     const digits = v.replace(/\D/g, '')
     if (digits.length < 10) return 'Укажите корректный номер WhatsApp (минимум 10 цифр).'
   }
+  if (step.key === 'email') {
+    // Простой синтаксический guard. Бэкенд + EmailField валидируют строже.
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v)) {
+      return 'Укажите корректный email (например name@company.kz).'
+    }
+  }
   if (step.key === 'employees_count') {
     if (!/\d/.test(v)) return 'Укажите число (например 5, 25, 200).'
   }
@@ -763,13 +945,16 @@ function RegistrationInput({
     )
   }
   const isPhone = step.key === 'phone_wa'
+  const isEmail = step.key === 'email'
   const isNumeric = step.key === 'employees_count'
-  const inputType = isPhone ? 'tel' : 'text'
-  const inputMode: 'tel' | 'numeric' | 'text' | undefined = isPhone
+  const inputType = isPhone ? 'tel' : isEmail ? 'email' : 'text'
+  const inputMode: 'tel' | 'email' | 'numeric' | 'text' | undefined = isPhone
     ? 'tel'
-    : isNumeric
-      ? 'numeric'
-      : undefined
+    : isEmail
+      ? 'email'
+      : isNumeric
+        ? 'numeric'
+        : undefined
 
   return (
     <form

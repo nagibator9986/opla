@@ -165,6 +165,17 @@ WAZZUP_CHANNEL_ID = env("WAZZUP_CHANNEL_ID", default="")
 # Public site URL — used to build absolute links sent to clients (magic-link, etc.)
 PUBLIC_SITE_URL = env("PUBLIC_SITE_URL", default="https://baqsy.tnriazun.com")
 
+# Email — Resend HTTP API для 2FA подтверждения email при регистрации.
+# Пустой API key = console-режим (код пишется в логи). Удобно для dev.
+RESEND_API_KEY = env("RESEND_API_KEY", default="")
+EMAIL_FROM_ADDR = env(
+    "EMAIL_FROM_ADDR",
+    default="Baqsy AI <onboarding@resend.dev>",
+)
+EMAIL_REPLY_TO = env("EMAIL_REPLY_TO", default="tleubekov.super@gmail.com")
+EMAIL_CODE_TTL_MINUTES = 15
+EMAIL_CODE_MAX_ATTEMPTS = 5
+
 # Django REST Framework
 REST_FRAMEWORK = {
     # ВАЖНО: только JWT. SessionAuthentication был удалён намеренно —
