@@ -27,8 +27,12 @@ type ChatMsg = { id: string; role: 'assistant' | 'user'; content: string }
 interface ChatWidgetProps {
   open: boolean
   onClose: () => void
-  /** If set, widget auto-starts the questionnaire for this submission. */
-  autoStartQuestionnaireFor?: { sessionId: string; submissionId: string } | null
+  /** If set, widget auto-starts the questionnaire for this submission.
+   *  sessionId опционален: если не передан, виджет использует свой
+   *  собственный sessionId (создаст через /chat/start/ если ещё нет). */
+  autoStartQuestionnaireFor?:
+    | { submissionId: string; sessionId?: string }
+    | null
   /** If true, чат открывается сразу с формой «Войти» (для возвращающихся клиентов). */
   startInLoginMode?: boolean
 }
@@ -255,6 +259,13 @@ export function ChatWidget({
         resp.access,
         resp.refresh,
       )
+      // ВАЖНО: после quick-login сбрасываем chat session из localStorage.
+      // Старая session_id могла принадлежать другому client_id (или вовсе
+      // быть гостевой) — иначе start-questionnaire упадёт с 403
+      // «Заявка не принадлежит этой сессии». Новая сессия будет создана
+      // автоматически при следующем открытии чата.
+      saveSessionId(null)
+      setSessionId(null)
       toast.show({
         kind: 'success',
         title: `С возвращением, ${resp.name.split(' ')[0] || resp.name}!`,
@@ -270,16 +281,20 @@ export function ChatWidget({
     }
   }
 
-  // Auto-start questionnaire
+  // Auto-start questionnaire. Используем собственный sessionId виджета —
+  // он либо уже был в localStorage, либо был создан bootstrap-ом через
+  // /chat/start/ (выше). Если в autoStartQuestionnaireFor передан явный
+  // sessionId — он имеет приоритет (legacy путь, на случай старых вызывающих).
   useEffect(() => {
-    if (!open || !autoStartQuestionnaireFor || !sessionId) return
-    if (autoStartQuestionnaireFor.sessionId !== sessionId) return
+    if (!open || !autoStartQuestionnaireFor) return
+    const effectiveSid = autoStartQuestionnaireFor.sessionId || sessionId
+    if (!effectiveSid) return  // bootstrap ещё не создал сессию
     let cancelled = false
     ;(async () => {
       setLoading(true)
       try {
         const resp = await startQuestionnaire(
-          autoStartQuestionnaireFor.sessionId,
+          effectiveSid,
           autoStartQuestionnaireFor.submissionId,
         )
         if (cancelled) return

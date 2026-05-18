@@ -414,7 +414,23 @@ class StartQuestionnaireView(APIView):
         except (Submission.DoesNotExist, ValueError):
             return Response({"detail": "Заявка не найдена."}, status=404)
 
-        if session.client_id != submission.client_id:
+        # Проверка владения заявкой: главный источник истины — JWT
+        # авторизованного юзера. ChatSession в localStorage может быть от
+        # прошлого визита/другого клиента (или вовсе без client_id, если
+        # юзер вошёл через quick-login без полной регистрации в этом окне).
+        # Если JWT-юзер == владелец submission — перепривязываем session
+        # к нему. Только если ни session, ни JWT не совпадают с submission —
+        # отказываем.
+        auth_client = None
+        if getattr(request.user, "is_authenticated", False):
+            auth_client = getattr(request.user, "client_profile", None)
+
+        if auth_client is not None and auth_client.id == submission.client_id:
+            # Юзер — настоящий владелец submission. Можно перевязать сессию.
+            if session.client_id != auth_client.id:
+                session.client = auth_client
+                # save позже, ниже уже идёт session.save()
+        elif session.client_id != submission.client_id:
             return Response(
                 {"detail": "Заявка не принадлежит этой сессии."}, status=403
             )

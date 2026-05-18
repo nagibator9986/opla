@@ -1,24 +1,20 @@
 import { useState } from 'react'
 import { ChatWidget } from '../chat/ChatWidget'
 
-const STORAGE_KEY = 'baqsy_chat_session_id'
-
-function loadSessionId(): string | null {
-  try {
-    return localStorage.getItem(STORAGE_KEY)
-  } catch {
-    return null
-  }
-}
-
 interface Props {
   submissionId: string
 }
 
-/** Большая CTA в кабинете — открывает чат сразу в режиме questionnaire. */
+/** Большая CTA в кабинете — открывает чат сразу в режиме questionnaire.
+ *
+ * sessionId здесь намеренно НЕ читается из localStorage. ChatWidget сам
+ * на bootstrap создаст свежую сессию (через /chat/start/) и привяжет её
+ * к авторизованному юзеру — backend перевяжет session.client к владельцу
+ * submission, и start-questionnaire пройдёт без 403 «Заявка не
+ * принадлежит этой сессии».
+ */
 export function ContinueQuestionnaireButton({ submissionId }: Props) {
   const [open, setOpen] = useState(false)
-  const sessionId = loadSessionId()
 
   return (
     <>
@@ -41,9 +37,7 @@ export function ContinueQuestionnaireButton({ submissionId }: Props) {
       <ChatWidget
         open={open}
         onClose={() => setOpen(false)}
-        autoStartQuestionnaireFor={
-          sessionId ? { sessionId, submissionId } : null
-        }
+        autoStartQuestionnaireFor={{ submissionId }}
       />
     </>
   )
