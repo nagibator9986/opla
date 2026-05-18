@@ -167,9 +167,13 @@ PUBLIC_SITE_URL = env("PUBLIC_SITE_URL", default="https://baqsy.tnriazun.com")
 
 # Django REST Framework
 REST_FRAMEWORK = {
+    # ВАЖНО: только JWT. SessionAuthentication был удалён намеренно —
+    # он требует CSRF token на каждый POST/PUT/DELETE, что ломало
+    # публичные эндпоинты (auth/quick-login/, chat/collect/, etc.)
+    # с ошибкой «CSRF Failed: CSRF token missing». Django Admin
+    # продолжает работать через свой собственный django.contrib.auth.
     "DEFAULT_AUTHENTICATION_CLASSES": [
         "rest_framework_simplejwt.authentication.JWTAuthentication",
-        "rest_framework.authentication.SessionAuthentication",
     ],
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.IsAuthenticated",

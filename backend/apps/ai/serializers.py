@@ -148,7 +148,16 @@ class ChatCollectDataSerializer(serializers.Serializer):
     def validate_company_age(self, value):
         if not value:
             return value
-        return _validate_meaningful_text(value, field_label="Срок существования", min_len=1)
+        v = value.strip()
+        # Короткие ответы как «1», «5», «12», «новая» — все валидны.
+        # Минимум 1 символ. Запрещаем только пустоту и одни спецсимволы.
+        if len(v) < 1:
+            raise serializers.ValidationError("Срок существования: введите ответ.")
+        if not re.search(r"[\w]", v, re.UNICODE):
+            raise serializers.ValidationError(
+                "Срок существования: введите осмысленный ответ."
+            )
+        return v
 
     def validate_parent_company(self, value):
         if not value:
@@ -159,7 +168,8 @@ class ChatCollectDataSerializer(serializers.Serializer):
         if not value:
             return value
         v = value.strip()
-        # Должно быть число (можно с диапазоном «5-10», «более 50»)
+        # Короткие числовые ответы как «5», «25», «200» валидны.
+        # Должна быть хотя бы одна цифра.
         if not re.search(r"\d", v):
             raise serializers.ValidationError(
                 "Количество сотрудников: укажите число (например, 5, 25, 200)."

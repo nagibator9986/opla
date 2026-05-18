@@ -657,17 +657,24 @@ function prefixStage(q: QuestionPayload): string {
 function validateRegStep(step: RegStep, raw: string): string | null {
   const v = raw.trim()
   if (!v) return 'Введите ответ.'
-  if (v.length < 2) return 'Слишком короткий ответ. Минимум 2 символа.'
-  // Защита от вроде «ааа», «....», «11111»
-  const unique = new Set(v.toLowerCase().replace(/\s/g, ''))
-  if (unique.size <= 1) return 'Похоже на случайный набор. Введите корректно.'
+
+  // Числовые поля — короткие ответы валидны (5, 25, «1 год»).
+  // Для них не применяем min-length и unique-chars проверки.
+  const isNumericField = step.key === 'employees_count' || step.key === 'company_age'
+
+  if (!isNumericField) {
+    if (v.length < 2) return 'Слишком короткий ответ. Минимум 2 символа.'
+    // Защита от «ааа», «....», повторяющихся символов
+    const unique = new Set(v.toLowerCase().replace(/\s/g, ''))
+    if (unique.size <= 1) return 'Похоже на случайный набор. Введите корректно.'
+  }
 
   if (step.key === 'name') {
     if (v.length < 4) return 'Укажите имя и фамилию полностью.'
     if (!/^[A-Za-zА-Яа-яЁёҚқҢңӨөҮүҰұІіҺһҒғӘә][A-Za-zА-Яа-яЁёҚқҢңӨөҮүҰұІіҺһҒғӘә\s\-.']+$/.test(v)) {
       return 'Имя: только буквы, пробелы, дефисы (без цифр).'
     }
-    const words = v.split(/[\s\-]+/).filter(Boolean)
+    const words = v.split(/[\s-]+/).filter(Boolean)
     if (words.length < 2) return 'Укажите имя и фамилию через пробел.'
     if (words.some((w) => w.length < 2)) return 'Слишком короткие слова. Минимум 2 буквы.'
     if (words.some((w) => new Set(w.toLowerCase()).size <= 1)) {
@@ -697,13 +704,16 @@ function RegistrationInput({
   setInput: (v: string) => void
 }) {
   const [err, setErr] = useState<string | null>(null)
-  // Сбрасываем ошибку при смене шага
+  const [submitted, setSubmitted] = useState(false)
+  // Сбрасываем ошибку и submitted-флаг при смене шага
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setErr(null)
+    setSubmitted(false)
   }, [step.key])
 
   const tryAnswer = (raw: string) => {
+    if (submitted) return  // защита от двойного клика
     const v = raw.trim()
     const validationErr = validateRegStep(step, v)
     if (validationErr) {
@@ -711,6 +721,7 @@ function RegistrationInput({
       return
     }
     setErr(null)
+    setSubmitted(true)
     onSubmit(v)
   }
 
@@ -721,8 +732,9 @@ function RegistrationInput({
           <button
             key={c}
             type="button"
+            disabled={submitted}
             onClick={() => tryAnswer(c)}
-            className="px-4 py-2.5 rounded-xl text-sm font-semibold bg-gradient-to-b from-brand-400 to-brand-500 text-ink-950 shadow-sm hover:from-brand-300 hover:to-brand-400 transition-colors"
+            className="px-4 py-2.5 rounded-xl text-sm font-semibold bg-gradient-to-b from-brand-400 to-brand-500 text-ink-950 shadow-sm hover:from-brand-300 hover:to-brand-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {c}
           </button>
@@ -748,12 +760,13 @@ function RegistrationInput({
             if (err) setErr(null)
           }}
           placeholder={step.placeholder || 'Ваш ответ…'}
-          className="flex-1 px-4 py-2.5 rounded-xl border border-ink-200 text-base focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-200"
+          disabled={submitted}
+          className="flex-1 px-4 py-2.5 rounded-xl border border-ink-200 text-base focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-200 disabled:bg-ink-50"
           aria-invalid={!!err}
         />
         <button
           type="submit"
-          disabled={!input.trim()}
+          disabled={!input.trim() || submitted}
           className="inline-flex items-center justify-center w-11 h-11 rounded-xl bg-ink-900 text-white hover:bg-ink-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           aria-label="Ответить"
         >
