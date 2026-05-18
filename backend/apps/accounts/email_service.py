@@ -149,6 +149,9 @@ def send_verification_code(to_email: str, code: str, name: str = "") -> tuple[bo
         headers={
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
+            # Resend behind Cloudflare блокирует default Python-urllib UA (1010).
+            "User-Agent": "Baqsy-Backend/1.0 (baqsy.tnriazun.com)",
+            "Accept": "application/json",
         },
         method="POST",
     )
