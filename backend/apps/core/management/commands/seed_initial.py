@@ -3,7 +3,7 @@ from django.core.management.base import BaseCommand
 from django.db import transaction
 
 from apps.accounts.models import BaseUser
-from apps.industries.models import Industry, QuestionnaireTemplate, Question
+from apps.industries.models import Industry, QuestionnaireTemplate
 from apps.payments.models import Tariff
 
 
@@ -21,32 +21,32 @@ TARIFFS = [
     {"code": "upsell", "title": "Upsell Ashıde 1→2", "price_kzt": 90000, "description": "Доплата за переход с Ashıde 1 на Ashıde 2"},
 ]
 
-# Demo questions: 5 block A (common) + 1 block B + 3 block C = 9 total
-DEMO_QUESTIONS = [
-    {"order": 1, "text": "Официальное название предприятия и бренд", "field_type": "text", "block": "A"},
-    {"order": 2, "text": "Ссылки на сайт и соцсети", "field_type": "text", "block": "A"},
-    {"order": 3, "text": "Страна и город", "field_type": "text", "block": "A"},
-    {"order": 4, "text": "Масштаб (оборот)", "field_type": "choice",
-     "options": {"choices": ["До 100к$", "До 1М$", "До 10М$", "Выше 10М$"]}, "block": "A"},
-    {"order": 5, "text": "Общее количество сотрудников", "field_type": "number", "block": "A"},
-    {"order": 6, "text": "Краткое описание деятельности (3-4 предложения)", "field_type": "text", "block": "B"},
-    {"order": 7, "text": "Опишите вашу текущую маркетинговую стратегию", "field_type": "text", "block": "C"},
-    {"order": 8, "text": "Какие каналы продаж вы используете?", "field_type": "multichoice",
-     "options": {"choices": ["Офлайн точки", "Сайт", "Маркетплейсы", "Социальные сети", "Другое"]}, "block": "C"},
-    {"order": 9, "text": "Основные конкуренты и ваши отличия от них", "field_type": "text", "block": "C"},
-]
-
-
 class Command(BaseCommand):
-    help = "Seed initial data: superuser, industries, tariffs, demo templates"
+    help = "Seed initial data: superuser, industries, tariffs (без устаревших демо-анкет)"
 
     @transaction.atomic
     def handle(self, *args, **options):
         self._create_superuser()
         self._create_industries()
         self._create_tariffs()
-        self._create_demo_templates()
+        # Демо-шаблоны (9 вопросов) больше не создаются — единственный
+        # источник истины — универсальная анкета Baqsylyq (38 вопросов).
+        # Чтобы её засеять, выполните: python manage.py seed_baqsylyq
+        self._cleanup_legacy_demo_templates()
         self.stdout.write(self.style.SUCCESS("Seed complete."))
+
+    def _cleanup_legacy_demo_templates(self):
+        """Деактивирует устаревшие per-industry демо-шаблоны.
+
+        Сохраняет их в БД (на случай исторических Submission), но снимает
+        is_active, чтобы новые заявки шли только в Baqsylyq.
+        """
+        legacy = QuestionnaireTemplate.objects.filter(
+            name__startswith="Демо-анкета:", is_active=True
+        )
+        count = legacy.update(is_active=False)
+        if count:
+            self.stdout.write(f"  Деактивировано устаревших демо-шаблонов: {count}")
 
     def _create_superuser(self):
         email = os.getenv("DJANGO_SUPERUSER_EMAIL", "admin@baqsy.kz")
@@ -75,27 +75,3 @@ class Command(BaseCommand):
             status = "created" if created else "exists"
             self.stdout.write(f"  Tariff {obj.title}: {status}")
 
-    def _create_demo_templates(self):
-        for industry in Industry.objects.all():
-            if QuestionnaireTemplate.objects.filter(industry=industry).exists():
-                self.stdout.write(f"  Template for {industry.name}: exists")
-                continue
-            template = QuestionnaireTemplate.objects.create(
-                industry=industry,
-                version=1,
-                is_active=True,
-                name=f"Демо-анкета: {industry.name}",
-            )
-            for q_data in DEMO_QUESTIONS:
-                Question.objects.create(
-                    template=template,
-                    order=q_data["order"],
-                    text=q_data["text"],
-                    field_type=q_data["field_type"],
-                    options=q_data.get("options", {}),
-                    required=True,
-                    block=q_data["block"],
-                )
-            self.stdout.write(
-                f"  Template for {industry.name}: created ({template.questions.count()} questions)"
-            )

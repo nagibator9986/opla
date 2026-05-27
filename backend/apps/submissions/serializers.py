@@ -27,9 +27,14 @@ class SubmissionCreateSerializer(serializers.Serializer):
         tariff = validated_data["tariff_code"]
         client = self.context["client"]
 
+        # Универсальная анкета Baqsylyq имеет приоритет над per-industry демо-шаблонами.
         template = QuestionnaireTemplate.objects.filter(
-            industry=industry, is_active=True
-        ).first()
+            industry__code="baqsylyq", is_active=True
+        ).order_by("-version").first()
+        if not template:
+            template = QuestionnaireTemplate.objects.filter(
+                industry=industry, is_active=True
+            ).first()
         if not template:
             raise serializers.ValidationError(
                 {"industry_code": "Для этой отрасли нет активной анкеты."}

@@ -232,7 +232,75 @@ def _coerce_answer(question: Question, raw: str | list[str]) -> dict:
     text = (raw if isinstance(raw, str) else "").strip()
     if question.required and not text:
         raise ValueError("Поле не может быть пустым.")
+    if text:
+        _validate_text_meaningful(question, text)
     return {"text": text}
+
+
+# Гласные RU/KZ/EN для проверки "осмысленности" текста
+_VOWELS = set("аеёиоуыэюяəіөүaeiouy")
+
+
+def _validate_text_meaningful(question: Question, text: str) -> None:
+    """Фильтр от «белиберды» — отлавливает случайный набор символов.
+
+    Эвристики настроены так, чтобы не блокировать короткие легитимные
+    ответы ("ИП", "Алматы", "5 лет"), но отбрасывать набор клавиш
+    типа «куруерукреу» или «ааааааа».
+
+    Бросает ``ValueError`` с понятным сообщением — вызывающий код (чат-бот)
+    покажет его клиенту и повторит вопрос.
+    """
+    n = len(text)
+    is_longtext = question.field_type == Question.FieldType.LONGTEXT
+
+    # 1) Содержательная длина для longtext (вопросы аудита)
+    if is_longtext and n < 15:
+        raise ValueError(
+            "Слишком короткий ответ. Опишите подробнее (хотя бы 15 символов) — "
+            "это нужно эксперту для качественного анализа."
+        )
+
+    # 2) Длинные повторы одного символа: «ааааа», «11111», «.....»
+    if re.search(r"(.)\1{4,}", text, re.UNICODE):
+        raise ValueError(
+            "Похоже на случайный набор символов (слишком много повторов). "
+            "Попробуйте ответить осмысленно."
+        )
+
+    # 3) Для longtext — минимум 2 слова через пробел
+    if is_longtext and len(text.split()) < 2:
+        raise ValueError(
+            "Развёрнутый ответ из одного слова обычно недостаточен — "
+            "опишите хотя бы парой предложений."
+        )
+
+    # Дальше анализируем только буквенную часть (без цифр, знаков, пробелов).
+    # Короткие ответы (< 5 букв) — пропускаем целиком, чтобы не мешать
+    # абревиатурам и коротким локациям ("ИП", "ТОО", "Yes", "Алма").
+    letters = [ch for ch in text if ch.isalpha()]
+    if len(letters) < 5:
+        return
+
+    # 4) Доля уникальных букв — отлавливает «куруерукреу куруерукреу»
+    unique_ratio = len({ch.lower() for ch in letters}) / len(letters)
+    threshold = 0.22 if is_longtext else 0.18
+    if unique_ratio < threshold:
+        raise ValueError(
+            "В ответе мало уникальных букв — похоже на случайный набор. "
+            "Опишите, пожалуйста, по сути вопроса."
+        )
+
+    # 5) Соотношение гласных/согласных (для 6+ букв) — отлавливает
+    # «фывапролд», «гггггггг» и похожие наборы.
+    if len(letters) >= 6:
+        vowel_count = sum(1 for ch in letters if ch.lower() in _VOWELS)
+        vowel_ratio = vowel_count / len(letters)
+        if vowel_ratio < 0.15 or vowel_ratio > 0.85:
+            raise ValueError(
+                "В ответе странное соотношение гласных и согласных — "
+                "похоже на набор случайных букв. Попробуйте ещё раз."
+            )
 
 
 def _render_placeholders(template: str, **vars) -> str:

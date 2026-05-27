@@ -114,11 +114,15 @@ class StartFreeSubmissionView(APIView):
         if existing is not None:
             return Response(SubmissionDetailSerializer(existing).data)
 
-        # Выбор шаблона анкеты: индустрия клиента → активный template.
-        # Если индустрия не задана, берём первый активный шаблон.
+        # Выбор шаблона анкеты:
+        # 1) Универсальная анкета Baqsylyq (industry.code='baqsylyq') — приоритет;
+        # 2) Шаблон по индустрии клиента;
+        # 3) Любой активный шаблон.
         industry = client.industry
-        template = None
-        if industry:
+        template = QuestionnaireTemplate.objects.filter(
+            industry__code="baqsylyq", is_active=True
+        ).order_by("-version").first()
+        if not template and industry:
             template = QuestionnaireTemplate.objects.filter(
                 industry=industry, is_active=True
             ).first()

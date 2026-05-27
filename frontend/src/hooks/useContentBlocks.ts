@@ -61,6 +61,25 @@ const FALLBACK: Record<string, string> = {
   legal_offer_updated: '29 апреля 2026 г.',
   legal_privacy_updated: '29 апреля 2026 г.',
   legal_refund_updated: '29 апреля 2026 г.',
+  // Футер — колонки и ссылки (редактируются в админке: /admin/content/contentblock/)
+  footer_col_product_heading: 'Продукт',
+  footer_link_tariffs: 'Тарифы',
+  footer_link_cases: 'Кейсы',
+  footer_link_articles: 'Статьи',
+  footer_link_faq: 'FAQ',
+  footer_col_contacts_heading: 'Контакты',
+  footer_contact_email: 'info@baqsy.kz',
+  footer_contact_whatsapp: 'WhatsApp +7 700 225-91-84',
+  footer_contact_whatsapp_url: 'https://wa.me/77002259184',
+  footer_col_documents_heading: 'Документы',
+  footer_link_offer: 'Публичная оферта',
+  footer_link_privacy: 'Политика конфиденциальности',
+  footer_link_refund: 'Оплата и возвраты',
+  footer_legal_heading: 'Реквизиты:',
+  footer_security_heading: 'Безопасность платежей:',
+  footer_security_line1: 'Оплата через CloudPayments KZ · 3-D Secure · PCI DSS Level 1',
+  footer_security_line2: 'Принимаем Visa, MasterCard. Расчёты в тенге (₸).',
+  footer_copyright_suffix: 'Все права защищены.',
 }
 
 export function useContentBlocks() {
