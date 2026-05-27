@@ -33,7 +33,8 @@ RUN poetry install --no-root --only main
 # Pillow is needed for Django ImageField (Case.logo, Case.cover_image).
 RUN /opt/pysetup/.venv/bin/pip install --no-cache-dir \
     "openai>=1.60,<3" \
-    "Pillow>=10.4"
+    "Pillow>=10.4" \
+    "requests>=2.31"
 
 ## Stage 2: runtime — slim image with WeasyPrint system libs + Cyrillic fonts
 FROM python:3.12-slim AS runtime
