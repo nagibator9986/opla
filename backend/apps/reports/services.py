@@ -50,6 +50,28 @@ def _format_answer_value(value_dict: dict) -> str:
     return ""
 
 
+def _load_donation_context() -> dict:
+    """Подтягивает донат-блок из ContentBlock'ов в PDF-контекст.
+
+    Если в БД нет такого блока — используется fallback из правил seed_content.
+    Так PDF всё равно отрендерится корректно даже если админ удалил блок.
+    """
+    from apps.content.models import ContentBlock
+
+    keys = [
+        "donation_title",
+        "donation_message",
+        "donation_card_number",
+        "donation_card_holder",
+        "donation_card_bank",
+    ]
+    blocks = {
+        cb.key: cb.content
+        for cb in ContentBlock.objects.filter(key__in=keys, is_active=True)
+    }
+    return {k: blocks.get(k, "") for k in keys}
+
+
 def render_pdf(report: "AuditReport") -> bytes:
     """Render audit report as PDF bytes using Jinja2 + WeasyPrint.
 
@@ -82,6 +104,7 @@ def render_pdf(report: "AuditReport") -> bytes:
         "tariff": tariff,
         "answers": list(answers),
         "generated_at": generated_at,
+        **_load_donation_context(),
     }
 
     html_str = template.render(**context)

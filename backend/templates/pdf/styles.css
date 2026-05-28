@@ -163,6 +163,78 @@ h3 {
     color: #1e293b;
 }
 
+/* ─── Donation Section ───────────────────────────────────────── */
+
+.donation-section {
+    margin-top: 1.5cm;
+    padding: 0.7cm 0.8cm;
+    background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+    border: 1px solid #fcd34d;
+    border-left: 4px solid #f59e0b;
+    border-radius: 6px;
+    page-break-inside: avoid;
+}
+
+.donation-section h2 {
+    border-left: none;
+    padding-left: 0;
+    margin-top: 0;
+    margin-bottom: 0.4cm;
+    font-size: 14pt;
+    color: #92400e;
+}
+
+.donation-message {
+    font-size: 10.5pt;
+    line-height: 1.6;
+    color: #422006;
+    margin-bottom: 0.5cm;
+}
+
+.donation-message p {
+    margin: 0.25cm 0;
+}
+
+.donation-card {
+    background: #ffffff;
+    border: 1.5px dashed #f59e0b;
+    border-radius: 5px;
+    padding: 0.4cm 0.5cm;
+    margin: 0.4cm 0;
+    text-align: center;
+}
+
+.donation-card-label {
+    font-size: 8pt;
+    color: #92400e;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: bold;
+    margin-bottom: 0.2cm;
+}
+
+.donation-card-number {
+    font-family: "Liberation Mono", "Courier New", monospace;
+    font-size: 18pt;
+    font-weight: bold;
+    color: #1e293b;
+    letter-spacing: 0.08em;
+}
+
+.donation-card-meta {
+    font-size: 9pt;
+    color: #64748b;
+    margin-top: 0.15cm;
+}
+
+.donation-disclaimer {
+    font-size: 8.5pt;
+    color: #78350f;
+    margin: 0.3cm 0 0 0;
+    font-style: italic;
+    line-height: 1.4;
+}
+
 /* ─── Footer ─────────────────────────────────────────────────── */
 
 .report-footer {

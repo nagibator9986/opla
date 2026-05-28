@@ -9,6 +9,7 @@ import { StatusProgress } from '../components/cabinet/StatusProgress'
 import { PdfDownloadButton } from '../components/cabinet/PdfDownloadButton'
 import { UpsellCard } from '../components/cabinet/UpsellCard'
 import { ContinueQuestionnaireButton } from '../components/cabinet/ContinueQuestionnaireButton'
+import { DonationBlock } from '../components/cabinet/DonationBlock'
 import { FloatingChatButton } from '../components/chat/ChatLauncher'
 import { useSubmission } from '../hooks/useSubmission'
 import { useAuthStore } from '../store/authStore'
@@ -150,6 +151,8 @@ export function CabinetPage() {
                 tariffCode={submission.tariff_code}
                 status={submission.status}
               />
+
+              {submission.status === 'delivered' && <DonationBlock />}
             </div>
           )}
         </Container>

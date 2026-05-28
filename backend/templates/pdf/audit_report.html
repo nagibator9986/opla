@@ -54,6 +54,35 @@
     </div>
     {% endif %}
 
+    <!-- ─── Donation block (показывается всегда) ───────────────── -->
+    {% if donation_card_number %}
+    <div class="donation-section">
+        <h2>{{ donation_title or 'Ваш forensic-отчёт сформирован и выдан' }}</h2>
+        <div class="donation-message">
+            {% if donation_message %}
+                {% for line in donation_message.split('\n') %}
+                    {% if line.strip() %}<p>{{ line }}</p>{% endif %}
+                {% endfor %}
+            {% endif %}
+        </div>
+        <div class="donation-card">
+            <div class="donation-card-label">Номер карты</div>
+            <div class="donation-card-number">{{ donation_card_number }}</div>
+            {% if donation_card_holder %}
+            <div class="donation-card-meta">Держатель: {{ donation_card_holder }}</div>
+            {% endif %}
+            {% if donation_card_bank %}
+            <div class="donation-card-meta">Банк: {{ donation_card_bank }}</div>
+            {% endif %}
+        </div>
+        <p class="donation-disclaimer">
+            Перевод по этим реквизитам — добровольный донат. Платёж не является
+            оплатой обязательного характера и не отражается в бухгалтерии Baqsy
+            как доход от услуг.
+        </p>
+    </div>
+    {% endif %}
+
     <!-- ─── Footer ────────────────────────────────────────────── -->
     <div class="report-footer">
         Baqsy System &mdash; {{ generated_at.strftime('%Y') }} &mdash; Конфиденциально

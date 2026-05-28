@@ -80,6 +80,14 @@ const FALLBACK: Record<string, string> = {
   footer_security_line1: 'Оплата через CloudPayments KZ · 3-D Secure · PCI DSS Level 1',
   footer_security_line2: 'Принимаем Visa, MasterCard. Расчёты в тенге (₸).',
   footer_copyright_suffix: 'Все права защищены.',
+  // Донат-блок (показывается клиенту после выдачи отчёта)
+  donation_title: 'Ваш forensic-отчёт сформирован и выдан',
+  donation_message:
+    'На текущем этапе калибровки Digital Baqsy платежные шлюзы находятся в режиме отладки.\n\n' +
+    'Если Вы хотите поддержать команду разработчиков, можете отправить любую комфортную для вас сумму (донат) по реквизитам ниже. Ваш вклад ускорит развитие Системы.',
+  donation_card_number: '4904 7298 1111 9463',
+  donation_card_holder: '',
+  donation_card_bank: '',
 }
 
 export function useContentBlocks() {
