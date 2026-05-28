@@ -34,7 +34,8 @@ RUN poetry install --no-root --only main
 RUN /opt/pysetup/.venv/bin/pip install --no-cache-dir \
     "openai>=1.60,<3" \
     "Pillow>=10.4" \
-    "requests>=2.31"
+    "requests>=2.31" \
+    "jinja2>=3.1"
 
 ## Stage 2: runtime — slim image with WeasyPrint system libs + Cyrillic fonts
 FROM python:3.12-slim AS runtime
