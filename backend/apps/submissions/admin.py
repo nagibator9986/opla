@@ -29,6 +29,17 @@ from apps.submissions.models import (
 # ─── helpers ─────────────────────────────────────────────────────────────
 
 
+def _public_pdf_url(submission) -> str:
+    """Возвращает публичный URL для скачивания PDF клиентом.
+
+    Через Django-view, который стримит из MinIO — потому что сам MinIO
+    наружу не торчит. Используется в кнопках админки (WhatsApp + Скачать PDF).
+    """
+    from django.conf import settings
+    base = getattr(settings, "SITE_URL", "https://baqsy.tnriazun.com").rstrip("/")
+    return f"{base}/api/v1/submissions/{submission.id}/pdf/"
+
+
 def _format_answer_value(value: dict) -> str:
     """Преобразует JSON ответа в человекочитаемый текст."""
     if not isinstance(value, dict):
@@ -546,10 +557,11 @@ class SubmissionAdmin(ModelAdmin):
             if report and report.pdf_url and client and client.phone_wa:
                 digits = "".join(ch for ch in client.phone_wa if ch.isdigit())
                 if digits:
+                    public_pdf_url = _public_pdf_url(obj)
                     message = (
                         f"Здравствуйте, {client.name}! Ваш бизнес-аудит Baqsy готов.\n"
                         f"Отчёт по компании «{client.company}» можно скачать по ссылке:\n"
-                        f"{report.pdf_url}\n\n"
+                        f"{public_pdf_url}\n\n"
                         f"Если возникнут вопросы — напишите в этот чат, мы ответим."
                     )
                     wa_url = f"https://wa.me/{digits}?text={quote(message)}"
@@ -577,8 +589,9 @@ class SubmissionAdmin(ModelAdmin):
             )
             pdf_link = ""
             if report and report.pdf_url:
+                public_pdf = _public_pdf_url(obj)
                 pdf_link = (
-                    f'<a href="{escape(report.pdf_url)}" target="_blank" rel="noopener" '
+                    f'<a href="{escape(public_pdf)}" target="_blank" rel="noopener" '
                     f'style="display:inline-flex;align-items:center;gap:6px;'
                     f'background:#fff;color:#d97706;border:1px solid #d97706;'
                     f'padding:9px 14px;border-radius:8px;text-decoration:none;'

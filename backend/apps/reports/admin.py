@@ -29,6 +29,7 @@ from unfold.admin import ModelAdmin
 from unfold.decorators import action
 
 from apps.reports.models import AuditReport
+from apps.submissions.admin import _public_pdf_url
 from apps.submissions.models import Submission
 
 
@@ -150,7 +151,7 @@ class AuditReportAdmin(ModelAdmin):
         return format_html(
             '<a href="{}" target="_blank" rel="noopener" '
             'style="color:#d97706;font-weight:600;font-size:12px;">📄 Открыть</a>',
-            obj.pdf_url,
+            _public_pdf_url(obj.submission),
         )
 
     @admin.display(description="WhatsApp")
@@ -166,10 +167,11 @@ class AuditReportAdmin(ModelAdmin):
         if not digits:
             return format_html('<span style="color:#94a3b8;font-size:11px;">нет номера</span>')
 
+        public_pdf_url = _public_pdf_url(obj.submission)
         message = (
             f"Здравствуйте, {client.name}! Ваш бизнес-аудит Baqsy готов.\n"
             f"Отчёт по компании «{client.company}» можно скачать по ссылке:\n"
-            f"{obj.pdf_url}\n\n"
+            f"{public_pdf_url}\n\n"
             f"Если возникнут вопросы — напишите в этот чат, мы ответим."
         )
         wa_url = f"https://wa.me/{digits}?text={quote_plus(message)}"
@@ -351,10 +353,11 @@ class AuditReportAdmin(ModelAdmin):
             if obj.pdf_url and client and client.phone_wa:
                 digits = "".join(ch for ch in client.phone_wa if ch.isdigit())
                 if digits:
+                    public_pdf = _public_pdf_url(sub)
                     message = (
                         f"Здравствуйте, {client.name}! Ваш бизнес-аудит Baqsy готов.\n"
                         f"Отчёт по компании «{client.company}» можно скачать по ссылке:\n"
-                        f"{obj.pdf_url}\n\nЕсли возникнут вопросы — напишите."
+                        f"{public_pdf}\n\nЕсли возникнут вопросы — напишите."
                     )
                     wa_url = f"https://wa.me/{digits}?text={quote_plus(message)}"
                     wa_html = (
@@ -374,8 +377,9 @@ class AuditReportAdmin(ModelAdmin):
             )
             pdf_link = ""
             if obj.pdf_url:
+                public_pdf = _public_pdf_url(sub)
                 pdf_link = (
-                    f'<a href="{escape(obj.pdf_url)}" target="_blank" rel="noopener" '
+                    f'<a href="{escape(public_pdf)}" target="_blank" rel="noopener" '
                     f'style="display:inline-flex;align-items:center;gap:6px;'
                     f'background:#fff;color:#d97706;border:1px solid #d97706;'
                     f'padding:9px 14px;border-radius:8px;text-decoration:none;'
