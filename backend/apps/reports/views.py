@@ -187,15 +187,22 @@ class ApproveReportView(APIView):
                 sub.status,
             )
 
+        # Переводим сам отчёт в статус APPROVED (раньше он оставался DRAFT
+        # даже после approve — UI это путало).
+        update_fields = []
         if not report.approved_at:
             report.approved_at = timezone.now()
-            report.save(update_fields=["approved_at"])
+            update_fields.append("approved_at")
+        if report.status == AuditReport.Status.DRAFT:
+            report.status = AuditReport.Status.APPROVED
+            update_fields.append("status")
+        if update_fields:
+            report.save(update_fields=update_fields)
 
-        # Generate PDF. Delivery is initiated manually by the admin from the
-        # AuditReport admin list (WhatsApp button).
+        # Generate PDF. Если есть uploaded_file — task сам пропустит рендер.
         from apps.reports.tasks import generate_pdf
 
         generate_pdf.delay(str(report.id))
 
-        log.info("ApproveReportView: queued PDF generation for report=%s", report.id)
+        log.info("ApproveReportView: approved + queued PDF for report=%s", report.id)
         return Response({"status": "queued"}, status=200)
