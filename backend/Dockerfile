@@ -37,6 +37,11 @@ RUN /opt/pysetup/.venv/bin/pip install --no-cache-dir \
     "requests>=2.31" \
     "jinja2>=3.1"
 
+# Каталог для FileField (uploaded_file у AuditReport и т.п.) — должен быть
+# писаемым из-под appuser. Volume в docker-compose монтируется поверх,
+# но base-каталог должен существовать ещё в образе.
+RUN mkdir -p /app/media/reports/uploaded && chmod -R u+rwX /app/media || true
+
 ## Stage 2: runtime — slim image with WeasyPrint system libs + Cyrillic fonts
 FROM python:3.12-slim AS runtime
 
