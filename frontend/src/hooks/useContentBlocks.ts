@@ -88,6 +88,12 @@ const FALLBACK: Record<string, string> = {
   donation_card_number: '4904 7298 1111 9463',
   donation_card_holder: '',
   donation_card_bank: '',
+  // Processing-карточка (показывается клиенту пока эксперт готовит отчёт)
+  processing_title: 'Анкета принята — отчёт в работе',
+  processing_message:
+    'Наш эксперт уже изучает ваши ответы и собирает именной forensic-отчёт. ' +
+    'Готовый PDF мы пришлём в WhatsApp на указанный номер.',
+  processing_eta: '3–5 рабочих дней',
 }
 
 export function useContentBlocks() {

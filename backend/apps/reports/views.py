@@ -28,17 +28,20 @@ def _extract_object_key(pdf_url: str) -> str | None:
 
 
 class DownloadReportPdfView(APIView):
-    """GET /api/v1/submissions/{submission_id}/pdf/ — публичная отдача PDF.
+    """GET /api/v1/submissions/{submission_id}/pdf/ — публичная отдача отчёта.
 
-    Зачем view (а не прямая ссылка на MinIO):
-      • MinIO живёт во внутренней Docker-сети (`http://minio:9000`) и не
-        проксируется наружу через nginx — публичная ссылка работать не
-        будет.
-      • Django стримит файл из MinIO клиенту, скрывая внутренний endpoint.
-      • Логика permissions может быть расширена (например, требовать токен
-        в URL — сейчас полагаемся на UUID submission как на «секрет»).
+    Источник файла (в порядке приоритета):
+      1. ``report.uploaded_file`` — если админ загрузил готовый PDF/DOCX,
+         он отдаётся как есть (с правильным content-type по расширению).
+      2. ``report.pdf_url`` — иначе стримим из MinIO PDF, собранный
+         WeasyPrint'ом из ``admin_text``.
 
-    Url namespace: settings.SITE_URL/api/v1/submissions/{id}/pdf/.
+    Почему через Django proxy (а не прямую ссылку на MinIO):
+      • MinIO живёт во внутренней Docker-сети (``http://minio:9000``) и
+        наружу через nginx не проксируется.
+      • Логика permissions может быть расширена без нарушения публичных URL.
+
+    Public URL = ``{SITE_URL}/api/v1/submissions/{submission_id}/pdf/``.
     """
 
     permission_classes = [AllowAny]
@@ -52,12 +55,51 @@ class DownloadReportPdfView(APIView):
             raise Http404("Заявка не найдена.")
 
         report = getattr(submission, "report", None)
-        if not report or not report.pdf_url:
-            raise Http404("PDF ещё не готов.")
+        if not report or not report.has_deliverable:
+            raise Http404("Отчёт ещё не готов.")
 
+        client = submission.client
+        company_slug = "report"
+        if client and client.company:
+            company_slug = re.sub(r"[^\w\-]+", "_", client.company)[:40] or "report"
+
+        # 1) Приоритет — загруженный админом файл.
+        if report.uploaded_file:
+            return self._serve_uploaded(report, company_slug)
+
+        # 2) Fallback — PDF из MinIO.
+        return self._serve_minio_pdf(report, company_slug)
+
+    # ── helpers ───────────────────────────────────────────────────────────
+
+    def _serve_uploaded(self, report, company_slug):
+        """Стримит загруженный админом файл (PDF / DOCX / другое).
+
+        django-FileField сам открывает поток из дефолтного storage
+        (FileSystemStorage в текущей конфигурации). При смене на S3
+        Django откроет stream из S3 прозрачно.
+        """
+        f = report.uploaded_file
+        ext = (f.name.rsplit(".", 1)[-1] or "pdf").lower()
+        content_type = {
+            "pdf":  "application/pdf",
+            "docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "doc":  "application/msword",
+        }.get(ext, "application/octet-stream")
+        return FileResponse(
+            f.open("rb"),
+            content_type=content_type,
+            as_attachment=False,
+            filename=f"baqsy_{company_slug}.{ext}",
+        )
+
+    def _serve_minio_pdf(self, report, company_slug):
         object_key = _extract_object_key(report.pdf_url)
         if not object_key:
-            log.error("DownloadReportPdfView: cannot extract S3 key from %s", report.pdf_url)
+            log.error(
+                "DownloadReportPdfView: cannot extract S3 key from %s",
+                report.pdf_url,
+            )
             return Response({"detail": "internal error"}, status=500)
 
         import boto3
@@ -82,19 +124,12 @@ class DownloadReportPdfView(APIView):
             )
             raise Http404("PDF не найден в хранилище.")
 
-        client = submission.client
-        filename_safe = "audit_report"
-        if client and client.company:
-            slug = re.sub(r"[^\w\-]+", "_", client.company)[:40]
-            filename_safe = f"baqsy_{slug}"
-
-        response = FileResponse(
+        return FileResponse(
             obj["Body"],
             content_type="application/pdf",
             as_attachment=False,
-            filename=f"{filename_safe}.pdf",
+            filename=f"baqsy_{company_slug}.pdf",
         )
-        return response
 
 
 class ApproveReportView(APIView):
@@ -122,9 +157,12 @@ class ApproveReportView(APIView):
         except AuditReport.DoesNotExist:
             return Response({"detail": "Report not found."}, status=404)
 
-        if not report.admin_text or not report.admin_text.strip():
+        # Должно быть либо загруженный файл, либо текст для AI-генерации.
+        has_text = bool((report.admin_text or "").strip())
+        has_file = bool(report.uploaded_file)
+        if not has_text and not has_file:
             return Response(
-                {"error": "admin_text is required before approval"},
+                {"error": "перед утверждением загрузите PDF/DOCX или заполните текст отчёта"},
                 status=400,
             )
 

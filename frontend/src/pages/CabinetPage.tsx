@@ -10,6 +10,7 @@ import { PdfDownloadButton } from '../components/cabinet/PdfDownloadButton'
 import { UpsellCard } from '../components/cabinet/UpsellCard'
 import { ContinueQuestionnaireButton } from '../components/cabinet/ContinueQuestionnaireButton'
 import { DonationBlock } from '../components/cabinet/DonationBlock'
+import { ProcessingCard } from '../components/cabinet/ProcessingCard'
 import { FloatingChatButton } from '../components/chat/ChatLauncher'
 import { useSubmission } from '../hooks/useSubmission'
 import { useAuthStore } from '../store/authStore'
@@ -152,7 +153,18 @@ export function CabinetPage() {
                 status={submission.status}
               />
 
-              {submission.status === 'delivered' && <DonationBlock />}
+              {/* После завершения анкеты — карточка «обрабатывается» и блок донат.
+                  Показываются на всех трёх статусах report-фазы (completed /
+                  under_audit / delivered) — клиент сразу видит донат, не
+                  дожидаясь доставки. */}
+              {['completed', 'under_audit', 'delivered'].includes(
+                submission.status,
+              ) && (
+                <>
+                  {submission.status !== 'delivered' && <ProcessingCard />}
+                  <DonationBlock />
+                </>
+              )}
             </div>
           )}
         </Container>

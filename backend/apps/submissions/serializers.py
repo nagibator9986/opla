@@ -72,13 +72,14 @@ class SubmissionDetailSerializer(serializers.ModelSerializer):
         return obj.answers.count()
 
     def get_pdf_url(self, obj):
-        """Возвращает публичный URL Django-вьюхи (стримит PDF из MinIO).
+        """Возвращает публичный URL Django-вьюхи (стримит файл из MinIO/FS).
 
-        MinIO внутри Docker-сети, поэтому клиент НЕ может ходить на
-        http://minio:9000 напрямую. Django-view проксирует.
+        Возвращает URL если:
+          • у отчёта есть uploaded_file (админ загрузил готовый PDF/DOCX), ИЛИ
+          • есть pdf_url (PDF собран WeasyPrint'ом из admin_text).
         """
         report = getattr(obj, "report", None)
-        if not (report and report.pdf_url):
+        if not report or not report.has_deliverable:
             return None
         request = self.context.get("request")
         path = f"/api/v1/submissions/{obj.id}/pdf/"

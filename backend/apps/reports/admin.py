@@ -67,14 +67,23 @@ class AuditReportAdmin(ModelAdmin):
             "fields": ("workflow_card",),
             "description": (
                 "Workflow-шаги отчёта. Кнопки переключают шаги. "
-                "Текст отчёта редактируется ниже в поле <b>«Содержимое»</b>."
+                "Контент отчёта подгружается из <b>uploaded_file</b> (если задан) "
+                "ИЛИ собирается из <b>admin_text</b>."
             ),
         }),
-        ("Содержимое отчёта", {
+        ("Готовый файл (приоритет)", {
+            "fields": ("uploaded_file",),
+            "description": (
+                "Загрузите свой PDF или DOCX — он будет отправлен клиенту "
+                "как есть, без AI-обработки. Если поле заполнено, текст "
+                "ниже игнорируется."
+            ),
+        }),
+        ("Текст отчёта (для AI-генерации PDF)", {
             "fields": ("admin_text",),
             "description": (
-                "Это текст, который попадёт в PDF под заголовком «Анализ бизнеса». "
-                "Можно отредактировать вручную или сгенерировать через AI-кнопку выше."
+                "Альтернатива загрузке файла: написать (или сгенерировать "
+                "через AI) текст. WeasyPrint соберёт из него PDF при утверждении."
             ),
         }),
         ("Клиент и заявка", {
@@ -118,8 +127,10 @@ class AuditReportAdmin(ModelAdmin):
         """Цветной бейдж с подсказкой следующего шага."""
         sub_status = obj.submission.status
         has_text = bool((obj.admin_text or "").strip())
+        has_uploaded = bool(obj.uploaded_file)
+        has_content = has_text or has_uploaded
         is_approved = obj.status in (AuditReport.Status.APPROVED, AuditReport.Status.SENT)
-        has_pdf = bool(obj.pdf_url)
+        deliverable_ready = bool(obj.pdf_url) or has_uploaded
         is_sent = obj.status == AuditReport.Status.SENT or sub_status == Submission.Status.DELIVERED
 
         if sub_status not in (
@@ -130,12 +141,12 @@ class AuditReportAdmin(ModelAdmin):
             label, bg, fg = "⏳ Ждём анкету", "#e2e8f0", "#475569"
         elif is_sent:
             label, bg, fg = "✓ Доставлено", "#d1fae5", "#065f46"
-        elif has_pdf and is_approved:
+        elif deliverable_ready and is_approved:
             label, bg, fg = "💬 Отправить клиенту", "#fef3c7", "#92400e"
-        elif has_text:
-            label, bg, fg = "✓ Утвердить + создать PDF", "#dbeafe", "#1e40af"
+        elif has_content:
+            label, bg, fg = "✓ Утвердить и отправить", "#dbeafe", "#1e40af"
         else:
-            label, bg, fg = "🤖 Сгенерировать AI-черновик", "#fef3c7", "#92400e"
+            label, bg, fg = "🤖 AI-черновик / 📎 Загрузить файл", "#fef3c7", "#92400e"
 
         return format_html(
             '<span style="display:inline-block;padding:4px 12px;border-radius:999px;'
@@ -241,8 +252,10 @@ class AuditReportAdmin(ModelAdmin):
         sub = obj.submission
         sub_status = sub.status
         has_text = bool((obj.admin_text or "").strip())
+        has_uploaded = bool(obj.uploaded_file)
+        has_content = has_text or has_uploaded
         is_approved = obj.status in (AuditReport.Status.APPROVED, AuditReport.Status.SENT)
-        has_pdf = bool(obj.pdf_url)
+        deliverable_ready = bool(obj.pdf_url) or has_uploaded
         is_sent = obj.status == AuditReport.Status.SENT or sub_status == Submission.Status.DELIVERED
 
         # Active step
@@ -252,9 +265,9 @@ class AuditReportAdmin(ModelAdmin):
             Submission.Status.DELIVERED,
         ):
             active = 1
-        elif not has_text:
+        elif not has_content:
             active = 2
-        elif not (is_approved and has_pdf):
+        elif not (is_approved and deliverable_ready):
             active = 3
         elif not is_sent:
             active = 4
@@ -312,14 +325,40 @@ class AuditReportAdmin(ModelAdmin):
                 "admin:reports_auditreport_generate_ai_draft", args=[obj.pk]
             )
             parts.append(
+                f'<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">'
+                # Вариант A — AI
+                f'<div style="padding:14px;background:#f0f9ff;border:1px solid #bae6fd;'
+                f'border-radius:10px;">'
+                f'<div style="font-weight:700;color:#0c4a6e;margin-bottom:4px;font-size:13px;">'
+                f'Вариант A — AI-генерация</div>'
+                f'<div style="font-size:11px;color:#475569;margin-bottom:10px;line-height:1.5;">'
+                f'12 ассистентов проанализируют ответы и соберут черновик за ~30 сек. '
+                f'Текст попадёт в поле «Текст отчёта» — потом можно отредактировать.</div>'
                 f'<a href="{escape(ai_url)}" '
-                f'style="display:inline-flex;align-items:center;gap:8px;'
-                f'background:#0ea5e9;color:#fff;padding:10px 18px;border-radius:8px;'
-                f'text-decoration:none;font-weight:600;font-size:14px;">'
-                f'🤖 Сгенерировать AI-черновик (12 ассистентов)</a>'
-                f'<div style="margin-top:8px;font-size:12px;color:#64748b;">'
-                f'Запустит 12 параллельных вызовов OpenAI, соберёт черновик в поле '
-                f'<b>«Содержимое отчёта»</b> ниже. Длительность: ~30 секунд.</div>'
+                f'style="display:inline-flex;align-items:center;gap:6px;'
+                f'background:#0ea5e9;color:#fff;padding:8px 14px;border-radius:6px;'
+                f'text-decoration:none;font-weight:600;font-size:13px;">'
+                f'🤖 Сгенерировать AI-черновик</a>'
+                f'</div>'
+                # Вариант B — Upload
+                f'<div style="padding:14px;background:#fff7ed;border:1px solid #fed7aa;'
+                f'border-radius:10px;">'
+                f'<div style="font-weight:700;color:#7c2d12;margin-bottom:4px;font-size:13px;">'
+                f'Вариант B — Загрузить готовый</div>'
+                f'<div style="font-size:11px;color:#475569;margin-bottom:10px;line-height:1.5;">'
+                f'Прикрепите свой PDF или DOCX в секции '
+                f'<b>«Готовый файл»</b> ниже — отправится клиенту как есть.</div>'
+                f'<a href="#id_uploaded_file" '
+                f'style="display:inline-flex;align-items:center;gap:6px;'
+                f'background:#f97316;color:#fff;padding:8px 14px;border-radius:6px;'
+                f'text-decoration:none;font-weight:600;font-size:13px;">'
+                f'📎 К полю загрузки →</a>'
+                f'</div>'
+                f'</div>'
+                f'<div style="margin-top:10px;font-size:11px;color:#64748b;'
+                f'padding:8px 12px;background:#f8fafc;border-radius:6px;">'
+                f'💡 После любого варианта вернитесь сюда и нажмите '
+                f'<b>«Утвердить»</b>.</div>'
             )
 
         elif active == 3:
@@ -350,7 +389,7 @@ class AuditReportAdmin(ModelAdmin):
         elif active == 4:
             client = getattr(sub, "client", None)
             wa_html = ""
-            if obj.pdf_url and client and client.phone_wa:
+            if deliverable_ready and client and client.phone_wa:
                 digits = "".join(ch for ch in client.phone_wa if ch.isdigit())
                 if digits:
                     public_pdf = _public_pdf_url(sub)
@@ -370,13 +409,13 @@ class AuditReportAdmin(ModelAdmin):
                 else:
                     wa_html = '<span style="color:#94a3b8;font-size:13px;">Нет валидного номера.</span>'
             else:
-                wa_html = '<span style="color:#f59e0b;font-size:13px;">PDF ещё генерируется — обновите страницу.</span>'
+                wa_html = '<span style="color:#f59e0b;font-size:13px;">Файл ещё готовится — обновите страницу.</span>'
 
             delivered_url = reverse(
                 "admin:reports_auditreport_mark_delivered", args=[obj.pk]
             )
             pdf_link = ""
-            if obj.pdf_url:
+            if deliverable_ready:
                 public_pdf = _public_pdf_url(sub)
                 pdf_link = (
                     f'<a href="{escape(public_pdf)}" target="_blank" rel="noopener" '
@@ -466,10 +505,12 @@ class AuditReportAdmin(ModelAdmin):
             report.admin_text = admin_text
             report.save(update_fields=["admin_text"])
 
-        if not (report.admin_text or "").strip():
+        has_text = bool((report.admin_text or "").strip())
+        has_file = bool(report.uploaded_file)
+        if not has_text and not has_file:
             messages.error(
                 request,
-                _("Заполните содержимое отчёта перед утверждением."),
+                _("Загрузите PDF/DOCX или заполните текст отчёта перед утверждением."),
             )
             return HttpResponseRedirect(
                 reverse("admin:reports_auditreport_change", args=(object_id,))

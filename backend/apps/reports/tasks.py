@@ -32,6 +32,15 @@ def generate_pdf(self, report_id: str):
         log.error("generate_pdf: report %s not found", report_id)
         return
 
+    # Если админ загрузил готовый файл — рендерить нечего, он используется как
+    # итоговый отчёт (стримится через DownloadReportPdfView).
+    if report.uploaded_file:
+        log.info(
+            "generate_pdf: uploaded_file present for report=%s, skipping render",
+            report_id,
+        )
+        return
+
     # Idempotency check (PDF-07)
     if report.pdf_url:
         log.info("generate_pdf: already exists for report=%s", report_id)
