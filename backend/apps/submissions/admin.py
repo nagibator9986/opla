@@ -151,6 +151,11 @@ class AuditReportInline(StackedInline):
 
 @admin.register(Submission)
 class SubmissionAdmin(ModelAdmin):
+    class Media:
+        # «Сохранить и утвердить» / «Сохранить и отметить доставленным»
+        # появляются в submit-row рядом с обычным «Сохранить».
+        js = ("admin/js/audit_report_quick_actions.js",)
+
     list_display = (
         "id_short", "client_label", "tariff",
         "status_badge", "answered_progress",
@@ -729,6 +734,96 @@ class SubmissionAdmin(ModelAdmin):
             f'attachment; filename*=UTF-8\'\'{quote(filename)}'
         )
         return response
+
+    # ── обработка дополнительных submit-кнопок ────────────────────────────
+
+    def save_formset(self, request, form, formset, change):
+        """Запоминаем что было сохранено в inline `AuditReportInline`, чтобы
+        в response_change правильно отработать «Сохранить и утвердить»."""
+        super().save_formset(request, form, formset, change)
+
+    def response_change(self, request, obj):
+        """Перехватываем «Сохранить и утвердить» / «Сохранить и отметить
+        доставленным» — после save сразу выполняем workflow-action."""
+        if "_save_and_approve" in request.POST:
+            return self._save_approve_redirect(request, obj)
+        if "_save_and_deliver" in request.POST:
+            return self._save_deliver_redirect(request, obj)
+
+        # После save, если есть контент и отчёт в draft — подсказка
+        report = getattr(obj, "report", None)
+        if (
+            report
+            and report.status == AuditReport.Status.DRAFT
+            and (report.uploaded_file or (report.admin_text or "").strip())
+        ):
+            messages.info(
+                request,
+                _(
+                    "✓ Сохранено. Контент отчёта готов — нажмите "
+                    "«✓ Сохранить и утвердить» внизу или «Утвердить и создать "
+                    "PDF» сверху, чтобы отправить файл клиенту."
+                ),
+            )
+        return super().response_change(request, obj)
+
+    def _save_approve_redirect(self, request, obj):
+        """Утвердить отчёт прямо со страницы редактирования заявки."""
+        report, _created = self._ensure_report(obj)
+        has_text = bool((report.admin_text or "").strip())
+        has_file = bool(report.uploaded_file)
+        if not has_text and not has_file:
+            messages.error(
+                request,
+                _("Загрузите PDF/DOCX или заполните текст отчёта перед утверждением."),
+            )
+            return HttpResponseRedirect(
+                reverse("admin:submissions_submission_change", args=(obj.pk,))
+            )
+
+        from apps.reports.views import ApproveReportView
+        approve_view = ApproveReportView.as_view()
+        response = approve_view(request, report_id=str(report.pk))
+        if hasattr(response, "status_code") and response.status_code == 200:
+            messages.success(
+                request,
+                _(
+                    "Отчёт утверждён. PDF готовится — обновите страницу через "
+                    "5–10 секунд, затем нажмите «💬 Отправить клиенту в WhatsApp»."
+                ),
+            )
+        else:
+            data = getattr(response, "data", {})
+            err = data.get("error", data.get("detail", "неизвестная ошибка"))
+            messages.error(request, f"Ошибка утверждения: {err}")
+        return HttpResponseRedirect(
+            reverse("admin:submissions_submission_change", args=(obj.pk,))
+        )
+
+    def _save_deliver_redirect(self, request, obj):
+        """Отметить доставленным прямо со страницы редактирования."""
+        report = getattr(obj, "report", None)
+        if obj.status == Submission.Status.UNDER_AUDIT:
+            try:
+                obj.mark_delivered()
+                obj.save(update_fields=["status"])
+                if report:
+                    report.status = AuditReport.Status.SENT
+                    report.save(update_fields=["status"])
+                messages.success(request, _("✓ Заявка помечена как доставленная клиенту."))
+            except Exception as exc:
+                messages.error(request, f"Ошибка FSM: {exc}")
+        elif obj.status == Submission.Status.DELIVERED:
+            messages.info(request, _("Эта заявка уже в статусе «Доставлен»."))
+        else:
+            messages.warning(
+                request,
+                f"Нельзя пометить доставленным из «{obj.get_status_display()}». "
+                f"Сначала утвердите отчёт.",
+            )
+        return HttpResponseRedirect(
+            reverse("admin:submissions_submission_change", args=(obj.pk,))
+        )
 
     # ── actions: workflow buttons ─────────────────────────────────────────
 
