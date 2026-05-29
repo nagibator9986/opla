@@ -1,8 +1,27 @@
+"""Админка заявок — единая страница с одной большой кнопкой действия.
+
+После 2026-05-29 переработана под принцип «один экран — одно действие»
+(см. CLAUDE.md §13.2). Старая логика с 4-шаговым прогрессом, 5 кнопками
+и дублирующей админкой AuditReport показала себя как непонятная — теперь:
+
+  • Только страница заявки (`/admin/submissions/submission/<id>/`) —
+    AuditReport-админка скрыта из меню, но доступна по прямому URL.
+  • Сверху: КЛИЕНТ, СТАТУС, ОДНА большая цветная кнопка с подсказкой
+    что сейчас делать.
+  • Ниже: одно поле для загрузки готового PDF/DOCX ИЛИ текст отчёта.
+  • Ниже: свёрнутые ответы клиента (кнопки «Скопировать / CSV / Печать»).
+
+Бизнес-логика workflow — в `apps.reports.services.approve_report()` и
+`mark_report_delivered()`, чтобы не дублировать между DRF view и admin.
+"""
+from __future__ import annotations
+
 import csv
 import io
 from collections import OrderedDict
-from urllib.parse import quote
+from urllib.parse import quote, quote_plus
 
+from django.conf import settings
 from django.contrib import admin, messages
 from django.http import HttpResponse, HttpResponseRedirect
 from django.urls import path, reverse
@@ -30,12 +49,10 @@ from apps.submissions.models import (
 
 
 def _public_pdf_url(submission) -> str:
-    """Возвращает публичный URL для скачивания PDF клиентом.
+    """Публичный URL отчёта (через Django proxy, MinIO внутри сети).
 
-    Через Django-view, который стримит из MinIO — потому что сам MinIO
-    наружу не торчит. Используется в кнопках админки (WhatsApp + Скачать PDF).
+    См. CLAUDE.md §13.5 — MinIO не торчит наружу, поэтому используем proxy.
     """
-    from django.conf import settings
     base = getattr(settings, "SITE_URL", "https://baqsy.tnriazun.com").rstrip("/")
     return f"{base}/api/v1/submissions/{submission.id}/pdf/"
 
@@ -59,34 +76,24 @@ def _format_answer_value(value: dict) -> str:
 
 
 def _grouped_answers(submission: Submission) -> "OrderedDict[str, list]":
-    """Группирует ответы по этапам (stage) с сохранением исходного порядка."""
     grouped: "OrderedDict[str, list]" = OrderedDict()
-    answers = (
-        submission.answers.select_related("question")
-        .order_by("question__order")
-    )
-    for answer in answers:
+    for answer in submission.answers.select_related("question").order_by("question__order"):
         stage = answer.question.stage or "Без раздела"
         grouped.setdefault(stage, []).append(answer)
     return grouped
 
 
 def _answers_as_plain_text(submission: Submission) -> str:
-    """Все ответы клиента как обычный текст — для копирования в буфер."""
     lines: list[str] = []
     client = submission.client
     if client:
         lines.append(f"Клиент: {client.name} · {client.company}")
         if client.phone_wa:
             lines.append(f"Телефон/WA: {client.phone_wa}")
-        if getattr(client, "email", None):
-            lines.append(f"Email: {client.email}")
     lines.append(f"Заявка: {submission.id}")
-    lines.append(f"Шаблон: {submission.template.name} v{submission.template.version}")
     if submission.tariff_id:
         lines.append(f"Тариф: {submission.tariff.title}")
     lines.append("")
-
     for stage, items in _grouped_answers(submission).items():
         lines.append(f"━━ {stage} ━━")
         for a in items:
@@ -96,54 +103,19 @@ def _answers_as_plain_text(submission: Submission) -> str:
     return "\n".join(lines)
 
 
-# ─── inlines ─────────────────────────────────────────────────────────────
-
-
-class AnswerInline(TabularInline):
-    model = Answer
-    extra = 0
-    readonly_fields = ("question_order", "question_text", "answer_pretty", "answered_at")
-    fields = ("question_order", "question_text", "answer_pretty", "answered_at")
-    can_delete = False
-    classes = ("collapse",)
-    verbose_name = "Ответ (таблица)"
-    verbose_name_plural = "Ответы клиента (таблица — свернуть/развернуть)"
-
-    def has_add_permission(self, request, obj=None):
-        return False
-
-    @admin.display(description="№")
-    def question_order(self, obj):
-        return obj.question.order
-
-    @admin.display(description="Вопрос")
-    def question_text(self, obj):
-        return obj.question.text
-
-    @admin.display(description="Ответ")
-    def answer_pretty(self, obj):
-        return _format_answer_value(obj.value)
+# ─── inline для отчёта ───────────────────────────────────────────────────
 
 
 class AuditReportInline(StackedInline):
-    """Inline для редактирования отчёта прямо со страницы заявки.
-
-    Два способа подготовить отчёт (любой из):
-      1) Загрузить готовый PDF/DOCX в поле <b>uploaded_file</b>.
-      2) Заполнить <b>admin_text</b> — будет собран PDF через WeasyPrint
-         (можно сгенерировать черновик кнопкой выше).
-
-    Workflow-кнопки и прогресс-индикатор — в карточке `report_workflow_card`.
-    """
+    """Одна форма для контента отчёта: либо файл, либо текст."""
 
     model = AuditReport
     extra = 0
     max_num = 1
-    fields = ("uploaded_file", "admin_text", "status", "pdf_url", "approved_at")
-    readonly_fields = ("status", "pdf_url", "approved_at")
+    fields = ("uploaded_file", "admin_text")
     can_delete = False
-    verbose_name = "Отчёт (файл или текст)"
-    verbose_name_plural = "Отчёт (файл или текст)"
+    verbose_name = "Контент отчёта"
+    verbose_name_plural = "Контент отчёта"
 
 
 # ─── main admin ──────────────────────────────────────────────────────────
@@ -151,10 +123,16 @@ class AuditReportInline(StackedInline):
 
 @admin.register(Submission)
 class SubmissionAdmin(ModelAdmin):
-    class Media:
-        # «Сохранить и утвердить» / «Сохранить и отметить доставленным»
-        # появляются в submit-row рядом с обычным «Сохранить».
-        js = ("admin/js/audit_report_quick_actions.js",)
+    """Единая страница заявки.
+
+    Один путь обработки:
+      1. Клиент сдаёт анкету → автоматически создаётся AuditReport draft.
+      2. Админ загружает PDF/DOCX ИЛИ пишет текст в admin_text → нажимает «Сохранить».
+      3. Подсказка «Готово — нажмите ОТПРАВИТЬ КЛИЕНТУ» → одна большая кнопка вверху.
+      4. После клика: всё одной транзакцией — approve, generate PDF, открывается
+         кабинет/WhatsApp.
+      5. После отправки сообщения админом — кнопка «Отметить доставленным».
+    """
 
     list_display = (
         "id_short", "client_label", "tariff",
@@ -166,59 +144,47 @@ class SubmissionAdmin(ModelAdmin):
     readonly_fields = (
         "id", "client", "template", "tariff",
         "created_at", "completed_at", "status",
-        "client_answers_card",
-        "report_workflow_card",
+        "action_card", "client_answers_card",
     )
     fieldsets = (
-        ("Отчёт (workflow)", {
-            "fields": ("report_workflow_card",),
-            "description": (
-                "Шаги работы с отчётом: <b>Анкета → AI-черновик → Редактура → "
-                "Утверждение + PDF → Отправка клиенту</b>. Кнопки переключают шаги. "
-                "Текст черновика редактируется в секции «Текст отчёта» ниже на этой странице."
-            ),
+        (None, {
+            "fields": ("action_card",),
         }),
-        ("Заявка", {
+        ("Ответы клиента", {
+            "fields": ("client_answers_card",),
+            "classes": ("collapse",),
+        }),
+        ("Метаданные заявки", {
             "fields": ("id", "client", "template", "tariff", "status",
                        "created_at", "completed_at"),
             "classes": ("collapse",),
         }),
-        ("Ответы клиента", {
-            "fields": ("client_answers_card",),
-            "description": (
-                "Все ответы клиента сгруппированы по этапам. "
-                "Используйте кнопки «Копировать», «Скачать CSV», «Распечатать» "
-                "для удобной обработки."
-            ),
-        }),
     )
-    inlines = [AuditReportInline, AnswerInline]
+    inlines = [AuditReportInline]
     list_per_page = 25
-    actions_detail = ["generate_ai_draft", "approve_and_send", "mark_delivered"]
+    actions_detail = ["send_to_client", "mark_delivered"]
 
-    # ── list_display helpers ──────────────────────────────────────────────
+    # ── list display ──────────────────────────────────────────────────────
 
-    @admin.display(description="ID", ordering="id")
+    @admin.display(description="ID")
     def id_short(self, obj):
         return str(obj.id)[:8]
 
-    @admin.display(description="Клиент", ordering="client__name")
+    @admin.display(description="Клиент")
     def client_label(self, obj):
         c = obj.client
-        if not c:
-            return "—"
-        return f"{c.name} · {c.company}"
+        return f"{c.name} · {c.company}" if c else "—"
 
     @admin.display(description="Статус")
     def status_badge(self, obj):
         colors = {
-            "created": ("#e2e8f0", "#0f172a"),
+            "created":           ("#e2e8f0", "#0f172a"),
             "in_progress_basic": ("#fef3c7", "#78350f"),
-            "paid": ("#dbeafe", "#1e40af"),
-            "in_progress_full": ("#fef3c7", "#78350f"),
-            "completed": ("#d1fae5", "#065f46"),
-            "under_audit": ("#fde68a", "#92400e"),
-            "delivered": ("#bbf7d0", "#065f46"),
+            "paid":              ("#dbeafe", "#1e40af"),
+            "in_progress_full":  ("#fef3c7", "#78350f"),
+            "completed":         ("#d1fae5", "#065f46"),
+            "under_audit":       ("#fde68a", "#92400e"),
+            "delivered":         ("#bbf7d0", "#065f46"),
         }
         bg, fg = colors.get(obj.status, ("#e2e8f0", "#0f172a"))
         return format_html(
@@ -235,142 +201,267 @@ class SubmissionAdmin(ModelAdmin):
 
     @admin.display(description="Отчёт")
     def report_progress_badge(self, obj):
-        """Бейдж прогресса отчёта: ●○○○ → ●●○○ → ●●●○ → ●●●● в зависимости
-        от того, на каком шаге workflow находится отчёт.
+        if obj.status in ("created", "in_progress_basic", "paid", "in_progress_full"):
+            return format_html('<span style="color:#94a3b8;font-size:11px;">— анкета не сдана —</span>')
+        report = getattr(obj, "report", None)
+        has_content = bool(report and (report.uploaded_file or (report.admin_text or "").strip()))
+        is_approved = report and report.status in ("approved", "sent")
+        is_sent = obj.status == "delivered" or (report and report.status == "sent")
+        if is_sent:
+            return format_html(
+                '<span style="background:#d1fae5;color:#065f46;padding:3px 10px;border-radius:999px;'
+                'font-size:11px;font-weight:600;">✓ Доставлено</span>'
+            )
+        if is_approved:
+            return format_html(
+                '<span style="background:#fde68a;color:#92400e;padding:3px 10px;border-radius:999px;'
+                'font-size:11px;font-weight:600;">Готов · Отправить</span>'
+            )
+        if has_content:
+            return format_html(
+                '<span style="background:#dbeafe;color:#1e40af;padding:3px 10px;border-radius:999px;'
+                'font-size:11px;font-weight:600;">Готов · Утвердить</span>'
+            )
+        return format_html(
+            '<span style="background:#fef3c7;color:#78350f;padding:3px 10px;border-radius:999px;'
+            'font-size:11px;font-weight:600;">Загрузите файл или AI</span>'
+        )
+
+    # ── главный action-card ───────────────────────────────────────────────
+
+    @admin.display(description="Что делать сейчас")
+    def action_card(self, obj):
+        """Большая карточка с одной кнопкой действия для текущего шага.
 
         Шаги:
-            ① анкета завершена (status >= completed)
-            ② AI-черновик есть (admin_text не пуст)
-            ③ утверждён + PDF (report.status >= approved & pdf_url)
-            ④ отправлен (status = delivered ИЛИ report.status = sent)
+          • анкета не сдана → сообщение «ждём клиента», без кнопок
+          • анкета сдана, контента нет → нужно загрузить файл / написать текст / нажать AI
+          • контент есть, не утверждено → одна кнопка «📨 Отправить клиенту»
+          • утверждено, не доставлено → две кнопки: WhatsApp + «Отметить доставленным»
+          • доставлено → ✓ Готово
         """
-        if obj.status in (
-            Submission.Status.CREATED,
-            Submission.Status.IN_PROGRESS_BASIC,
-            Submission.Status.PAID,
-            Submission.Status.IN_PROGRESS_FULL,
-        ):
-            return format_html(
-                '<span style="color:#94a3b8;font-size:11px;">— анкета не завершена —</span>'
+        if not obj or not obj.pk:
+            return mark_safe(
+                '<div style="padding:14px;background:#f1f5f9;border-radius:8px;color:#475569;">'
+                'Сохраните заявку, чтобы увидеть действия.</div>'
             )
+
+        client = obj.client
+        client_line = f"{client.name} · {client.company}" if client else "Клиент не задан"
+        status_text = obj.get_status_display()
 
         report = getattr(obj, "report", None)
-        step1 = True  # анкета завершена раз сюда дошли
-        step2 = bool(
-            report and (
-                (report.admin_text or "").strip() or report.uploaded_file
+        has_text = bool(report and (report.admin_text or "").strip())
+        has_file = bool(report and report.uploaded_file)
+        has_content = has_text or has_file
+        is_approved = report and report.status in ("approved", "sent")
+        deliverable_ready = report and (report.pdf_url or report.uploaded_file)
+        is_sent = obj.status == "delivered" or (report and report.status == "sent")
+
+        # Шапка карточки — всегда одинаковая
+        parts: list[str] = []
+        parts.append(
+            '<div style="font-family:system-ui,-apple-system,sans-serif;'
+            'border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;background:#fff;">'
+        )
+        parts.append(
+            f'<div style="padding:16px 20px;background:linear-gradient'
+            f'(135deg,#fef3c7 0%,#fffbeb 100%);border-bottom:1px solid #fde68a;">'
+            f'<div style="font-size:11px;color:#92400e;text-transform:uppercase;'
+            f'letter-spacing:0.05em;font-weight:700;margin-bottom:4px;">Заявка клиента</div>'
+            f'<div style="font-size:18px;font-weight:700;color:#0f172a;">{escape(client_line)}</div>'
+            f'<div style="font-size:12px;color:#78350f;margin-top:4px;">'
+            f'Статус: <b>{escape(status_text)}</b></div>'
+            f'</div>'
+        )
+
+        # Тело — действие зависит от шага
+        parts.append('<div style="padding:20px;">')
+
+        if obj.status in ("created", "in_progress_basic", "paid", "in_progress_full"):
+            parts.append(
+                '<div style="padding:16px;background:#fef3c7;border-radius:10px;'
+                'color:#78350f;font-size:14px;text-align:center;">'
+                '⏳ <b>Ждём, пока клиент закончит анкету.</b><br/>'
+                '<span style="font-size:12px;">Действия станут доступны после завершения.</span>'
+                '</div>'
             )
-        )
-        step3 = bool(
-            report
-            and (report.pdf_url or report.uploaded_file)
-            and report.status in (AuditReport.Status.APPROVED, AuditReport.Status.SENT)
-        )
-        step4 = obj.status == Submission.Status.DELIVERED or (
-            report and report.status == AuditReport.Status.SENT
-        )
 
-        done = sum([step1, step2, step3, step4])
-        labels = {
-            1: ("⓵ AI или загрузить файл", "#fef3c7", "#78350f"),
-            2: ("⓶ Контент готов · Утвердить", "#dbeafe", "#1e40af"),
-            3: ("⓷ Файл готов · Отправить", "#fde68a", "#92400e"),
-            4: ("⓸ Доставлено клиенту ✓", "#d1fae5", "#065f46"),
-        }
-        label, bg, fg = labels[done]
-        return format_html(
-            '<span style="display:inline-block;padding:3px 10px;border-radius:999px;'
-            'background:{};color:{};font-size:11px;font-weight:600;'
-            'white-space:nowrap;">{}</span>',
-            bg, fg, label,
-        )
+        elif is_sent:
+            parts.append(
+                '<div style="padding:16px;background:#d1fae5;border-radius:10px;'
+                'color:#065f46;font-size:14px;text-align:center;font-weight:600;">'
+                '✓ Отчёт отправлен клиенту и помечен доставленным.'
+                '</div>'
+            )
 
-    # ── главный read-only блок с ответами + кнопками ──────────────────────
+        elif not has_content:
+            # Нужно выбрать: загрузить файл, написать текст или сгенерировать AI
+            ai_url = reverse("admin:submissions_submission_generate_ai_draft", args=[obj.pk])
+            parts.append(
+                '<div style="font-size:14px;color:#0f172a;margin-bottom:12px;font-weight:600;">'
+                'Выберите способ подготовки отчёта:</div>'
+            )
+            parts.append(
+                f'<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">'
+                # ── Вариант A: AI ──
+                f'<div style="padding:14px;background:#f0f9ff;border:1px solid #bae6fd;border-radius:10px;">'
+                f'<div style="font-weight:700;color:#0c4a6e;font-size:13px;margin-bottom:4px;">'
+                f'A. Через AI</div>'
+                f'<div style="font-size:11px;color:#475569;margin-bottom:10px;line-height:1.5;">'
+                f'12 ассистентов соберут текст за ~30 сек. Потом можно отредактировать.</div>'
+                f'<a href="{escape(ai_url)}" '
+                f'style="display:inline-flex;align-items:center;gap:6px;background:#0ea5e9;'
+                f'color:#fff;padding:8px 14px;border-radius:6px;text-decoration:none;'
+                f'font-weight:600;font-size:13px;">🤖 Сгенерировать</a>'
+                f'</div>'
+                # ── Вариант B: Upload ──
+                f'<div style="padding:14px;background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;">'
+                f'<div style="font-weight:700;color:#7c2d12;font-size:13px;margin-bottom:4px;">'
+                f'B. Загрузить готовый</div>'
+                f'<div style="font-size:11px;color:#475569;margin-bottom:10px;line-height:1.5;">'
+                f'PDF или DOCX от эксперта. Отправится клиенту как есть.</div>'
+                f'<a href="#contentotchta-group" '
+                f'style="display:inline-flex;align-items:center;gap:6px;background:#f97316;'
+                f'color:#fff;padding:8px 14px;border-radius:6px;text-decoration:none;'
+                f'font-weight:600;font-size:13px;">📎 К полю загрузки</a>'
+                f'</div>'
+                f'</div>'
+                '<div style="padding:10px;background:#f1f5f9;border-radius:8px;font-size:11px;'
+                'color:#475569;line-height:1.5;">'
+                '💡 Найдите ниже секцию <b>«Контент отчёта»</b>, загрузите файл '
+                'или впишите текст — потом нажмите <b>«Сохранить и продолжить редактирование»</b> '
+                'внизу страницы. После сохранения здесь появится кнопка отправки.'
+                '</div>'
+            )
 
-    @admin.display(description="Ответы клиента (по этапам)")
+        elif not is_approved:
+            # Контент есть → большая кнопка «Отправить клиенту»
+            send_url = reverse("admin:submissions_submission_send_to_client", args=[obj.pk])
+            content_label = "файл загружен" if has_file else f"текст ({len(report.admin_text)} символов)"
+            parts.append(
+                f'<div style="margin-bottom:12px;padding:10px 14px;background:#dbeafe;'
+                f'border-radius:8px;color:#1e40af;font-size:13px;">'
+                f'✓ Контент готов ({content_label}).'
+                f'</div>'
+                f'<a href="{escape(send_url)}" '
+                f'style="display:block;width:100%;box-sizing:border-box;text-align:center;'
+                f'background:#10b981;color:#fff;padding:16px 24px;border-radius:10px;'
+                f'text-decoration:none;font-weight:700;font-size:16px;'
+                f'box-shadow:0 4px 12px rgba(16,185,129,0.3);">'
+                f'📨 Отправить клиенту</a>'
+                f'<div style="margin-top:10px;font-size:11px;color:#64748b;text-align:center;">'
+                f'Утвердит отчёт, соберёт PDF, активирует отправку через WhatsApp.</div>'
+            )
+
+        else:
+            # Утверждён, не доставлен → WhatsApp + отметить доставленным
+            wa_html = ""
+            if deliverable_ready and client and client.phone_wa:
+                digits = "".join(ch for ch in client.phone_wa if ch.isdigit())
+                if digits:
+                    pdf_url = _public_pdf_url(obj)
+                    message = (
+                        f"Здравствуйте, {client.name}! Ваш бизнес-аудит Baqsy готов.\n"
+                        f"Отчёт по компании «{client.company}» можно скачать по ссылке:\n"
+                        f"{pdf_url}\n\nЕсли возникнут вопросы — напишите."
+                    )
+                    wa_url = f"https://wa.me/{digits}?text={quote_plus(message)}"
+                    wa_html = (
+                        f'<a href="{escape(wa_url)}" target="_blank" rel="noopener" '
+                        f'style="display:block;width:100%;box-sizing:border-box;text-align:center;'
+                        f'background:#25D366;color:#fff;padding:16px 24px;border-radius:10px;'
+                        f'text-decoration:none;font-weight:700;font-size:16px;margin-bottom:10px;'
+                        f'box-shadow:0 4px 12px rgba(37,211,102,0.3);">'
+                        f'💬 Открыть WhatsApp с сообщением</a>'
+                    )
+
+            deliver_url = reverse("admin:submissions_submission_mark_delivered", args=[obj.pk])
+            pdf_url = _public_pdf_url(obj)
+            parts.append(
+                '<div style="margin-bottom:12px;padding:10px 14px;background:#fde68a;'
+                'border-radius:8px;color:#92400e;font-size:13px;">'
+                '✓ Отчёт утверждён. PDF готов к отправке.'
+                '</div>'
+            )
+            parts.append(wa_html)
+            parts.append(
+                f'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;">'
+                f'<a href="{escape(pdf_url)}" target="_blank" '
+                f'style="display:block;text-align:center;background:#fff;color:#d97706;'
+                f'border:1.5px solid #d97706;padding:10px;border-radius:8px;text-decoration:none;'
+                f'font-weight:600;font-size:13px;">📄 Открыть PDF</a>'
+                f'<a href="{escape(deliver_url)}" '
+                f'style="display:block;text-align:center;background:#fff;color:#10b981;'
+                f'border:1.5px solid #10b981;padding:10px;border-radius:8px;text-decoration:none;'
+                f'font-weight:600;font-size:13px;">📦 Отметить доставленным</a>'
+                f'</div>'
+                f'<div style="margin-top:10px;font-size:11px;color:#64748b;text-align:center;">'
+                f'1) Открыть WhatsApp · 2) Отправить сообщение · 3) Нажать «Отметить доставленным».'
+                f'</div>'
+            )
+
+        parts.append('</div></div>')
+        return mark_safe("".join(parts))
+
+    # ── ответы клиента ────────────────────────────────────────────────────
+
+    @admin.display(description="Ответы (по этапам)")
     def client_answers_card(self, obj):
-        """Карточка со всеми ответами клиента: группировка по этапам +
-        кнопки «Копировать в буфер», «Скачать CSV», «Распечатать»."""
         if not obj or not obj.pk:
             return "—"
-
         grouped = _grouped_answers(obj)
         total = sum(len(v) for v in grouped.values())
         if total == 0:
             return mark_safe(
-                '<div style="padding:24px;background:#fef3c7;border-radius:8px;color:#78350f;">'
+                '<div style="padding:14px;background:#fef3c7;border-radius:8px;color:#78350f;">'
                 'Клиент ещё не дал ни одного ответа.</div>'
             )
 
         csv_url = reverse("admin:submissions_submission_answers_csv", args=[obj.pk])
         plain_text = _answers_as_plain_text(obj)
-
-        # Сборка HTML
         parts: list[str] = []
         parts.append('<div style="font-family:system-ui,-apple-system,sans-serif;">')
-
-        # Кнопки действий
-        parts.append('<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">')
         parts.append(
-            '<button type="button" id="copy-answers-btn" '
-            'style="background:#0ea5e9;color:#fff;border:none;padding:8px 14px;'
-            'border-radius:6px;cursor:pointer;font-weight:600;font-size:13px;">'
-            '📋 Скопировать все ответы</button>'
-        )
-        parts.append(
+            f'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;">'
+            f'<button type="button" id="copy-answers-btn" '
+            f'style="background:#0ea5e9;color:#fff;border:none;padding:8px 14px;'
+            f'border-radius:6px;cursor:pointer;font-weight:600;font-size:12px;">'
+            f'📋 Скопировать</button>'
             f'<a href="{escape(csv_url)}" '
-            'style="background:#10b981;color:#fff;text-decoration:none;padding:8px 14px;'
-            'border-radius:6px;font-weight:600;font-size:13px;">📊 Скачать CSV</a>'
-        )
-        parts.append(
-            '<button type="button" onclick="window.print()" '
-            'style="background:#6366f1;color:#fff;border:none;padding:8px 14px;'
-            'border-radius:6px;cursor:pointer;font-weight:600;font-size:13px;">'
-            '🖨️ Распечатать</button>'
-        )
-        parts.append(
-            f'<span style="margin-left:auto;color:#475569;font-size:12px;align-self:center;">'
+            f'style="background:#10b981;color:#fff;text-decoration:none;padding:8px 14px;'
+            f'border-radius:6px;font-weight:600;font-size:12px;">📊 CSV</a>'
+            f'<button type="button" onclick="window.print()" '
+            f'style="background:#6366f1;color:#fff;border:none;padding:8px 14px;'
+            f'border-radius:6px;cursor:pointer;font-weight:600;font-size:12px;">🖨️ Печать</button>'
+            f'<span style="margin-left:auto;align-self:center;color:#475569;font-size:12px;">'
             f'Ответов: <b>{total}</b></span>'
+            f'</div>'
+            f'<textarea id="answers-plain-text" readonly '
+            f'style="position:absolute;left:-9999px;">{escape(plain_text)}</textarea>'
         )
-        parts.append('</div>')
-
-        # Скрытый текст для копирования
-        parts.append(
-            f'<textarea id="answers-plain-text" '
-            f'style="position:absolute;left:-9999px;top:-9999px;" '
-            f'readonly>{escape(plain_text)}</textarea>'
-        )
-
-        # Группы ответов
         for stage, items in grouped.items():
             parts.append(
-                '<div style="margin-bottom:18px;border:1px solid #e2e8f0;'
-                'border-radius:10px;overflow:hidden;background:#fff;">'
+                f'<div style="margin-bottom:14px;border:1px solid #e2e8f0;border-radius:8px;'
+                f'overflow:hidden;background:#fff;">'
+                f'<div style="background:#0f172a;color:#fff;padding:8px 12px;font-weight:600;'
+                f'font-size:12px;">{escape(stage)} · {len(items)}</div>'
+                f'<div style="padding:6px 12px;">'
             )
-            parts.append(
-                f'<div style="background:#0f172a;color:#fff;padding:10px 14px;'
-                f'font-weight:600;font-size:13px;letter-spacing:0.02em;">'
-                f'{escape(stage)} · {len(items)} ответ(а/ов)</div>'
-            )
-            parts.append('<div style="padding:6px 14px;">')
             for a in items:
-                q_text = escape(a.question.text)
-                a_text = escape(_format_answer_value(a.value))
                 parts.append(
-                    f'<div style="padding:10px 0;border-bottom:1px dashed #e2e8f0;">'
-                    f'<div style="color:#64748b;font-size:11px;text-transform:uppercase;'
-                    f'letter-spacing:0.05em;margin-bottom:4px;">Вопрос {a.question.order}</div>'
-                    f'<div style="color:#0f172a;font-weight:500;margin-bottom:6px;">{q_text}</div>'
-                    f'<div style="background:#f1f5f9;padding:8px 12px;border-radius:6px;'
-                    f'color:#0f172a;font-size:14px;white-space:pre-wrap;line-height:1.5;">'
-                    f'{a_text}</div>'
+                    f'<div style="padding:8px 0;border-bottom:1px dashed #e2e8f0;">'
+                    f'<div style="color:#64748b;font-size:10px;text-transform:uppercase;'
+                    f'margin-bottom:4px;">Q{a.question.order}</div>'
+                    f'<div style="color:#0f172a;font-weight:500;margin-bottom:4px;font-size:12px;">'
+                    f'{escape(a.question.text)}</div>'
+                    f'<div style="background:#f1f5f9;padding:6px 10px;border-radius:5px;'
+                    f'color:#0f172a;font-size:12px;white-space:pre-wrap;">'
+                    f'{escape(_format_answer_value(a.value))}</div>'
                     f'</div>'
                 )
             parts.append('</div></div>')
-
         parts.append('</div>')
-
-        # JS для копирования
         parts.append("""
         <script>
         (function() {
@@ -378,317 +469,17 @@ class SubmissionAdmin(ModelAdmin):
           var ta  = document.getElementById('answers-plain-text');
           if (!btn || !ta) return;
           btn.addEventListener('click', function() {
-            ta.style.left = '0';
-            ta.style.top = '0';
-            ta.select();
-            try {
-              document.execCommand('copy');
-              btn.innerText = '✓ Скопировано!';
-              btn.style.background = '#10b981';
-              setTimeout(function() {
-                btn.innerText = '📋 Скопировать все ответы';
-                btn.style.background = '#0ea5e9';
-              }, 1800);
-            } catch (e) {
-              if (navigator.clipboard) {
-                navigator.clipboard.writeText(ta.value).then(function() {
-                  btn.innerText = '✓ Скопировано!';
-                  setTimeout(function() {
-                    btn.innerText = '📋 Скопировать все ответы';
-                  }, 1800);
-                });
-              }
-            }
+            ta.style.left = '0'; ta.select();
+            try { document.execCommand('copy'); btn.innerText = '✓ Скопировано'; setTimeout(function(){btn.innerText='📋 Скопировать';}, 1500); }
+            catch(e) { if (navigator.clipboard) navigator.clipboard.writeText(ta.value); }
             ta.style.left = '-9999px';
-            ta.style.top = '-9999px';
           });
         })();
         </script>
         """)
-
         return mark_safe("".join(parts))
 
-    # ── workflow-карточка: статусы + кнопки действий по отчёту ────────────
-
-    @admin.display(description="Прогресс работы")
-    def report_workflow_card(self, obj):
-        """Карточка с workflow-шагами и кнопками действий по AuditReport.
-
-        Шаги:
-            ① Анкета завершена  → submission.status >= completed
-            ② AI-черновик       → admin_text заполнен
-            ③ Утверждено + PDF  → report.status >= approved (pdf_url ready)
-            ④ Отправлено        → report.status = sent (submission.status = delivered)
-
-        Кнопки:
-            • «🤖 Сгенерировать AI-черновик» — если admin_text пуст
-            • «✓ Утвердить и сгенерировать PDF» — если admin_text заполнен и не approved
-            • «💬 Отправить клиенту в WhatsApp» — если PDF готов, открывает wa.me
-            • «📦 Отметить доставленным» — после ручной отправки
-        """
-        if not obj or not obj.pk:
-            return mark_safe(
-                '<div style="padding:16px;background:#f1f5f9;border-radius:8px;color:#475569;">'
-                'Сохраните заявку, чтобы увидеть workflow.</div>'
-            )
-
-        report = getattr(obj, "report", None)
-        status = obj.status
-
-        # Определяем состояние каждого шага
-        step1_done = status in (
-            Submission.Status.COMPLETED,
-            Submission.Status.UNDER_AUDIT,
-            Submission.Status.DELIVERED,
-        )
-        has_text = bool(report and (report.admin_text or "").strip())
-        has_uploaded = bool(report and report.uploaded_file)
-        step2_done = has_text or has_uploaded  # есть контент для итогового файла
-        is_approved = report and report.status in (
-            AuditReport.Status.APPROVED, AuditReport.Status.SENT
-        )
-        step3_done = is_approved and bool(
-            report and (report.pdf_url or report.uploaded_file)
-        )
-        step4_done = (
-            status == Submission.Status.DELIVERED
-            or (report and report.status == AuditReport.Status.SENT)
-        )
-
-        # Активный шаг — первый незавершённый
-        if not step1_done:
-            active_step = 1
-        elif not step2_done:
-            active_step = 2
-        elif not step3_done:
-            active_step = 3
-        elif not step4_done:
-            active_step = 4
-        else:
-            active_step = 5  # всё готово
-
-        STEPS = [
-            ("Анкета", "Клиент завершил заполнение"),
-            ("AI-черновик", "Сгенерировать через 12 ассистентов"),
-            ("Утверждение", "Проверить текст → создать PDF"),
-            ("Отправка", "WhatsApp клиенту → отметить доставленным"),
-        ]
-
-        parts: list[str] = []
-        parts.append(
-            '<div style="font-family:system-ui,-apple-system,sans-serif;'
-            'border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;'
-            'background:#fff;">'
-        )
-
-        # ── Прогресс-шаги ──
-        parts.append(
-            '<div style="display:flex;padding:0;background:linear-gradient'
-            '(135deg,#fef3c7 0%,#fffbeb 100%);border-bottom:1px solid #fde68a;">'
-        )
-        for idx, (name, hint) in enumerate(STEPS, 1):
-            done = idx < active_step or active_step == 5
-            active = idx == active_step
-            if done:
-                bg, fg, icon = "#10b981", "#fff", "✓"
-            elif active:
-                bg, fg, icon = "#f59e0b", "#fff", str(idx)
-            else:
-                bg, fg, icon = "#e2e8f0", "#94a3b8", str(idx)
-            parts.append(
-                f'<div style="flex:1;padding:14px 12px;text-align:center;'
-                f'border-right:1px solid #fde68a;">'
-                f'<div style="display:inline-flex;align-items:center;justify-content:center;'
-                f'width:28px;height:28px;border-radius:50%;background:{bg};color:{fg};'
-                f'font-weight:700;font-size:13px;margin-bottom:6px;">{icon}</div>'
-                f'<div style="font-size:12px;font-weight:600;color:#0f172a;">{escape(name)}</div>'
-                f'<div style="font-size:10px;color:#64748b;margin-top:2px;">{escape(hint)}</div>'
-                f'</div>'
-            )
-        parts.append('</div>')
-
-        # ── Кнопки действий: только для активного шага ──
-        parts.append('<div style="padding:16px;background:#fff;">')
-
-        if active_step == 1:
-            parts.append(
-                '<div style="padding:12px;background:#fef3c7;border-radius:8px;color:#78350f;'
-                'font-size:13px;">'
-                'Клиент ещё не закончил заполнение анкеты. Доступные действия появятся '
-                'после завершения.'
-                '</div>'
-            )
-
-        elif active_step == 2:
-            # Два варианта: AI-генерация ИЛИ загрузка готового файла
-            ai_url = reverse(
-                "admin:submissions_submission_generate_ai_draft", args=[obj.pk]
-            )
-            parts.append(
-                f'<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;'
-                f'margin-bottom:10px;">'
-                # ── Вариант A: AI-генерация ──
-                f'<div style="padding:14px;background:#f0f9ff;border:1px solid #bae6fd;'
-                f'border-radius:10px;">'
-                f'<div style="font-weight:700;color:#0c4a6e;margin-bottom:4px;font-size:13px;">'
-                f'Вариант A — AI-генерация</div>'
-                f'<div style="font-size:11px;color:#475569;margin-bottom:10px;line-height:1.5;">'
-                f'12 ассистентов проанализируют ответы и соберут черновик за ~30 сек. '
-                f'Потом можно отредактировать.</div>'
-                f'<a href="{escape(ai_url)}" '
-                f'style="display:inline-flex;align-items:center;gap:6px;'
-                f'background:#0ea5e9;color:#fff;padding:8px 14px;border-radius:6px;'
-                f'text-decoration:none;font-weight:600;font-size:13px;">'
-                f'🤖 Сгенерировать AI-черновик</a>'
-                f'</div>'
-                # ── Вариант B: Загрузить готовый файл ──
-                f'<div style="padding:14px;background:#fff7ed;border:1px solid #fed7aa;'
-                f'border-radius:10px;">'
-                f'<div style="font-weight:700;color:#7c2d12;margin-bottom:4px;font-size:13px;">'
-                f'Вариант B — Загрузить готовый</div>'
-                f'<div style="font-size:11px;color:#475569;margin-bottom:10px;line-height:1.5;">'
-                f'Прикрепите свой готовый PDF или DOCX-отчёт в секции '
-                f'<b>«Отчёт (файл или текст)»</b> ниже — он отправится клиенту '
-                f'как есть.</div>'
-                f'<a href="#id_report-0-uploaded_file" '
-                f'style="display:inline-flex;align-items:center;gap:6px;'
-                f'background:#f97316;color:#fff;padding:8px 14px;border-radius:6px;'
-                f'text-decoration:none;font-weight:600;font-size:13px;">'
-                f'📎 К полю загрузки →</a>'
-                f'</div>'
-                f'</div>'
-                f'<div style="font-size:11px;color:#64748b;padding:8px 12px;'
-                f'background:#f8fafc;border-radius:6px;">'
-                f'💡 После любого варианта вернитесь сюда и нажмите '
-                f'<b>«Утвердить»</b> на следующем шаге.</div>'
-            )
-
-        elif active_step == 3:
-            # Утверждение + PDF
-            approve_url = reverse(
-                "admin:submissions_submission_approve_and_send", args=[obj.pk]
-            )
-            ai_url = reverse(
-                "admin:submissions_submission_generate_ai_draft", args=[obj.pk]
-            )
-            parts.append(
-                f'<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;">'
-                f'<a href="{escape(approve_url)}" '
-                f'style="display:inline-flex;align-items:center;gap:8px;'
-                f'background:#10b981;color:#fff;padding:10px 18px;border-radius:8px;'
-                f'text-decoration:none;font-weight:600;font-size:14px;">'
-                f'✓ Утвердить и создать PDF</a>'
-                f'<a href="{escape(ai_url)}" '
-                f'style="display:inline-flex;align-items:center;gap:6px;'
-                f'background:#fff;color:#0ea5e9;border:1px solid #0ea5e9;'
-                f'padding:9px 14px;border-radius:8px;text-decoration:none;'
-                f'font-weight:600;font-size:13px;">'
-                f'🤖 Догенерировать AI</a>'
-                f'</div>'
-                f'<div style="font-size:12px;color:#64748b;">'
-                f'Сначала проверьте/отредактируйте <b>«Текст отчёта»</b> ниже, '
-                f'потом нажмите «Утвердить». Это запустит генерацию PDF через '
-                f'WeasyPrint и загрузит файл в MinIO.'
-                f'</div>'
-            )
-
-        elif active_step == 4:
-            # WhatsApp + Mark delivered
-            client = obj.client
-            wa_html = ""
-            deliverable_ready = report and (report.pdf_url or report.uploaded_file)
-            if deliverable_ready and client and client.phone_wa:
-                digits = "".join(ch for ch in client.phone_wa if ch.isdigit())
-                if digits:
-                    public_pdf_url = _public_pdf_url(obj)
-                    message = (
-                        f"Здравствуйте, {client.name}! Ваш бизнес-аудит Baqsy готов.\n"
-                        f"Отчёт по компании «{client.company}» можно скачать по ссылке:\n"
-                        f"{public_pdf_url}\n\n"
-                        f"Если возникнут вопросы — напишите в этот чат, мы ответим."
-                    )
-                    wa_url = f"https://wa.me/{digits}?text={quote(message)}"
-                    wa_html = (
-                        f'<a href="{escape(wa_url)}" target="_blank" rel="noopener" '
-                        f'style="display:inline-flex;align-items:center;gap:8px;'
-                        f'background:#25D366;color:#fff;padding:10px 18px;border-radius:8px;'
-                        f'text-decoration:none;font-weight:600;font-size:14px;">'
-                        f'💬 Отправить клиенту в WhatsApp</a>'
-                    )
-                else:
-                    wa_html = (
-                        '<span style="color:#94a3b8;font-size:13px;">'
-                        'У клиента нет номера WhatsApp — отправьте отчёт другим способом.</span>'
-                    )
-            elif not deliverable_ready:
-                wa_html = (
-                    '<span style="color:#f59e0b;font-size:13px;">'
-                    'Файл отчёта ещё не готов (если был выбран AI-вариант, генерация '
-                    'PDF занимает несколько секунд — обновите страницу).</span>'
-                )
-
-            delivered_url = reverse(
-                "admin:submissions_submission_mark_delivered", args=[obj.pk]
-            )
-            pdf_link = ""
-            if deliverable_ready:
-                public_pdf = _public_pdf_url(obj)
-                pdf_link = (
-                    f'<a href="{escape(public_pdf)}" target="_blank" rel="noopener" '
-                    f'style="display:inline-flex;align-items:center;gap:6px;'
-                    f'background:#fff;color:#d97706;border:1px solid #d97706;'
-                    f'padding:9px 14px;border-radius:8px;text-decoration:none;'
-                    f'font-weight:600;font-size:13px;">'
-                    f'📄 Скачать PDF</a>'
-                )
-
-            parts.append(
-                f'<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;">'
-                f'{wa_html}{pdf_link}'
-                f'<a href="{escape(delivered_url)}" '
-                f'style="display:inline-flex;align-items:center;gap:6px;'
-                f'background:#fff;color:#10b981;border:1px solid #10b981;'
-                f'padding:9px 14px;border-radius:8px;text-decoration:none;'
-                f'font-weight:600;font-size:13px;">'
-                f'📦 Отметить доставленным</a>'
-                f'</div>'
-                f'<div style="font-size:12px;color:#64748b;">'
-                f'<b>Шаг 1.</b> Нажмите «Отправить клиенту» — откроется WhatsApp Web '
-                f'с готовым сообщением. <b>Шаг 2.</b> Проверьте текст и пошлите. '
-                f'<b>Шаг 3.</b> Вернитесь сюда и нажмите «Отметить доставленным».'
-                f'</div>'
-            )
-
-        else:  # active_step == 5 — всё готово
-            parts.append(
-                '<div style="padding:14px;background:#d1fae5;border-radius:8px;'
-                'color:#065f46;font-size:14px;font-weight:600;">'
-                '✓ Отчёт сформирован, отправлен клиенту и помечен доставленным.'
-                '</div>'
-            )
-
-        # ── Метаинформация ──
-        if report:
-            meta_parts = [
-                f"AuditReport.status: <b>{escape(report.get_status_display())}</b>",
-            ]
-            if report.approved_at:
-                meta_parts.append(
-                    f"утверждено: {report.approved_at.strftime('%Y-%m-%d %H:%M')}"
-                )
-            if report.pdf_url:
-                meta_parts.append("PDF: готов ✓")
-            parts.append(
-                f'<div style="margin-top:14px;padding-top:12px;border-top:1px solid #e2e8f0;'
-                f'font-size:11px;color:#64748b;">'
-                f'{" · ".join(meta_parts)}'
-                f'</div>'
-            )
-
-        parts.append('</div></div>')
-        return mark_safe("".join(parts))
-
-    # ── custom admin URLs ─────────────────────────────────────────────────
+    # ── custom URLs (CSV экспорт) ──────────────────────────────────────────
 
     def get_urls(self):
         urls = super().get_urls()
@@ -702,55 +493,106 @@ class SubmissionAdmin(ModelAdmin):
         return custom + urls
 
     def answers_csv_view(self, request, object_id):
-        """Экспорт всех ответов клиента в CSV (UTF-8 with BOM для Excel)."""
         submission = Submission.objects.select_related(
             "client", "template", "template__industry", "tariff"
         ).get(pk=object_id)
-
         buf = io.StringIO()
-        buf.write("﻿")  # BOM — Excel поймёт UTF-8
+        buf.write("﻿")
         writer = csv.writer(buf, delimiter=";", quoting=csv.QUOTE_MINIMAL)
         writer.writerow(["Этап", "№", "Вопрос", "Тип", "Ответ", "Дата ответа"])
         for stage, items in _grouped_answers(submission).items():
             for a in items:
                 writer.writerow([
-                    stage,
-                    a.question.order,
-                    a.question.text,
+                    stage, a.question.order, a.question.text,
                     a.question.get_field_type_display(),
                     _format_answer_value(a.value),
                     a.answered_at.strftime("%Y-%m-%d %H:%M") if a.answered_at else "",
                 ])
-
         client = submission.client
-        client_slug = (
+        slug = (
             f"{client.company}_{client.name}".replace(" ", "_")
             if client else f"submission_{submission.id}"
         )
-        filename = f"baqsy_answers_{client_slug}.csv"
-
         response = HttpResponse(buf.getvalue(), content_type="text/csv; charset=utf-8")
         response["Content-Disposition"] = (
-            f'attachment; filename*=UTF-8\'\'{quote(filename)}'
+            f'attachment; filename*=UTF-8\'\'{quote("baqsy_answers_" + slug + ".csv")}'
         )
         return response
 
-    # ── обработка дополнительных submit-кнопок ────────────────────────────
+    # ── workflow actions ───────────────────────────────────────────────────
 
-    def save_formset(self, request, form, formset, change):
-        """Запоминаем что было сохранено в inline `AuditReportInline`, чтобы
-        в response_change правильно отработать «Сохранить и утвердить»."""
-        super().save_formset(request, form, formset, change)
+    def _ensure_report(self, submission) -> AuditReport:
+        report, _ = AuditReport.objects.get_or_create(
+            submission=submission,
+            defaults={"admin_text": "", "status": AuditReport.Status.DRAFT},
+        )
+        return report
+
+    @action(description="🤖 Сгенерировать AI-черновик", url_path="generate-ai-draft")
+    def generate_ai_draft(self, request, object_id):
+        from apps.ai.parameter_analyzer import assemble_full_report
+        submission = Submission.objects.select_related("client", "report").get(pk=object_id)
+        report = self._ensure_report(submission)
+        try:
+            text = assemble_full_report(submission)
+        except Exception as exc:
+            messages.error(request, f"Ошибка генерации: {exc}")
+            return HttpResponseRedirect(
+                reverse("admin:submissions_submission_change", args=(object_id,))
+            )
+        existing = (report.admin_text or "").strip()
+        report.admin_text = f"{existing}\n\n---\n\n{text}" if existing else text
+        report.save(update_fields=["admin_text", "updated_at"])
+        messages.success(
+            request,
+            _("✓ AI-черновик готов. Проверьте текст ниже и нажмите «📨 Отправить клиенту»."),
+        )
+        return HttpResponseRedirect(
+            reverse("admin:submissions_submission_change", args=(object_id,))
+        )
+
+    @action(description="📨 Отправить клиенту", url_path="send-to-client")
+    def send_to_client(self, request, object_id):
+        """Главное действие админа — утвердить + поставить PDF в очередь."""
+        from apps.reports.services import approve_report
+        submission = Submission.objects.select_related("client").get(pk=object_id)
+        report = self._ensure_report(submission)
+        ok, err = approve_report(report)
+        if not ok:
+            messages.error(request, err)
+        else:
+            messages.success(
+                request,
+                _(
+                    "✓ Отчёт утверждён. PDF готовится — обновите страницу через "
+                    "5–10 секунд, появится кнопка «Открыть WhatsApp»."
+                ),
+            )
+        return HttpResponseRedirect(
+            reverse("admin:submissions_submission_change", args=(object_id,))
+        )
+
+    @action(description="📦 Отметить доставленным", url_path="mark-delivered")
+    def mark_delivered(self, request, object_id):
+        from apps.reports.services import mark_report_delivered
+        submission = Submission.objects.select_related("report").get(pk=object_id)
+        report = getattr(submission, "report", None)
+        if not report:
+            messages.error(request, _("У заявки нет отчёта."))
+        else:
+            ok, err = mark_report_delivered(report)
+            if not ok:
+                messages.warning(request, err or "Не удалось пометить.")
+            else:
+                messages.success(request, _("✓ Заявка помечена как доставленная клиенту."))
+        return HttpResponseRedirect(
+            reverse("admin:submissions_submission_change", args=(object_id,))
+        )
+
+    # ── подсказка после обычного «Сохранить» ──────────────────────────────
 
     def response_change(self, request, obj):
-        """Перехватываем «Сохранить и утвердить» / «Сохранить и отметить
-        доставленным» — после save сразу выполняем workflow-action."""
-        if "_save_and_approve" in request.POST:
-            return self._save_approve_redirect(request, obj)
-        if "_save_and_deliver" in request.POST:
-            return self._save_deliver_redirect(request, obj)
-
-        # После save, если есть контент и отчёт в draft — подсказка
+        """После обычного save показываем подсказку что делать дальше."""
         report = getattr(obj, "report", None)
         if (
             report
@@ -760,186 +602,11 @@ class SubmissionAdmin(ModelAdmin):
             messages.info(
                 request,
                 _(
-                    "✓ Сохранено. Контент отчёта готов — нажмите "
-                    "«✓ Сохранить и утвердить» внизу или «Утвердить и создать "
-                    "PDF» сверху, чтобы отправить файл клиенту."
+                    "✓ Сохранено. Теперь нажмите большую зелёную кнопку "
+                    "«📨 Отправить клиенту» сверху страницы."
                 ),
             )
         return super().response_change(request, obj)
-
-    def _save_approve_redirect(self, request, obj):
-        """Утвердить отчёт прямо со страницы редактирования заявки."""
-        report, _created = self._ensure_report(obj)
-        has_text = bool((report.admin_text or "").strip())
-        has_file = bool(report.uploaded_file)
-        if not has_text and not has_file:
-            messages.error(
-                request,
-                _("Загрузите PDF/DOCX или заполните текст отчёта перед утверждением."),
-            )
-            return HttpResponseRedirect(
-                reverse("admin:submissions_submission_change", args=(obj.pk,))
-            )
-
-        from apps.reports.views import ApproveReportView
-        approve_view = ApproveReportView.as_view()
-        response = approve_view(request, report_id=str(report.pk))
-        if hasattr(response, "status_code") and response.status_code == 200:
-            messages.success(
-                request,
-                _(
-                    "Отчёт утверждён. PDF готовится — обновите страницу через "
-                    "5–10 секунд, затем нажмите «💬 Отправить клиенту в WhatsApp»."
-                ),
-            )
-        else:
-            data = getattr(response, "data", {})
-            err = data.get("error", data.get("detail", "неизвестная ошибка"))
-            messages.error(request, f"Ошибка утверждения: {err}")
-        return HttpResponseRedirect(
-            reverse("admin:submissions_submission_change", args=(obj.pk,))
-        )
-
-    def _save_deliver_redirect(self, request, obj):
-        """Отметить доставленным прямо со страницы редактирования."""
-        report = getattr(obj, "report", None)
-        if obj.status == Submission.Status.UNDER_AUDIT:
-            try:
-                obj.mark_delivered()
-                obj.save(update_fields=["status"])
-                if report:
-                    report.status = AuditReport.Status.SENT
-                    report.save(update_fields=["status"])
-                messages.success(request, _("✓ Заявка помечена как доставленная клиенту."))
-            except Exception as exc:
-                messages.error(request, f"Ошибка FSM: {exc}")
-        elif obj.status == Submission.Status.DELIVERED:
-            messages.info(request, _("Эта заявка уже в статусе «Доставлен»."))
-        else:
-            messages.warning(
-                request,
-                f"Нельзя пометить доставленным из «{obj.get_status_display()}». "
-                f"Сначала утвердите отчёт.",
-            )
-        return HttpResponseRedirect(
-            reverse("admin:submissions_submission_change", args=(obj.pk,))
-        )
-
-    # ── actions: workflow buttons ─────────────────────────────────────────
-
-    def _ensure_report(self, submission):
-        """Гарантировать наличие AuditReport (на случай если signal не сработал
-        для исторических заявок). Возвращает (report, created)."""
-        report, created = AuditReport.objects.get_or_create(
-            submission=submission,
-            defaults={
-                "admin_text": "",
-                "status": AuditReport.Status.DRAFT,
-            },
-        )
-        return report, created
-
-    @action(
-        description=_("🤖 Сгенерировать AI-черновик (12 ассистентов)"),
-        url_path="generate-ai-draft",
-    )
-    def generate_ai_draft(self, request, object_id):
-        """Запускает 12 ассистентов и собирает черновик в report.admin_text."""
-        from apps.ai.parameter_analyzer import assemble_full_report
-
-        submission = Submission.objects.select_related("client", "report").get(pk=object_id)
-        report, _created = self._ensure_report(submission)
-
-        try:
-            text = assemble_full_report(submission)
-        except Exception as exc:
-            messages.error(request, f"Ошибка генерации: {exc}")
-            return HttpResponseRedirect(
-                reverse("admin:submissions_submission_change", args=(object_id,))
-            )
-
-        existing = (report.admin_text or "").strip()
-        report.admin_text = f"{existing}\n\n---\n\n{text}" if existing else text
-        report.save(update_fields=["admin_text", "updated_at"])
-        messages.success(
-            request,
-            _("Черновик сгенерирован 12 ассистентами — проверьте и отредактируйте текст ниже."),
-        )
-        return HttpResponseRedirect(
-            reverse("admin:submissions_submission_change", args=(object_id,))
-        )
-
-    @action(
-        description=_("✓ Утвердить и создать PDF"),
-        url_path="approve-send",
-    )
-    def approve_and_send(self, request, object_id):
-        """Approve report and queue PDF generation."""
-        submission = Submission.objects.select_related("client").get(pk=object_id)
-        report, _ = self._ensure_report(submission)
-
-        admin_text = request.POST.get("admin_text")
-        if admin_text is not None:
-            report.admin_text = admin_text
-            report.save(update_fields=["admin_text"])
-
-        has_text = bool((report.admin_text or "").strip())
-        has_file = bool(report.uploaded_file)
-        if not has_text and not has_file:
-            messages.error(
-                request,
-                _("Перед утверждением загрузите PDF/DOCX или заполните текст отчёта."),
-            )
-            return HttpResponseRedirect(
-                reverse("admin:submissions_submission_change", args=(object_id,))
-            )
-
-        from apps.reports.views import ApproveReportView
-        approve_view = ApproveReportView.as_view()
-        response = approve_view(request, report_id=str(report.pk))
-        if hasattr(response, "status_code") and response.status_code == 200:
-            messages.success(
-                request,
-                _("Отчёт утверждён. PDF готовится — обновите страницу через 5–10 секунд."),
-            )
-        else:
-            data = getattr(response, "data", {})
-            err = data.get("error", data.get("detail", "неизвестная ошибка"))
-            messages.error(request, f"Ошибка: {err}")
-        return HttpResponseRedirect(
-            reverse("admin:submissions_submission_change", args=(object_id,))
-        )
-
-    @action(
-        description=_("📦 Отметить доставленным"),
-        url_path="mark-delivered",
-    )
-    def mark_delivered(self, request, object_id):
-        """После того как админ отправил PDF в WA — переводим submission в delivered."""
-        submission = Submission.objects.select_related("report").get(pk=object_id)
-        report = getattr(submission, "report", None)
-
-        if submission.status == Submission.Status.UNDER_AUDIT:
-            try:
-                submission.mark_delivered()
-                submission.save(update_fields=["status"])
-                if report:
-                    report.status = AuditReport.Status.SENT
-                    report.save(update_fields=["status"])
-                messages.success(request, _("Заявка помечена как доставленная клиенту."))
-            except Exception as exc:
-                messages.error(request, f"Ошибка FSM: {exc}")
-        elif submission.status == Submission.Status.DELIVERED:
-            messages.info(request, _("Заявка уже в статусе «Доставлен»."))
-        else:
-            messages.warning(
-                request,
-                f"Нельзя пометить доставленным из статуса «{submission.get_status_display()}». "
-                f"Сначала утвердите отчёт.",
-            )
-        return HttpResponseRedirect(
-            reverse("admin:submissions_submission_change", args=(object_id,))
-        )
 
 
 # ─── group/participant admins (без изменений) ───────────────────────────
@@ -956,7 +623,6 @@ class AuditParticipantInline(TabularInline):
     def invite_link(self, obj):
         if not obj.invite_token:
             return "—"
-        from django.conf import settings
         base = getattr(settings, "SITE_URL", "https://baqsy.tnriazun.com").rstrip("/")
         url = f"{base}/invite/{obj.invite_token}"
         return format_html(
@@ -967,16 +633,12 @@ class AuditParticipantInline(TabularInline):
 
 @admin.register(AuditGroup)
 class AuditGroupAdmin(ModelAdmin):
-    list_display = (
-        "id", "submission_link", "quorum_size",
-        "completed_count_badge", "created_at",
-    )
+    list_display = ("id", "submission_link", "quorum_size", "completed_count_badge", "created_at")
     list_filter = ("quorum_size",)
     search_fields = (
         "initiator_submission__client__name",
         "initiator_submission__client__company",
-        "participants__email",
-        "participants__name",
+        "participants__email", "participants__name",
     )
     readonly_fields = ("initiator_submission", "created_at", "updated_at")
     inlines = [AuditParticipantInline]
@@ -1017,10 +679,10 @@ class AuditParticipantAdmin(ModelAdmin):
     @admin.display(description="Статус")
     def status_badge(self, obj):
         colors = {
-            "invited": ("#dbeafe", "#1e40af"),
+            "invited":     ("#dbeafe", "#1e40af"),
             "in_progress": ("#fef3c7", "#78350f"),
-            "completed": ("#d1fae5", "#065f46"),
-            "expired": ("#fee2e2", "#991b1b"),
+            "completed":   ("#d1fae5", "#065f46"),
+            "expired":     ("#fee2e2", "#991b1b"),
         }
         bg, fg = colors.get(obj.status, ("#e2e8f0", "#0f172a"))
         return format_html(

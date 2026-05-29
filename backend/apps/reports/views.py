@@ -157,52 +157,8 @@ class ApproveReportView(APIView):
         except AuditReport.DoesNotExist:
             return Response({"detail": "Report not found."}, status=404)
 
-        # Должно быть либо загруженный файл, либо текст для AI-генерации.
-        has_text = bool((report.admin_text or "").strip())
-        has_file = bool(report.uploaded_file)
-        if not has_text and not has_file:
-            return Response(
-                {"error": "перед утверждением загрузите PDF/DOCX или заполните текст отчёта"},
-                status=400,
-            )
-
-        sub = report.submission
-
-        # FSM: completed → under_audit (idempotent when already under_audit)
-        if sub.status == Submission.Status.COMPLETED:
-            try:
-                sub.start_audit()
-                sub.save(update_fields=["status"])
-                log.info("ApproveReportView: sub=%s → under_audit", sub.id)
-            except Exception as exc:
-                log.warning(
-                    "ApproveReportView: FSM transition failed for sub=%s: %s", sub.id, exc
-                )
-        elif sub.status == Submission.Status.UNDER_AUDIT:
-            log.info("ApproveReportView: sub=%s already under_audit", sub.id)
-        else:
-            log.warning(
-                "ApproveReportView: sub=%s in unexpected status=%s for approval",
-                sub.id,
-                sub.status,
-            )
-
-        # Переводим сам отчёт в статус APPROVED (раньше он оставался DRAFT
-        # даже после approve — UI это путало).
-        update_fields = []
-        if not report.approved_at:
-            report.approved_at = timezone.now()
-            update_fields.append("approved_at")
-        if report.status == AuditReport.Status.DRAFT:
-            report.status = AuditReport.Status.APPROVED
-            update_fields.append("status")
-        if update_fields:
-            report.save(update_fields=update_fields)
-
-        # Generate PDF. Если есть uploaded_file — task сам пропустит рендер.
-        from apps.reports.tasks import generate_pdf
-
-        generate_pdf.delay(str(report.id))
-
-        log.info("ApproveReportView: approved + queued PDF for report=%s", report.id)
+        from apps.reports.services import approve_report
+        ok, err = approve_report(report)
+        if not ok:
+            return Response({"error": err}, status=400)
         return Response({"status": "queued"}, status=200)

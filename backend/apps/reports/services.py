@@ -50,6 +50,73 @@ def _format_answer_value(value_dict: dict) -> str:
     return ""
 
 
+def approve_report(report: "AuditReport") -> tuple[bool, str | None]:
+    """Утвердить отчёт: меняет статусы заявки и отчёта, ставит PDF в очередь.
+
+    Возвращает ``(success: bool, error_message: str | None)``.
+
+    Используется И из admin (response_change/actions), И из API (ApproveReportView):
+    единая бизнес-логика без дублирования. См. CLAUDE.md §13.1 — не звать DRF
+    views из admin, использовать helper.
+    """
+    has_text = bool((report.admin_text or "").strip())
+    has_file = bool(report.uploaded_file)
+    if not has_text and not has_file:
+        return False, "Загрузите PDF/DOCX или заполните текст отчёта."
+
+    sub = report.submission
+    if sub.status == "completed":
+        try:
+            sub.start_audit()
+            sub.save(update_fields=["status"])
+            log.info("approve_report: sub=%s → under_audit", sub.id)
+        except Exception as exc:
+            log.warning(
+                "approve_report: FSM failed sub=%s: %s", sub.id, exc
+            )
+
+    update_fields = []
+    if report.status == "draft":
+        report.status = "approved"
+        update_fields.append("status")
+    if not report.approved_at:
+        report.approved_at = timezone.now()
+        update_fields.append("approved_at")
+    if update_fields:
+        report.save(update_fields=update_fields)
+
+    from apps.reports.tasks import generate_pdf
+    generate_pdf.delay(str(report.id))
+
+    log.info("approve_report: approved + queued report=%s", report.id)
+    return True, None
+
+
+def mark_report_delivered(report: "AuditReport") -> tuple[bool, str | None]:
+    """Пометить отчёт доставленным клиенту: заявка → delivered, отчёт → sent.
+
+    Возвращает ``(success: bool, error_message: str | None)``.
+    """
+    sub = report.submission
+    if sub.status == "delivered":
+        return True, "Уже доставлено."
+    if sub.status != "under_audit":
+        return False, (
+            f"Нельзя пометить доставленным из «{sub.get_status_display()}». "
+            "Сначала утвердите отчёт."
+        )
+    try:
+        sub.mark_delivered()
+        sub.save(update_fields=["status"])
+        report.status = "sent"
+        report.save(update_fields=["status"])
+        log.info("mark_report_delivered: sub=%s done", sub.id)
+        return True, None
+    except Exception as exc:
+        log.warning("mark_report_delivered: failed sub=%s: %s", sub.id, exc)
+        return False, str(exc)
+
+
 def _load_donation_context() -> dict:
     """Подтягивает донат-блок из ContentBlock'ов в PDF-контекст.
 

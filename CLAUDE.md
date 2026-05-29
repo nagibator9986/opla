@@ -202,3 +202,60 @@ cd frontend && npm run dev
 - Пользователь — владелец продукта, не разработчик в команде. Объясняем решения простым языком, но без упрощений в коде.
 - Перед рискованными действиями (миграции, деплой, изменение цен) — подтверждение.
 - Коммиты на русском в императиве: «добавить модель Industry», «починить webhook CloudPayments».
+
+## 13. Уроки на проде (обновлять при каждой ошибке)
+
+### 13.1 НЕ вызывать DRF views из Django admin
+`response_change()` / actions в Django admin получают **Django HttpRequest**.
+Если внутри вызывать `SomeDRFView.as_view()(request, ...)`, DRF делает свою
+аутентификацию через `authentication_classes` (по умолчанию JWT). Session-cookie
+из админки не пройдёт → ответ **401 unauthorized**.
+
+Правильно: выносить бизнес-логику в `services.py` и звать её из обоих мест.
+
+### 13.2 Один экран — одно действие
+Прод-проверка: 4-шаговый прогресс-бар + 5 кнопок + 2 параллельные админки
+(`Submission` и `AuditReport`) сделали интерфейс непонятным. Пользователь
+теряется и не знает что нажать.
+
+Правило: на странице **одна большая кнопка** действия. Текст и поведение
+зависят от текущего состояния. Без дублирующих админок, без визуального шума.
+
+### 13.3 Не инжектить JS в `.submit-row` через `Media.js`
+Стили Unfold подгружаются позже → кнопки выглядят сломанно. CSRF + AdminSite
+могут отвергнуть `name` которого нет в форме. Лучше пользоваться `actions_detail`
+у Unfold ModelAdmin — Unfold сам кладёт кнопки сверху страницы.
+
+### 13.4 MinIO bucket НЕ создаётся автоматически
+При первом обращении нужно `boto3.create_bucket(Bucket='baqsy')`. Иначе
+`generate_pdf` падает с `NoSuchBucket`.
+
+### 13.5 MinIO не торчит наружу
+`AWS_S3_ENDPOINT_URL = http://minio:9000` — внутренний Docker URL. Presigned
+URL содержит этот хост → клиент в WhatsApp ссылку не откроет. Решение —
+отдавать PDF через Django proxy view (`/api/v1/submissions/{uuid}/pdf/`).
+
+### 13.6 FileField + volume mount = права
+Контейнер собирается под `appuser:baqsy` (uid 1001), volume `/app/media`
+монтируется с прежним owner-ом (uid 1000) → `PermissionError`. В Dockerfile
+обязательно `mkdir -p /app/media/...` + `chmod u+rwX`.
+
+### 13.7 Сигнал post_save Submission → AuditReport
+Без auto-create заявки в `completed` остаются без отчёта — админу непонятно
+откуда взять «Сгенерировать AI». Сигнал устраняет ручной шаг, идемпотентно.
+
+### 13.8 Анкета универсальная (Baqsylyq), демо отключены
+Активный шаблон — один: `industry__code='baqsylyq'` v1, 55 вопросов
+(адаптивно 25/38). Логика выбора в `SubmissionCreateView` приоритетно ищет
+Baqsylyq, потом fallback по индустрии.
+
+### 13.9 Питон + bash heredoc + f-string
+`manage.py shell -c "f'{k}: {d.get(k, \"-\")}'"` ломается:
+- bash экранирует `\"` внутри двойных кавычек,
+- Python не разрешает `"-"` внутри f-string открытой `"`.
+Использовать конкатенацию (`"x: " + str(v)`) или одинарные кавычки.
+
+### 13.10 Зависимости — и в pyproject, и в Dockerfile
+Каждый top-level import должен быть в обоих местах. Иначе при rebuild без
+cache — `ModuleNotFoundError`. Текущие belt-and-suspenders в Dockerfile:
+`openai`, `Pillow`, `requests`, `jinja2`.
