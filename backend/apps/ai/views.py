@@ -682,6 +682,32 @@ def _questionnaire_answer(session: ChatSession, raw_content):
         content=_stringify_answer(raw_content),
     )
 
+    # ── Фильтр квалификации: если save_answer выставил rejection_reason
+    # (например, ответ на «количество сотрудников» < 10), показываем
+    # вежливый отказ и завершаем диалог без перевода в `completed`.
+    submission.refresh_from_db(fields=["rejection_reason"])
+    if (submission.rejection_reason or "").strip():
+        rejection_msg = ChatMessage.objects.create(
+            session=session,
+            role=ChatMessage.Role.ASSISTANT,
+            content=submission.rejection_reason,
+        )
+        session.status = ChatSession.Status.COMPLETED
+        session.save(update_fields=["status", "updated_at"])
+        return Response(
+            {
+                "mode": session.mode,
+                "completed": True,
+                "rejected": True,
+                "reply": {
+                    "role": "assistant",
+                    "id": rejection_msg.id,
+                    "content": rejection_msg.content,
+                },
+                "next_question": None,
+            }
+        )
+
     # Completed?
     if try_complete(submission):
         total = len(visible_questions_for(submission))

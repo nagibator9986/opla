@@ -11,6 +11,7 @@ import { UpsellCard } from '../components/cabinet/UpsellCard'
 import { ContinueQuestionnaireButton } from '../components/cabinet/ContinueQuestionnaireButton'
 import { DonationBlock } from '../components/cabinet/DonationBlock'
 import { ProcessingCard } from '../components/cabinet/ProcessingCard'
+import { RejectionCard } from '../components/cabinet/RejectionCard'
 import { FloatingChatButton } from '../components/chat/ChatLauncher'
 import { useSubmission } from '../hooks/useSubmission'
 import { useAuthStore } from '../store/authStore'
@@ -153,17 +154,19 @@ export function CabinetPage() {
                 status={submission.status}
               />
 
-              {/* После завершения анкеты — карточка «обрабатывается» и блок донат.
-                  Показываются на всех трёх статусах report-фазы (completed /
-                  under_audit / delivered) — клиент сразу видит донат, не
-                  дожидаясь доставки. */}
-              {['completed', 'under_audit', 'delivered'].includes(
-                submission.status,
-              ) && (
-                <>
-                  {submission.status !== 'delivered' && <ProcessingCard />}
-                  <DonationBlock />
-                </>
+              {/* Карточка отказа — если клиент не прошёл фильтр квалификации
+                  (оборот < 50 млн ₸ или сотрудников < 10). Заменяет
+                  ProcessingCard + DonationBlock полностью. */}
+              {submission.rejection_reason ? (
+                <RejectionCard reason={submission.rejection_reason} />
+              ) : (
+                /* После завершения анкеты — карточка «обрабатывается» + донат-блок. */
+                ['completed', 'under_audit', 'delivered'].includes(submission.status) && (
+                  <>
+                    {submission.status !== 'delivered' && <ProcessingCard />}
+                    <DonationBlock />
+                  </>
+                )
               )}
             </div>
           )}

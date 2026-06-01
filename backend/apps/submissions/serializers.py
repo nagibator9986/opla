@@ -62,6 +62,7 @@ class SubmissionDetailSerializer(serializers.ModelSerializer):
             "total_questions", "answered_count",
             "tariff_code", "pdf_url",
             "created_at", "completed_at",
+            "rejection_reason",
         ]
         read_only_fields = fields
 

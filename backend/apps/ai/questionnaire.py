@@ -25,6 +25,67 @@ from apps.submissions.models import Answer, Submission
 log = logging.getLogger(__name__)
 
 
+# ── Фильтр квалификации ───────────────────────────────────────────────
+# По бизнес-решению владельца платформы (2026-06): аудит делаем только
+# компаниям от 10 сотрудников и от 50 млн ₸ среднемесячного оборота. Ниже
+# — вежливый отказ, анкета не продолжается. Тексты редактируются через
+# ContentBlock'и (см. apps/content + seed_content.py).
+
+QUALIFICATION_MIN_EMPLOYEES = 10
+QUALIFICATION_MIN_REVENUE_MLN_KZT = 50.0
+
+
+def _extract_number_answer(submission, *keywords: str) -> float | None:
+    """Найти числовой ответ среди ответов submission по ключевым словам в тексте вопроса."""
+    for a in submission.answers.select_related("question"):
+        text = (a.question.text or "").lower()
+        if any(kw.lower() in text for kw in keywords):
+            val = a.value
+            if isinstance(val, dict) and "number" in val and val["number"] is not None:
+                try:
+                    return float(val["number"])
+                except (TypeError, ValueError):
+                    continue
+    return None
+
+
+def check_qualification(submission) -> str | None:
+    """Если клиент не прошёл фильтр квалификации — возвращает текст отказа.
+
+    Иначе — None (клиент проходит, анкета продолжается).
+    """
+    employees = _extract_number_answer(submission, "количество сотрудников")
+    revenue = _extract_number_answer(submission, "оборот компании", "среднемесячный оборот")
+
+    if employees is not None and employees < QUALIFICATION_MIN_EMPLOYEES:
+        return _load_rejection_text("rejection_employees", default=(
+            "К сожалению, наша система forensic-аудита Digital Baqsylyq "
+            "рассчитана на компании с командой от 10 человек. Спасибо за "
+            "интерес — мы благодарны за время, которое вы потратили. "
+            "Будем рады видеть вас, когда команда вырастет!"
+        ))
+    if revenue is not None and revenue < QUALIFICATION_MIN_REVENUE_MLN_KZT:
+        return _load_rejection_text("rejection_revenue", default=(
+            "К сожалению, наша система forensic-аудита Digital Baqsylyq "
+            "ориентирована на компании со среднемесячным оборотом от 50 млн ₸. "
+            "Спасибо за интерес — мы благодарны за время, которое вы потратили. "
+            "Будем рады видеть вас, когда обороты вырастут!"
+        ))
+    return None
+
+
+def _load_rejection_text(key: str, default: str) -> str:
+    """Подгружает текст отказа из ContentBlock, fallback на default."""
+    try:
+        from apps.content.models import ContentBlock
+        cb = ContentBlock.objects.filter(key=key, is_active=True).first()
+        if cb and cb.content.strip():
+            return cb.content
+    except Exception:
+        pass
+    return default
+
+
 @dataclass
 class RenderedQuestion:
     question_id: int
@@ -75,7 +136,16 @@ def visible_questions_for(submission: Submission) -> list[Question]:
 
 
 def next_question(submission: Submission) -> RenderedQuestion | None:
-    """Return the next unanswered question, or None when complete."""
+    """Return the next unanswered question, or None when complete.
+
+    Если клиент не прошёл фильтр квалификации — также возвращает None
+    (но без перевода в `completed`). Вызывающий код должен сначала
+    проверить `submission.rejection_reason` чтобы понять причину.
+    """
+    # Если клиент уже дисквалифицирован — анкета не продолжается.
+    if (submission.rejection_reason or "").strip():
+        return None
+
     visible = visible_questions_for(submission)
     answered_ids = set(submission.answers.values_list("question_id", flat=True))
 
@@ -113,6 +183,11 @@ def save_answer(submission: Submission, question: Question, raw: str | list[str]
 
     Validates based on question.field_type. Raises ValueError with a
     user-safe message on invalid input.
+
+    После сохранения автоматически проверяет квалификацию — если ответ
+    был на ключевой вопрос (сотрудники / оборот) и значение не проходит
+    фильтр, выставляет `submission.rejection_reason`. После этого
+    `next_question` будет возвращать None, а chat-view покажет текст отказа.
     """
     value = _coerce_answer(question, raw)
 
@@ -122,9 +197,28 @@ def save_answer(submission: Submission, question: Question, raw: str | list[str]
         defaults={"value": value, "answered_at": timezone.now()},
     )
 
+    # Перепроверяем квалификацию только если ещё не дисквалифицирован
+    if not (submission.rejection_reason or "").strip():
+        reason = check_qualification(submission)
+        if reason:
+            submission.rejection_reason = reason
+            submission.save(update_fields=["rejection_reason"])
+            log.info(
+                "save_answer: submission=%s disqualified after Q%s",
+                submission.id, question.order,
+            )
+
 
 def try_complete(submission: Submission) -> bool:
-    """If all visible required questions are answered, advance FSM and return True."""
+    """If all visible required questions are answered, advance FSM and return True.
+
+    Дисквалифицированные клиенты (`rejection_reason` заполнен) НЕ переводятся
+    в completed — анкета остаётся в `in_progress_full`, в кабинете показывается
+    карточка отказа вместо обработки отчёта.
+    """
+    if (submission.rejection_reason or "").strip():
+        return False
+
     visible = visible_questions_for(submission)
     required_ids = {q.id for q in visible if q.required}
     answered_ids = set(submission.answers.values_list("question_id", flat=True))
@@ -200,11 +294,25 @@ def _coerce_answer(question: Question, raw: str | list[str]) -> dict:
 
     if ft == Question.FieldType.URL:
         url = (raw if isinstance(raw, str) else "").strip()
-        if not url and not question.required:
-            return {"url": ""}
-        if not re.match(r"^https?://", url):
+        if not url:
+            if not question.required:
+                return {"url": ""}
+            raise ValueError("Введите ссылку или название аккаунта.")
+
+        # Мягкая нормализация — клиент не обязан помнить про https://.
+        # Принимаем: jazorda.kz / www.jazorda.kz / https://jazorda.kz /
+        # @username (Instagram-like). Всё приводим к https://...
+        if url.startswith("@"):
+            url = "https://instagram.com/" + url[1:].lstrip("/")
+        elif not re.match(r"^https?://", url, re.IGNORECASE):
+            url = "https://" + url.lstrip("/")
+
+        # Очень мягкая проверка: есть хотя бы точка или путь после https://.
+        # Базовое: должен быть хост типа "имя.домен" ИЛИ "instagram.com/..."
+        if not re.match(r"^https?://[^\s/]+(\.[^\s/]+|/.+)", url, re.IGNORECASE):
             raise ValueError(
-                "Нужна корректная ссылка — начните с https:// или http://"
+                "Похоже на неправильную ссылку. Попробуйте: jazorda.kz или "
+                "https://instagram.com/jazorda"
             )
         return {"url": url}
 

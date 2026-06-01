@@ -35,6 +35,14 @@ class Submission(UUIDModel, TimestampedModel):
     status = FSMField(default=Status.CREATED, choices=Status.choices)
     completed_at = models.DateTimeField(null=True, blank=True)
     last_reminded_at = models.DateTimeField(null=True, blank=True)
+    rejection_reason = models.TextField(
+        blank=True, default="",
+        help_text=(
+            "Если заполнено — клиент не прошёл фильтр квалификации "
+            "(оборот < 50 млн ₸ или сотрудников < 10). Анкета не "
+            "продолжается, в кабинете показывается карточка отказа."
+        ),
+    )
 
     class Meta:
         verbose_name = "Заказ"

@@ -17,6 +17,7 @@ export interface Submission {
   pdf_url: string | null
   created_at: string
   completed_at: string | null
+  rejection_reason?: string | null
 }
 
 export interface DeeplinkResponse {
