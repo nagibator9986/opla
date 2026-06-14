@@ -6,9 +6,23 @@ can edit any block from /admin/content/contentblock/ afterwards.
 
 Run: python manage.py seed_content
 """
+import re
+
 from django.core.management.base import BaseCommand
 
 from apps.content.models import ContentBlock
+
+
+# Блоки с форматированным HTML (CKEditor + <SafeHtml> на фронте). Должно
+# совпадать с миграцией content/0002_html_content_blocks.
+_HTML_KEYS = {"method_text", "donation_message", "processing_message"}
+_FAQ_ANSWER_RE = re.compile(r"^faq_\d+_a$")
+
+
+def _content_type_for(key: str) -> str:
+    if key in _HTML_KEYS or _FAQ_ANSWER_RE.match(key):
+        return ContentBlock.ContentType.HTML
+    return ContentBlock.ContentType.TEXT
 
 
 # ─── Landing page content blocks ────────────────────────────────────────────
@@ -243,7 +257,7 @@ class Command(BaseCommand):
                 defaults={
                     "title": title,
                     "content": default,
-                    "content_type": ContentBlock.ContentType.TEXT,
+                    "content_type": _content_type_for(key),
                     "is_active": True,
                 },
             )

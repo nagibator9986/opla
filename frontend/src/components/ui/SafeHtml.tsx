@@ -30,11 +30,12 @@ const PURIFY_CONFIG: Config = {
     'ul', 'ol', 'li',
     'a',
     'blockquote',
+    'figure', 'figcaption',
     'table', 'thead', 'tbody', 'tr', 'th', 'td',
     'code', 'pre',
     'span',
   ],
-  ALLOWED_ATTR: ['href', 'title', 'target', 'rel'],
+  ALLOWED_ATTR: ['href', 'title', 'target', 'rel', 'colspan', 'rowspan'],
 }
 
 interface SafeHtmlProps {

@@ -2,7 +2,6 @@ import re
 
 from django import forms
 from django.contrib import admin
-from django.db import models
 from django.urls import reverse
 from django.utils.html import format_html
 
@@ -18,9 +17,29 @@ class ContentBlockForm(forms.ModelForm):
         model = ContentBlock
         fields = "__all__"
 
-    def clean_content(self) -> str:
-        # CKEditor выдаёт HTML — храним только очищенный (защита от XSS).
-        return sanitize_html(self.cleaned_data.get("content"))
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Rich-редактор ТОЛЬКО для HTML-блоков (длинные тексты: метод, FAQ,
+        # донат и т.п.). Для текстовых меток (заголовки, цены, ссылки, кнопки)
+        # — обычная textarea: CKEditor оборачивает любой текст в <p>, а такие
+        # блоки выводятся на фронте инлайн как {c.key} и показали бы теги.
+        if self.instance and self.instance.content_type == ContentBlock.ContentType.HTML:
+            self.fields["content"].widget = CKEditor5Widget(config_name="content_block")
+        else:
+            self.fields["content"].widget = forms.Textarea(
+                attrs={"rows": 8, "style": "width: 100%; font-size: 15px; padding: 10px;"}
+            )
+
+    def clean(self):
+        # Санитайзим в clean(), а НЕ в clean_content: поля чистятся в порядке
+        # объявления модели, где content идёт раньше content_type, поэтому в
+        # clean_content значения content_type ещё нет (→ санитайз пропускался
+        # бы). В clean() доступны все очищенные поля. Текстовые блоки не трогаем,
+        # иначе nh3 исказил бы безобидный текст вроде «5 < 10».
+        cleaned = super().clean()
+        if cleaned.get("content_type") == ContentBlock.ContentType.HTML:
+            cleaned["content"] = sanitize_html(cleaned.get("content") or "")
+        return cleaned
 
 
 # Map each key prefix to a human-readable section label shown in the admin
@@ -78,14 +97,8 @@ class ContentBlockAdmin(ModelAdmin):
             ),
         }),
     )
-    # CKEditor 5 — администратор форматирует текст (жирный, курсив, списки,
-    # заголовки, цитаты, таблицы). HTML очищается в ContentBlockForm.clean_content
-    # и рендерится на фронте через <SafeHtml>.
-    formfield_overrides = {
-        models.TextField: {
-            "widget": CKEditor5Widget(config_name="content_block"),
-        },
-    }
+    # Виджет поля content выбирается в ContentBlockForm.__init__ по content_type:
+    # CKEditor для HTML-блоков, обычная textarea для текстовых меток.
 
     @admin.display(description="")
     def edit_button(self, obj: ContentBlock) -> str:

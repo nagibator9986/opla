@@ -23,6 +23,8 @@ ALLOWED_TAGS: set[str] = {
     "ul", "ol", "li",
     "a",
     "blockquote",
+    # CKEditor оборачивает таблицу в <figure class="table">…<figcaption>.
+    "figure", "figcaption",
     "table", "thead", "tbody", "tr", "th", "td",
     "code", "pre",
     "span",
@@ -32,6 +34,8 @@ ALLOWED_TAGS: set[str] = {
 # (nh3 запрещает указывать оба одновременно).
 ALLOWED_ATTRIBUTES: dict[str, set[str]] = {
     "a": {"href", "title", "target"},
+    "th": {"colspan", "rowspan"},
+    "td": {"colspan", "rowspan"},
 }
 
 
