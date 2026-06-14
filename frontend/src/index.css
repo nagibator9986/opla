@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@plugin "@tailwindcss/typography";
 
 @theme {
   --color-brand-50: #fffbeb;
@@ -179,4 +180,25 @@ body {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* Типографика rich-контента (CKEditor → SafeHtml) на фирменной палитре.
+   Перекрашивает @tailwindcss/typography в ink/brand вместо дефолтного серого. */
+.prose {
+  --tw-prose-body: var(--color-ink-700);
+  --tw-prose-headings: var(--color-ink-900);
+  --tw-prose-lead: var(--color-ink-600);
+  --tw-prose-links: var(--color-brand-700);
+  --tw-prose-bold: var(--color-ink-900);
+  --tw-prose-counters: var(--color-ink-500);
+  --tw-prose-bullets: var(--color-brand-400);
+  --tw-prose-hr: var(--color-ink-200);
+  --tw-prose-quotes: var(--color-ink-800);
+  --tw-prose-quote-borders: var(--color-brand-300);
+  --tw-prose-captions: var(--color-ink-500);
+  --tw-prose-code: var(--color-ink-900);
+  --tw-prose-pre-code: var(--color-ink-100);
+  --tw-prose-pre-bg: var(--color-ink-900);
+  --tw-prose-th-borders: var(--color-ink-300);
+  --tw-prose-td-borders: var(--color-ink-200);
 }

@@ -6,9 +6,21 @@ from django.db import models
 from django.urls import reverse
 from django.utils.html import format_html
 
+from django_ckeditor_5.widgets import CKEditor5Widget
 from unfold.admin import ModelAdmin
 
 from apps.content.models import ContentBlock
+from apps.core.sanitize import sanitize_html
+
+
+class ContentBlockForm(forms.ModelForm):
+    class Meta:
+        model = ContentBlock
+        fields = "__all__"
+
+    def clean_content(self) -> str:
+        # CKEditor выдаёт HTML — храним только очищенный (защита от XSS).
+        return sanitize_html(self.cleaned_data.get("content"))
 
 
 # Map each key prefix to a human-readable section label shown in the admin
@@ -36,6 +48,7 @@ def _section_for_key(key: str) -> str:
 
 @admin.register(ContentBlock)
 class ContentBlockAdmin(ModelAdmin):
+    form = ContentBlockForm
     # Edit-button column is the obvious CTA so users don't have to guess which
     # cell is clickable. `title` is also a link for those who prefer text.
     list_display = ("edit_button", "title", "section_badge", "preview", "key", "is_active")
@@ -65,13 +78,12 @@ class ContentBlockAdmin(ModelAdmin):
             ),
         }),
     )
-    # Plain Textarea — content is rendered as plain text on the landing.
+    # CKEditor 5 — администратор форматирует текст (жирный, курсив, списки,
+    # заголовки, цитаты, таблицы). HTML очищается в ContentBlockForm.clean_content
+    # и рендерится на фронте через <SafeHtml>.
     formfield_overrides = {
         models.TextField: {
-            "widget": forms.Textarea(attrs={
-                "rows": 8,
-                "style": "width: 100%; font-size: 15px; padding: 10px;",
-            }),
+            "widget": CKEditor5Widget(config_name="content_block"),
         },
     }
 

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Container, Section } from '../ui/Container'
 import { Badge } from '../ui/Badge'
+import { SafeHtml } from '../ui/SafeHtml'
 
 interface FaqSectionProps {
   content: Record<string, string>
@@ -78,9 +79,10 @@ export function FaqSection({ content }: FaqSectionProps) {
                   }`}
                 >
                   <div className="overflow-hidden">
-                    <p className="px-5 md:px-6 pb-5 md:pb-6 text-ink-600 leading-relaxed">
-                      {item.answer}
-                    </p>
+                    <SafeHtml
+                      html={item.answer}
+                      className="px-5 md:px-6 pb-5 md:pb-6 text-ink-600 leading-relaxed"
+                    />
                   </div>
                 </div>
               </div>

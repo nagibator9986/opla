@@ -5,6 +5,7 @@ import { Header } from '../components/layout/Header'
 import { Footer } from '../components/layout/Footer'
 import { Container } from '../components/ui/Container'
 import { Badge } from '../components/ui/Badge'
+import { SafeHtml } from '../components/ui/SafeHtml'
 import { DockedChatPanel } from '../components/chat/ChatLauncher'
 import { getBlogPost } from '../api/blog'
 
@@ -86,9 +87,11 @@ export function BlogPostPage() {
                 </p>
               )}
 
-              <div className="prose prose-ink max-w-none text-ink-800 leading-relaxed whitespace-pre-wrap text-base md:text-lg">
-                {data.body || 'Полный текст скоро появится.'}
-              </div>
+              <SafeHtml
+                html={data.body}
+                fallback="Полный текст скоро появится."
+                className="text-ink-800 leading-relaxed text-base md:text-lg"
+              />
             </article>
           )}
         </Container>

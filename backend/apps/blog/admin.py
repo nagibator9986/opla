@@ -1,16 +1,34 @@
 from django import forms
 from django.contrib import admin
-from django.db import models
 from django.urls import reverse
 from django.utils.html import format_html
 
+from django_ckeditor_5.widgets import CKEditor5Widget
 from unfold.admin import ModelAdmin
 
 from apps.blog.models import BlogPost
+from apps.core.sanitize import sanitize_html
+
+
+class BlogPostForm(forms.ModelForm):
+    class Meta:
+        model = BlogPost
+        fields = "__all__"
+        widgets = {
+            # Тело статьи — rich-редактор; краткое описание остаётся простым.
+            "body": CKEditor5Widget(config_name="content_block"),
+            "excerpt": forms.Textarea(
+                attrs={"rows": 4, "style": "width: 100%; font-size: 15px; padding: 10px;"}
+            ),
+        }
+
+    def clean_body(self) -> str:
+        return sanitize_html(self.cleaned_data.get("body"))
 
 
 @admin.register(BlogPost)
 class BlogPostAdmin(ModelAdmin):
+    form = BlogPostForm
     list_display = (
         "edit_button",
         "cover_thumb",
@@ -60,14 +78,6 @@ class BlogPostAdmin(ModelAdmin):
             },
         ),
     )
-
-    formfield_overrides = {
-        models.TextField: {
-            "widget": forms.Textarea(
-                attrs={"rows": 10, "style": "width: 100%; font-size: 15px; padding: 10px;"}
-            )
-        },
-    }
 
     @admin.display(description="")
     def edit_button(self, obj):

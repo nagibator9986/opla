@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useContentBlocks } from '../../hooks/useContentBlocks'
+import { SafeHtml } from '../ui/SafeHtml'
 
 /**
  * Карточка-донат, показывается клиенту в кабинете когда отчёт выдан (delivered).
@@ -71,7 +72,7 @@ export function DonationBlock() {
       </div>
 
       <div className="px-6 py-5">
-        <p className="text-sm text-ink-700 leading-relaxed whitespace-pre-line">{message}</p>
+        <SafeHtml html={message} className="text-sm text-ink-700 leading-relaxed" />
 
         <div className="mt-5 rounded-xl border-2 border-dashed border-brand-300/70 bg-white/60 backdrop-blur-sm p-4">
           <div className="flex items-center justify-between gap-3 mb-2">

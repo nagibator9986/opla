@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 
 import { Badge } from '../ui/Badge'
+import { SafeHtml } from '../ui/SafeHtml'
 import { ChatLauncher } from '../chat/ChatLauncher'
 import { getCase, type CaseDetail } from '../../api/cases'
 
@@ -147,9 +148,11 @@ export function CaseModal({ slug, onClose }: CaseModalProps) {
                   )}
                 </header>
 
-                <div className="prose prose-ink max-w-none text-ink-800 leading-relaxed whitespace-pre-wrap text-base">
-                  {data.body || 'Полный текст кейса скоро появится.'}
-                </div>
+                <SafeHtml
+                  html={data.body}
+                  fallback="Полный текст кейса скоро появится."
+                  className="text-ink-800 leading-relaxed text-base"
+                />
 
                 <div className="mt-10 p-6 md:p-7 rounded-2xl bg-gradient-to-br from-ink-900 to-ink-950 text-white">
                   <h3 className="text-lg md:text-xl font-bold mb-2">

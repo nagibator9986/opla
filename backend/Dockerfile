@@ -35,7 +35,8 @@ RUN /opt/pysetup/.venv/bin/pip install --no-cache-dir \
     "openai>=1.60,<3" \
     "Pillow>=10.4" \
     "requests>=2.31" \
-    "jinja2>=3.1"
+    "jinja2>=3.1" \
+    "nh3>=0.2,<0.4"
 
 # Каталог для FileField (uploaded_file у AuditReport и т.п.) — должен быть
 # писаемым из-под appuser. Volume в docker-compose монтируется поверх,

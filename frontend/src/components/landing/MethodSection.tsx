@@ -1,5 +1,6 @@
 import { Container, Section } from '../ui/Container'
 import { Badge } from '../ui/Badge'
+import { SafeHtml } from '../ui/SafeHtml'
 
 interface MethodSectionProps {
   content: Record<string, string>
@@ -52,10 +53,13 @@ export function MethodSection({ content }: MethodSectionProps) {
           <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-ink-900 tracking-tight">
             {content.method_title ?? 'Наш метод'}
           </h2>
-          <p className="mt-4 text-base md:text-lg text-ink-600 leading-relaxed">
-            {content.method_text ??
-              'Три простых шага от первого сообщения в Telegram до готового отчёта с разбором ключевых параметров бизнеса.'}
-          </p>
+          <SafeHtml
+            html={
+              content.method_text ??
+              'Три простых шага от первого сообщения в Telegram до готового отчёта с разбором ключевых параметров бизнеса.'
+            }
+            className="mt-4 text-base md:text-lg text-ink-600 leading-relaxed"
+          />
         </div>
 
         <div className="relative grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">

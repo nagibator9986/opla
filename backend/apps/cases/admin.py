@@ -1,16 +1,35 @@
 from django import forms
 from django.contrib import admin
-from django.db import models
 from django.urls import reverse
 from django.utils.html import format_html
 
+from django_ckeditor_5.widgets import CKEditor5Widget
 from unfold.admin import ModelAdmin
 
 from apps.cases.models import Case
+from apps.core.sanitize import sanitize_html
+
+
+class CaseAdminForm(forms.ModelForm):
+    class Meta:
+        model = Case
+        fields = "__all__"
+        widgets = {
+            # Полный текст кейса — rich-редактор; тизер карточки остаётся
+            # простым (плоский текст без разметки).
+            "body": CKEditor5Widget(config_name="content_block"),
+            "short_text": forms.Textarea(
+                attrs={"rows": 4, "style": "width: 100%; font-size: 15px; padding: 10px;"}
+            ),
+        }
+
+    def clean_body(self) -> str:
+        return sanitize_html(self.cleaned_data.get("body"))
 
 
 @admin.register(Case)
 class CaseAdmin(ModelAdmin):
+    form = CaseAdminForm
     list_display = ("edit_button", "logo_thumb", "title", "company_name", "metric", "order", "is_active")
     list_display_links = ("title",)
     list_filter = ("is_active", "accent", "industry")
@@ -50,12 +69,6 @@ class CaseAdmin(ModelAdmin):
             },
         ),
     )
-
-    formfield_overrides = {
-        models.TextField: {
-            "widget": forms.Textarea(attrs={"rows": 8, "style": "width: 100%; font-size: 15px; padding: 10px;"})
-        },
-    }
 
     @admin.display(description="")
     def edit_button(self, obj):

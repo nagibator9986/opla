@@ -5,6 +5,7 @@ import { Header } from '../components/layout/Header'
 import { Footer } from '../components/layout/Footer'
 import { Container } from '../components/ui/Container'
 import { Badge } from '../components/ui/Badge'
+import { SafeHtml } from '../components/ui/SafeHtml'
 import { ChatLauncher, FloatingChatButton } from '../components/chat/ChatLauncher'
 import { getCase, type CaseDetail } from '../api/cases'
 
@@ -95,9 +96,11 @@ export function CaseDetailPage() {
                 />
               )}
 
-              <div className="prose prose-ink max-w-none text-ink-800 leading-relaxed whitespace-pre-wrap text-base md:text-lg">
-                {data.body || 'Полный текст кейса скоро появится.'}
-              </div>
+              <SafeHtml
+                html={data.body}
+                fallback="Полный текст кейса скоро появится."
+                className="text-ink-800 leading-relaxed text-base md:text-lg"
+              />
 
               <div className="mt-16 p-8 rounded-3xl bg-gradient-to-br from-ink-900 to-ink-950 text-white">
                 <h2 className="text-2xl md:text-3xl font-bold mb-3">Хотите похожий результат?</h2>

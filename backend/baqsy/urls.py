@@ -12,4 +12,6 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("health/", health, name="health"),
     path("api/v1/", include("apps.core.api_urls")),
+    # CKEditor 5 — загрузка картинок/ассетов из rich-редактора (staff-only).
+    path("ckeditor5/", include("django_ckeditor_5.urls")),
 ]

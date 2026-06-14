@@ -384,3 +384,5 @@ CKEDITOR_5_CONFIGS = {
         "language": "ru",
     },
 }
+# Загружать файлы из редактора может только персонал админки.
+CKEDITOR_5_FILE_UPLOAD_PERMISSION = "staff"

@@ -11,6 +11,7 @@
  * При отсутствии (например пока API не настроен) — fallback значения ниже.
  */
 import { useContentBlocks } from '../../hooks/useContentBlocks'
+import { SafeHtml } from '../ui/SafeHtml'
 
 export function ProcessingCard() {
   const { data: content } = useContentBlocks()
@@ -34,7 +35,7 @@ export function ProcessingCard() {
         </div>
         <div className="min-w-0 flex-1">
           <h3 className="text-lg font-bold text-ink-900">{title}</h3>
-          <p className="mt-1.5 text-sm text-ink-600 leading-relaxed">{message}</p>
+          <SafeHtml html={message} className="mt-1.5 text-sm text-ink-600 leading-relaxed" />
           <div className="mt-4 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-sky-100 text-sky-900 text-xs font-semibold">
             <svg className="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9 4a1 1 0 011 1v4l3 1.5a1 1 0 11-1 1.732l-3.5-2A1 1 0 018 9.5V5a1 1 0 011-1z" clipRule="evenodd" />
