@@ -114,11 +114,11 @@ function CaseList({ cases, onOpen }: { cases: CaseSummary[]; onOpen: (slug: stri
           <button
             type="button"
             onClick={() => onOpen(c.slug)}
-            className="group w-full flex items-center justify-between gap-3 py-3 text-left cursor-pointer"
-            aria-label={`Открыть кейс ${c.title}`}
+            className="group w-full flex items-center gap-3 py-3 text-left cursor-pointer"
+            aria-label={`Открыть кейс ${c.company_name || c.title}`}
           >
-            <span className="font-medium text-ink-700 group-hover:text-brand-700 transition-colors truncate">
-              {c.title}
+            <span className="flex-1 min-w-0 truncate font-medium text-ink-700 group-hover:text-brand-700 transition-colors">
+              {c.company_name || c.title}
             </span>
             <svg
               className="flex-shrink-0 w-4 h-4 text-ink-300 opacity-0 group-hover:opacity-100 group-hover:text-brand-500 group-hover:translate-x-0.5 transition-all"
