@@ -11,15 +11,6 @@ import { CaseModal } from '../components/cases/CaseModal'
 import { listCases, type CaseSummary } from '../api/cases'
 import { useAuthStore } from '../store/authStore'
 
-const ACCENT_GRADIENT: Record<CaseSummary['accent'], string> = {
-  emerald: 'from-emerald-400 to-emerald-600',
-  sky: 'from-sky-400 to-indigo-500',
-  amber: 'from-amber-400 to-orange-500',
-  rose: 'from-rose-400 to-rose-600',
-  violet: 'from-violet-400 to-purple-500',
-  slate: 'from-slate-400 to-slate-600',
-}
-
 export function CasesPage() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
   const [searchParams, setSearchParams] = useSearchParams()
@@ -110,102 +101,55 @@ export function CasesPage() {
   )
 }
 
-// Компактный список: одна строка на кейс. На 35–50 кейсов занимает в разы
-// меньше места, чем сетка квадратных карточек, и остаётся сканируемым.
-// Клик по строке открывает модалку кейса (тот же ?case=slug).
+// Минималистичный список: ТОЛЬКО кликабельные заголовки кейсов — без значков,
+// подзаголовков, отраслей и метрик (по просьбе клиента: «значки не нужны»,
+// «только заголовки кликабельные, чтобы места меньше занимало»). Все детали
+// (метрика, разбор) открываются в модалке по клику. Стрелка проявляется лишь
+// при наведении, поэтому по умолчанию — чистый список заголовков.
 function CaseList({ cases, onOpen }: { cases: CaseSummary[]; onOpen: (slug: string) => void }) {
   return (
-    <div className="max-w-3xl mx-auto rounded-2xl border border-ink-200 bg-white shadow-[0_1px_2px_rgb(15_23_42_/_0.04)] overflow-hidden">
-      <ul className="divide-y divide-ink-100">
-        {cases.map((c) => (
-          <li key={c.slug}>
-            <button
-              type="button"
-              onClick={() => onOpen(c.slug)}
-              className="group w-full flex items-center gap-3 sm:gap-4 px-4 sm:px-5 py-3.5 text-left hover:bg-ink-50/70 transition-colors cursor-pointer"
-              aria-label={`Открыть кейс ${c.title}`}
+    <ul className="max-w-2xl mx-auto border-t border-ink-100">
+      {cases.map((c) => (
+        <li key={c.slug} className="border-b border-ink-100">
+          <button
+            type="button"
+            onClick={() => onOpen(c.slug)}
+            className="group w-full flex items-center justify-between gap-3 py-3 text-left cursor-pointer"
+            aria-label={`Открыть кейс ${c.title}`}
+          >
+            <span className="font-medium text-ink-700 group-hover:text-brand-700 transition-colors truncate">
+              {c.title}
+            </span>
+            <svg
+              className="flex-shrink-0 w-4 h-4 text-ink-300 opacity-0 group-hover:opacity-100 group-hover:text-brand-500 group-hover:translate-x-0.5 transition-all"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+              aria-hidden
             >
-              {/* Лого / инициалы с акцентной подложкой */}
-              <span className="relative flex-shrink-0 w-11 h-11 rounded-xl bg-ink-50 border border-ink-200/70 flex items-center justify-center overflow-hidden">
-                <span
-                  aria-hidden
-                  className={`absolute inset-0 bg-gradient-to-br ${ACCENT_GRADIENT[c.accent]} opacity-10 group-hover:opacity-20 transition-opacity`}
-                />
-                {c.logo_url ? (
-                  <img
-                    src={c.logo_url}
-                    alt={c.company_name || c.title}
-                    className="relative max-h-7 max-w-[80%] object-contain grayscale group-hover:grayscale-0 transition-all duration-300"
-                  />
-                ) : (
-                  <span className="relative text-sm font-bold text-ink-700">
-                    {(c.company_name || c.title).slice(0, 2).toUpperCase()}
-                  </span>
-                )}
-              </span>
-
-              {/* Заголовок + подзаголовок */}
-              <span className="min-w-0 flex-1">
-                <span className="block font-semibold text-ink-900 text-sm sm:text-base truncate">
-                  {c.company_name || c.title}
-                </span>
-                <span className="block text-xs sm:text-sm text-ink-500 truncate">
-                  {c.subtitle || c.title}
-                </span>
-              </span>
-
-              {/* Отрасль — только на десктопе */}
-              {c.industry && (
-                <span className="hidden md:inline-flex flex-shrink-0 px-2.5 py-1 rounded-full bg-ink-100 text-ink-600 text-xs font-medium">
-                  {c.industry}
-                </span>
-              )}
-
-              {/* Метрика */}
-              {c.metric && (
-                <span
-                  className={`flex-shrink-0 text-sm font-bold bg-gradient-to-br ${ACCENT_GRADIENT[c.accent]} bg-clip-text text-transparent tabular-nums`}
-                >
-                  {c.metric}
-                </span>
-              )}
-
-              {/* Шеврон */}
-              <svg
-                className="flex-shrink-0 w-4 h-4 text-ink-300 group-hover:text-ink-500 group-hover:translate-x-0.5 transition-all"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-                aria-hidden
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z"
-                  clipRule="evenodd"
-                />
-              </svg>
-            </button>
-          </li>
-        ))}
-      </ul>
-    </div>
+              <path
+                fillRule="evenodd"
+                d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z"
+                clipRule="evenodd"
+              />
+            </svg>
+          </button>
+        </li>
+      ))}
+    </ul>
   )
 }
 
 function CaseListSkeleton() {
   return (
-    <div className="max-w-3xl mx-auto rounded-2xl border border-ink-200 bg-white overflow-hidden">
-      <ul className="divide-y divide-ink-100">
-        {[0, 1, 2, 3, 4, 5].map((i) => (
-          <li key={i} className="flex items-center gap-4 px-4 sm:px-5 py-3.5 animate-pulse">
-            <span className="flex-shrink-0 w-11 h-11 rounded-xl bg-ink-100" />
-            <span className="flex-1 space-y-2">
-              <span className="block h-3.5 w-1/3 bg-ink-100 rounded" />
-              <span className="block h-3 w-2/3 bg-ink-100 rounded" />
-            </span>
-            <span className="flex-shrink-0 w-10 h-4 bg-ink-100 rounded" />
-          </li>
-        ))}
-      </ul>
-    </div>
+    <ul className="max-w-2xl mx-auto border-t border-ink-100">
+      {[0, 1, 2, 3, 4, 5, 6, 7].map((i) => (
+        <li key={i} className="border-b border-ink-100 py-3">
+          <span
+            className="block h-4 bg-ink-100 rounded animate-pulse"
+            style={{ width: `${50 + (i % 4) * 12}%` }}
+          />
+        </li>
+      ))}
+    </ul>
   )
 }
