@@ -359,6 +359,12 @@ def _validate_text_meaningful(question: Question, text: str) -> None:
     Бросает ``ValueError`` с понятным сообщением — вызывающий код (чат-бот)
     покажет его клиенту и повторит вопрос.
     """
+    # Ответы-ссылки (профили соцсетей, сайты) не прогоняем через эвристики
+    # «осмысленности»: одиночный URL/@handle не имеет пробелов и «мало гласных»,
+    # но это валидный ответ (напр. «https://linkedin.com/in/john», «@baqsy»).
+    if re.search(r"https?://|www\.|@\w|[\w-]+\.(?:com|kz|ru|io|me|net|org|co)\b", text, re.IGNORECASE):
+        return
+
     n = len(text)
     is_longtext = question.field_type == Question.FieldType.LONGTEXT
 
